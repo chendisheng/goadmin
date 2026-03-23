@@ -1,0 +1,25 @@
+name: menu
+version: v1
+kind: business-module
+dependencies:
+  - core/auth/bootstrap
+  - core/auth/casbin
+routes:
+  - method: GET
+    path: /api/v1/menus
+  - method: GET
+    path: /api/v1/menus/:id
+  - method: GET
+    path: /api/v1/menus/tree
+  - method: GET
+    path: /api/v1/menus/routes
+  - method: POST
+    path: /api/v1/menus
+  - method: PUT
+    path: /api/v1/menus/:id
+  - method: DELETE
+    path: /api/v1/menus/:id
+capabilities:
+  - basic-crud
+  - tree
+  - dynamic-routes

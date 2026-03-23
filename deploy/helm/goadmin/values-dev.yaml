@@ -1,0 +1,16 @@
+replicaCount: 1
+
+image:
+  tag: dev
+
+config:
+  goadminEnv: dev
+  appEnv: dev
+  serverHttpHost: 0.0.0.0
+  logLevel: debug
+  logFormat: console
+  databaseAutoMigrate: true
+  tenantEnabled: true
+
+ingress:
+  enabled: false

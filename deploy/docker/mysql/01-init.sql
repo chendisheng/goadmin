@@ -1,0 +1,5 @@
+-- Deprecated placeholder.
+-- Split migration files now live in this directory:
+--   001-charset.sql
+--   010-databases.sql
+--   020-user-grants.sql

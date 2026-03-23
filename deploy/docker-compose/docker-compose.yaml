@@ -1,0 +1,110 @@
+services:
+  backend:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      target: runtime
+    image: goadmin/backend:local
+    env_file:
+      - ../../.env
+    environment:
+      GOADMIN_ENV: ${GOADMIN_ENV:-dev}
+      APP_ENV: ${APP_ENV:-dev}
+      GOADMIN_CONFIG_DIR: /app/backend/config
+      GOADMIN_SERVER_HTTP_HOST: ${GOADMIN_SERVER_HTTP_HOST:-0.0.0.0}
+      GOADMIN_SERVER_HTTP_PORT: ${GOADMIN_SERVER_HTTP_PORT:-8080}
+      TZ: ${TZ:-Asia/Shanghai}
+      GOADMIN_LOGGER_LEVEL: ${GOADMIN_LOGGER_LEVEL:-debug}
+      GOADMIN_LOGGER_FORMAT: ${GOADMIN_LOGGER_FORMAT:-console}
+      GOADMIN_LOGGER_OUTPUT: ${GOADMIN_LOGGER_OUTPUT:-stdout}
+      GOADMIN_DATABASE_DRIVER: ${GOADMIN_DATABASE_DRIVER:-mysql}
+      GOADMIN_DATABASE_DSN: ${GOADMIN_DATABASE_DSN:-goadmin:goadmin@tcp(mysql:3306)/goadmin?charset=utf8mb4&parseTime=True&loc=Local}
+      GOADMIN_DATABASE_AUTO_MIGRATE: ${GOADMIN_DATABASE_AUTO_MIGRATE:-true}
+      GOADMIN_TENANT_ENABLED: ${GOADMIN_TENANT_ENABLED:-true}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-*}
+      GOADMIN_AUTH_JWT_SECRET: ${GOADMIN_AUTH_JWT_SECRET:-please-change-me}
+      GOADMIN_AUTH_JWT_ISSUER: ${GOADMIN_AUTH_JWT_ISSUER:-GoAdmin}
+      GOADMIN_AUTH_JWT_AUDIENCE: ${GOADMIN_AUTH_JWT_AUDIENCE:-goadmin-api}
+      GOADMIN_AUTH_JWT_ACCESS_TOKEN_TTL: ${GOADMIN_AUTH_JWT_ACCESS_TOKEN_TTL:-2h}
+      GOADMIN_AUTH_JWT_REFRESH_TOKEN_TTL: ${GOADMIN_AUTH_JWT_REFRESH_TOKEN_TTL:-168h}
+      GOADMIN_AUTH_CASBIN_ENABLED: ${GOADMIN_AUTH_CASBIN_ENABLED:-true}
+      GOADMIN_AUTH_CASBIN_MODEL_PATH: ${GOADMIN_AUTH_CASBIN_MODEL_PATH:-core/auth/casbin/model/rbac.conf}
+      GOADMIN_AUTH_CASBIN_POLICY_PATH: ${GOADMIN_AUTH_CASBIN_POLICY_PATH:-core/auth/casbin/adapter/policy.csv}
+    ports:
+      - "${GOADMIN_PORT:-8080}:${GOADMIN_SERVER_HTTP_PORT:-8080}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "/app/backend/scripts/healthcheck.sh"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  mysql:
+    image: mysql:8.0
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-goadmin}
+      MYSQL_USER: ${MYSQL_USER:-goadmin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-goadmin}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST:-%}
+      MYSQL_INITDB_SKIP_TZINFO: ${MYSQL_INITDB_SKIP_TZINFO:-1}
+      TZ: ${MYSQL_TIMEZONE:-Asia/Shanghai}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../docker/mysql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u $${MYSQL_USER:-goadmin} -p$${MYSQL_PASSWORD:-goadmin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    command:
+      - sh
+      - -c
+      - >-
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD";
+        fi;
+        exec redis-server --appendonly yes
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          sh -ec 'if [ -n "$$REDIS_PASSWORD" ]; then
+          redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG;
+          else
+          redis-cli ping | grep -q PONG;
+          fi'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mysql-data:
+  redis-data:

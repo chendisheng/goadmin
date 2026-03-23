@@ -1,0 +1,41 @@
+app:
+  name: GoAdmin
+  env: dev
+  version: 0.1.0
+
+server:
+  http:
+    host: 0.0.0.0
+    port: 8080
+    read_timeout: 10s
+    write_timeout: 10s
+    idle_timeout: 60s
+    shutdown_timeout: 5s
+
+logger:
+  level: info
+  format: json
+  output: stdout
+  development: true
+
+database:
+  driver: mysql
+  dsn: goadmin:goadmin@tcp(127.0.0.1:3306)/goadmin?charset=utf8mb4&parseTime=True&loc=Local
+  auto_migrate: true
+
+# tenant.enabled controls whether multi-tenant behavior is enabled.
+tenant:
+  enabled: true
+
+auth:
+  jwt:
+    issuer: GoAdmin
+    audience: goadmin-api
+    access_token_ttl: 2h
+    refresh_token_ttl: 168h
+  casbin:
+    enabled: true
+    model_path: core/auth/casbin/model/rbac.conf
+    policy_path: core/auth/casbin/adapter/policy.csv
+  bootstrap:
+    users: []

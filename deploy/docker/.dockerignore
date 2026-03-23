@@ -1,0 +1,10 @@
+**/.DS_Store
+**/bin
+.git
+.gitignore
+../../.idea
+memory-bank
+backend/bin
+backend/.idea
+backend/.vscode
+.env

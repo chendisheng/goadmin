@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: goadmin-config
+data:
+  GOADMIN_ENV: test
+  APP_ENV: test
+  GOADMIN_LOGGER_LEVEL: info
+  GOADMIN_LOGGER_FORMAT: json
+  GOADMIN_LOGGER_OUTPUT: stdout

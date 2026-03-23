@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: goadmin-config
+  namespace: goadmin
+  labels:
+    app.kubernetes.io/name: goadmin
+    app.kubernetes.io/component: backend
+data:
+  GOADMIN_ENV: prod
+  APP_ENV: prod
+  GOADMIN_CONFIG_DIR: /app/backend/config
+  GOADMIN_SERVER_HTTP_HOST: 0.0.0.0
+  GOADMIN_SERVER_HTTP_PORT: "8080"
+  TZ: Asia/Shanghai
+  GOADMIN_LOGGER_LEVEL: info
+  GOADMIN_LOGGER_FORMAT: json
+  GOADMIN_LOGGER_OUTPUT: stdout
+  GOADMIN_DATABASE_DRIVER: mysql
+  GOADMIN_DATABASE_AUTO_MIGRATE: "true"
+  GOADMIN_TENANT_ENABLED: "true"
+  GOADMIN_AUTH_JWT_ISSUER: GoAdmin
+  GOADMIN_AUTH_JWT_AUDIENCE: goadmin-api
+  GOADMIN_AUTH_CASBIN_ENABLED: "true"
+  GOADMIN_AUTH_CASBIN_MODEL_PATH: core/auth/casbin/model/rbac.conf
+  GOADMIN_AUTH_CASBIN_POLICY_PATH: core/auth/casbin/adapter/policy.csv
+  CORS_ALLOW_ORIGINS: "*"

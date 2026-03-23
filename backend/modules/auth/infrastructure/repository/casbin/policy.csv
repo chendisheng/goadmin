@@ -1,0 +1,4 @@
+p, admin, /api/v1/auth/me, GET
+p, admin, /api/v1/auth/logout, POST
+p, user, /api/v1/auth/me, GET
+p, user, /api/v1/auth/logout, POST

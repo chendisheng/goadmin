@@ -1,0 +1,31 @@
+app:
+  env: prod
+
+server:
+  http:
+    port: 8000
+    read_timeout: 5s
+    write_timeout: 5s
+    idle_timeout: 60s
+    shutdown_timeout: 10s
+
+logger:
+  level: info
+  format: json
+  output: stdout
+  development: false
+
+database:
+  driver: mysql
+  dsn: goadmin:goadmin@tcp(127.0.0.1:3306)/goadmin_prod?charset=utf8mb4&parseTime=True&loc=Local
+  auto_migrate: true
+
+# tenant.enabled controls whether multi-tenant behavior is enabled.
+tenant:
+  enabled: true
+
+auth:
+  casbin:
+    enabled: true
+    model_path: core/auth/casbin/model/rbac.conf
+    policy_path: core/auth/casbin/adapter/policy.csv

@@ -1,0 +1,20 @@
+name: role
+version: v1
+kind: business-module
+dependencies:
+  - core/auth/bootstrap
+  - core/auth/casbin
+routes:
+  - method: GET
+    path: /api/v1/roles
+  - method: GET
+    path: /api/v1/roles/:id
+  - method: POST
+    path: /api/v1/roles
+  - method: PUT
+    path: /api/v1/roles/:id
+  - method: DELETE
+    path: /api/v1/roles/:id
+capabilities:
+  - basic-crud
+  - menu-binding

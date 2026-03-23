@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goadmin.fullname" . }}-config
+  labels:
+    {{- include "goadmin.labels" . | nindent 4 }}
+data:
+  GOADMIN_ENV: {{ .Values.config.goadminEnv | quote }}
+  APP_ENV: {{ .Values.config.appEnv | quote }}
+  GOADMIN_CONFIG_DIR: {{ .Values.config.configDir | quote }}
+  GOADMIN_SERVER_HTTP_HOST: {{ .Values.config.serverHttpHost | quote }}
+  GOADMIN_SERVER_HTTP_PORT: {{ .Values.config.port | quote }}
+  TZ: {{ .Values.config.timezone | quote }}
+  GOADMIN_LOGGER_LEVEL: {{ .Values.config.logLevel | quote }}
+  GOADMIN_LOGGER_FORMAT: {{ .Values.config.logFormat | quote }}
+  GOADMIN_LOGGER_OUTPUT: {{ .Values.config.logOutput | quote }}
+  GOADMIN_DATABASE_DRIVER: {{ .Values.config.databaseDriver | quote }}
+  GOADMIN_DATABASE_AUTO_MIGRATE: {{ .Values.config.databaseAutoMigrate | quote }}
+  GOADMIN_TENANT_ENABLED: {{ .Values.config.tenantEnabled | quote }}
+  GOADMIN_AUTH_JWT_ISSUER: {{ .Values.config.jwtIssuer | quote }}
+  GOADMIN_AUTH_JWT_AUDIENCE: {{ .Values.config.jwtAudience | quote }}
+  GOADMIN_AUTH_CASBIN_ENABLED: {{ .Values.config.casbinEnabled | quote }}
+  GOADMIN_AUTH_CASBIN_MODEL_PATH: {{ .Values.config.casbinModelPath | quote }}
+  GOADMIN_AUTH_CASBIN_POLICY_PATH: {{ .Values.config.casbinPolicyPath | quote }}
+  CORS_ALLOW_ORIGINS: {{ .Values.config.corsAllowOrigins | quote }}

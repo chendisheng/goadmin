@@ -1,0 +1,55 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/your-org/goadmin
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: nginx
+  hosts:
+    - host: goadmin.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+config:
+  goadminEnv: prod
+  appEnv: prod
+  configDir: /app/backend/config
+  serverHttpHost: 0.0.0.0
+  port: 8080
+  timezone: Asia/Shanghai
+  logLevel: info
+  logFormat: json
+  logOutput: stdout
+  databaseDriver: mysql
+  databaseAutoMigrate: true
+  tenantEnabled: true
+  corsAllowOrigins: "*"
+  jwtIssuer: GoAdmin
+  jwtAudience: goadmin-api
+  casbinEnabled: true
+  casbinModelPath: core/auth/casbin/model/rbac.conf
+  casbinPolicyPath: core/auth/casbin/adapter/policy.csv
+
+secret:
+  databaseDsn: goadmin:goadmin@tcp(mysql.goadmin.svc.cluster.local:3306)/goadmin?charset=utf8mb4&parseTime=True&loc=Local
+  jwtSecret: change-me-in-production
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

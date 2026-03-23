@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: goadmin
+  labels:
+    app.kubernetes.io/name: goadmin
+    app.kubernetes.io/part-of: goadmin

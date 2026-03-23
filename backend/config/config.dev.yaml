@@ -1,0 +1,35 @@
+app:
+  env: dev
+
+server:
+  http:
+    port: 8080
+
+logger:
+  level: debug
+  format: console
+  development: true
+
+database:
+  driver: mysql
+  dsn: goadmin:goadmin@tcp(127.0.0.1:3306)/goadmin_dev?charset=utf8mb4&parseTime=True&loc=Local
+  auto_migrate: true
+
+# tenant.enabled controls whether multi-tenant behavior is enabled.
+tenant:
+  enabled: true
+
+auth:
+  jwt:
+    secret: dev-secret-change-me
+  casbin:
+    model_path: core/auth/casbin/model/rbac.conf
+    policy_path: core/auth/casbin/adapter/policy.csv
+  bootstrap:
+    users:
+      - username: admin
+        password: admin123
+        tenant_id: system
+        display_name: System Admin
+        roles:
+          - admin

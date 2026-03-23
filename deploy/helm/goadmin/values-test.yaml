@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  tag: test
+
+config:
+  goadminEnv: test
+  appEnv: test
+  serverHttpHost: 0.0.0.0
+  logLevel: info
+  databaseAutoMigrate: true
+  tenantEnabled: true
+
+ingress:
+  enabled: false

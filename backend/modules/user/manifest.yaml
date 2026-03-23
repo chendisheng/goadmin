@@ -1,0 +1,20 @@
+name: user
+version: v1
+kind: business-module
+dependencies:
+  - core/auth/bootstrap
+  - core/auth/casbin
+routes:
+  - method: GET
+    path: /api/v1/users
+  - method: GET
+    path: /api/v1/users/:id
+  - method: POST
+    path: /api/v1/users
+  - method: PUT
+    path: /api/v1/users/:id
+  - method: DELETE
+    path: /api/v1/users/:id
+capabilities:
+  - basic-crud
+  - tenant-aware

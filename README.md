@@ -26,6 +26,8 @@ This starts the HTTP server with the current config loading rules:
 - `GOADMIN_ENV` / `APP_ENV` default to `dev`
 - `GOADMIN_CONFIG_DIR` defaults to `backend/config`
 
+The repository also ships a Phase 15 frontend delivery path under `web/` and `deploy/docker/web.Dockerfile`, which builds the Vue app into static assets and serves them through Nginx with API proxying to the backend.
+
 ### Tenant configuration
 
 The backend exposes a runtime tenant toggle in `backend/config/*.yaml`:
@@ -57,10 +59,12 @@ The backend is exposed on port `8080` by default.
 The repository also includes the delivery artifacts needed for Phase 9 and the current deployment layout:
 
 - `deploy/docker/Dockerfile` for image builds
+- `deploy/docker/web.Dockerfile` and `deploy/docker/web-nginx.conf` for frontend image builds and Nginx SPA hosting
 - `deploy/docker-compose/docker-compose.yaml` for local container orchestration
 - `deploy/k8s/` for plain Kubernetes manifests
 - `deploy/helm/goadmin/` for Helm-based deployments
-- `.github/workflows/ci-cd.yml` for CI/CD automation
+- `.github/workflows/ci-cd.yml` for the unified backend + frontend CI/CD automation
+- `.github/workflows/web-ci-cd.yml` as a manual backup for frontend-only image publishing
 
 Environment toggles are exposed through `.env.example` and the YAML config files under `backend/config/`, including `tenant.enabled`.
 
@@ -82,6 +86,20 @@ Build the backend binary:
 
 ```bash
 make -C backend build
+```
+
+Build the frontend bundle:
+
+```bash
+cd web
+npm install
+npm run build
+```
+
+Build the frontend container image:
+
+```bash
+docker build -f deploy/docker/web.Dockerfile -t goadmin/web:local .
 ```
 
 Run tests:

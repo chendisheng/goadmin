@@ -3,6 +3,11 @@ replicaCount: 2
 image:
   tag: prod
 
+frontend:
+  replicaCount: 1
+  image:
+    tag: prod
+
 config:
   goadminEnv: prod
   appEnv: prod

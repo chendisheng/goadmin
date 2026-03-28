@@ -5,6 +5,10 @@ declare module 'vue-router' {
     title?: string;
     subtitle?: string;
     icon?: string;
+    componentName?: string;
+    alwaysShow?: boolean;
+    permission?: string;
+    link?: string;
     inMenu?: boolean;
     hideInMenu?: boolean;
     public?: boolean;

@@ -95,6 +95,7 @@ type BootstrapUser struct {
 	TenantID     string   `mapstructure:"tenant_id"`
 	DisplayName  string   `mapstructure:"display_name"`
 	Roles        []string `mapstructure:"roles"`
+	Permissions  []string `mapstructure:"permissions"`
 }
 
 func Default() Config {

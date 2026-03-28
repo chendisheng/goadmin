@@ -1,4 +1,27 @@
 services:
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/web.Dockerfile
+      target: runtime
+      args:
+        VITE_APP_TITLE: ${VITE_APP_TITLE:-GoAdmin}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    image: goadmin/web:local
+    environment:
+      API_UPSTREAM: ${WEB_API_UPSTREAM:-http://backend:8080}
+    ports:
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
   backend:
     build:
       context: ../..

@@ -19,3 +19,7 @@ p, admin, /api/v1/menus/routes, GET
 p, admin, /api/v1/menus, POST
 p, admin, /api/v1/menus/:id, PUT
 p, admin, /api/v1/menus/:id, DELETE
+p, admin, /api/v1/plugins*, GET
+p, admin, /api/v1/plugins*, POST
+p, admin, /api/v1/plugins*, PUT
+p, admin, /api/v1/plugins*, DELETE

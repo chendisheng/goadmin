@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"sort"
 	"strings"
 	"sync"
 
@@ -17,6 +18,40 @@ import (
 type BootstrapStore struct {
 	mu    sync.RWMutex
 	users map[string]config.BootstrapUser
+}
+
+func resolvePermissions(user config.BootstrapUser) []string {
+	permissions := append([]string(nil), user.Permissions...)
+	if len(permissions) > 0 {
+		return normalizeStrings(permissions)
+	}
+	for _, role := range user.Roles {
+		if normalize(role) == "admin" {
+			return []string{"*"}
+		}
+	}
+	return nil
+}
+
+func normalizeStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		normalized := strings.TrimSpace(value)
+		if normalized == "" {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	sort.Strings(result)
+	return result
 }
 
 func NewBootstrapStore(users []config.BootstrapUser) *BootstrapStore {
@@ -57,6 +92,7 @@ func (s *BootstrapStore) Authenticate(_ context.Context, username, password stri
 		Username:    fallback(user.Username, key),
 		DisplayName: fallback(user.DisplayName, fallback(user.Username, key)),
 		Roles:       append([]string(nil), user.Roles...),
+		Permissions: resolvePermissions(user),
 	}
 	if !coretenant.Enabled() {
 		identity.TenantID = ""

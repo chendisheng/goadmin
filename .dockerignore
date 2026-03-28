@@ -1,0 +1,18 @@
+# GoAdmin root Docker build context ignores
+.git
+.github
+.idea
+.vscode
+.windsurf
+memory-bank
+**/.DS_Store
+**/*.log
+**/node_modules
+web/dist
+web/node_modules
+backend/bin
+backend/dist
+backend/.cache
+coverage
+.env
+.env.*

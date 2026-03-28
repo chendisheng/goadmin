@@ -3,6 +3,11 @@ replicaCount: 1
 image:
   tag: test
 
+frontend:
+  replicaCount: 1
+  image:
+    tag: test
+
 config:
   goadminEnv: test
   appEnv: test

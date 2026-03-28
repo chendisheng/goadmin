@@ -2,8 +2,8 @@ import type { RouteRecordRaw } from 'vue-router';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import LoginView from '@/views/LoginView.vue';
-import DashboardView from '@/views/DashboardView.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
+import PluginCenterDetailView from '@/views/plugin/center/detail.vue';
 
 export const appRoutes: RouteRecordRaw[] = [
   {
@@ -23,6 +23,7 @@ export const appRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/',
+    name: 'app-shell',
     component: AppLayout,
     meta: {
       title: 'GoAdmin',
@@ -31,16 +32,13 @@ export const appRoutes: RouteRecordRaw[] = [
     },
     children: [
       {
-        path: 'dashboard',
-        name: 'dashboard',
-        component: DashboardView,
+        path: 'system/plugins/:name',
+        name: 'plugin-center-detail',
+        component: PluginCenterDetailView,
         meta: {
-          title: '工作台',
-          subtitle: 'Phase 10 Frontend Core',
-          icon: 'Odometer',
-          inMenu: true,
+          title: '插件详情',
           requiresAuth: true,
-          order: 1,
+          hideInMenu: true,
         },
       },
     ],

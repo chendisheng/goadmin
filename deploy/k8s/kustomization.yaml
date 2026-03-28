@@ -5,5 +5,7 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - deployment.yaml
+  - deployment-web.yaml
   - service.yaml
+  - service-web.yaml
   - ingress.yaml

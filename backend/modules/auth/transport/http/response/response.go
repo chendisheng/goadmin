@@ -15,4 +15,5 @@ type UserInfo struct {
 	Username    string   `json:"username"`
 	DisplayName string   `json:"display_name,omitempty"`
 	Roles       []string `json:"roles,omitempty"`
+	Permissions []string `json:"permissions,omitempty"`
 }

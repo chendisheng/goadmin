@@ -42,14 +42,14 @@ async function onPingHealth() {
           <template #header>
             <div class="page-card__header">
               <span>Frontend Core</span>
-              <el-tag effect="plain" round type="success">Phase 10</el-tag>
+              <el-tag effect="plain" round type="success">Phase 12</el-tag>
             </div>
           </template>
 
           <div class="dashboard-hero__content">
             <div>
-              <h2>{{ appTitle }} 前端骨架</h2>
-              <p>当前项目已具备 Router、Pinia、Axios、Layout 和基础主题入口，可直接承接后续 Auth / Menu / CRUD 阶段。</p>
+              <h2>{{ appTitle }} 动态菜单工作台</h2>
+              <p>当前项目已通过后端菜单驱动路由与侧边栏，后续可直接承接 Auth / CRUD / Plugin 阶段。</p>
             </div>
 
             <el-descriptions :column="1" border size="small">
@@ -133,9 +133,9 @@ async function onPingHealth() {
         <el-card class="page-card" shadow="never">
           <template #header>下一阶段</template>
           <ul class="dashboard-list">
-            <li>Auth 登录与 Token 管理</li>
-            <li>后端菜单驱动路由</li>
-            <li>管理页 CRUD 与权限控制</li>
+            <li>Admin Modules 基础管理页</li>
+            <li>权限控制与按钮级授权</li>
+            <li>插件 UI 与动态扩展</li>
           </ul>
         </el-card>
       </el-col>

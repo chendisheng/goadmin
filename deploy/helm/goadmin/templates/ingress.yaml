@@ -17,7 +17,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "goadmin.fullname" $ }}
+                name: {{ include "goadmin.fullname" $ }}-web
                 port:
                   name: http
           {{- end }}

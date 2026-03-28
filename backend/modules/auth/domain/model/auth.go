@@ -13,6 +13,7 @@ type Identity struct {
 	Username    string
 	DisplayName string
 	Roles       []string
+	Permissions []string
 }
 
 type Session struct {

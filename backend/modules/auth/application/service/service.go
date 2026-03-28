@@ -59,6 +59,7 @@ func (s *Service) Login(ctx context.Context, input model.Credentials) (*model.Se
 		Username:    identity.Username,
 		DisplayName: identity.DisplayName,
 		Roles:       append([]string(nil), identity.Roles...),
+		Permissions: append([]string(nil), identity.Permissions...),
 	})
 	if err != nil {
 		return nil, apperrors.Wrap(err, apperrors.CodeInternal, "issue token failed")
@@ -87,6 +88,7 @@ func (s *Service) Me(_ context.Context, claims *coreauthjwt.Claims) (*model.Iden
 		Username:    claims.Username,
 		DisplayName: claims.DisplayName,
 		Roles:       append([]string(nil), claims.Roles...),
+		Permissions: append([]string(nil), claims.Permissions...),
 	}
 	return identity, nil
 }

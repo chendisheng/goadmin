@@ -84,6 +84,20 @@ export const useSessionStore = defineStore('session', () => {
   const isAuthenticated = computed(() => accessToken.value.trim().length > 0);
   const displayName = computed(() => currentUser.value?.display_name || currentUser.value?.username || '访客');
   const roleLabels = computed(() => currentUser.value?.roles ?? []);
+  const permissions = computed(() => currentUser.value?.permissions ?? []);
+
+  function normalizePermission(value: string): string {
+    return value.trim();
+  }
+
+  function hasPermission(permission: string | string[]): boolean {
+    const list = permissions.value.map(normalizePermission).filter((item: string) => item !== '');
+    if (list.includes('*')) {
+      return true;
+    }
+    const candidates = Array.isArray(permission) ? permission : [permission];
+    return candidates.some((candidate) => list.includes(normalizePermission(candidate)));
+  }
 
   function hydrate() {
     accessToken.value = readAccessToken();
@@ -142,6 +156,8 @@ export const useSessionStore = defineStore('session', () => {
     isAuthenticated,
     displayName,
     roleLabels,
+    permissions,
+    hasPermission,
     hydrate,
     applyLoginResponse,
     setCurrentUser,

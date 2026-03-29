@@ -26,14 +26,14 @@ docker compose -f deploy/docker-compose/docker-compose.yaml up --build
 
 这个脚本会：
 
-- 自动读取根目录 `.env`
+- 自动读取 `deploy/docker-compose/.env`，若不存在则回退到根目录 `.env`
 - 设置 `GOADMIN_ENV=dev`
 - 设置 `GOADMIN_CONFIG_DIR=backend/config`
 - 启动 `go run ./cmd/server`
 
 ## 启动前准备
 
-1. 复制 `.env.example` 为 `.env`
+1. 复制 `deploy/docker-compose/.env.example` 为 `.env`
 2. 按需修改数据库账号、端口和密码
 3. 确保本地 Docker 可用
 

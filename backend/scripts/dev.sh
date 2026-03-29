@@ -8,11 +8,20 @@ GO_BIN="${GO_BIN:-go}"
 GOADMIN_ENV="${GOADMIN_ENV:-dev}"
 APP_ENV="${APP_ENV:-${GOADMIN_ENV}}"
 GOADMIN_CONFIG_DIR="${GOADMIN_CONFIG_DIR:-${BACKEND_DIR}/config}"
+ENV_FILE="${ENV_FILE:-}"
 
-if [ -f "${ROOT_DIR}/.env" ]; then
+if [ -z "${ENV_FILE}" ]; then
+	if [ -f "${ROOT_DIR}/deploy/docker-compose/.env" ]; then
+		ENV_FILE="${ROOT_DIR}/deploy/docker-compose/.env"
+	elif [ -f "${ROOT_DIR}/.env" ]; then
+		ENV_FILE="${ROOT_DIR}/.env"
+	fi
+fi
+
+if [ -n "${ENV_FILE}" ] && [ -f "${ENV_FILE}" ]; then
 	set -a
 	# shellcheck disable=SC1090
-	. "${ROOT_DIR}/.env"
+	. "${ENV_FILE}"
 	set +a
 fi
 

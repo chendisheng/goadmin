@@ -12,8 +12,12 @@ GoAdmin is a clean-room, modular backend project. This repository currently incl
 1. Copy the example environment file:
 
 ```bash
-cp .env.example .env
+cp deploy/docker-compose/.env.example deploy/docker-compose/.env
 ```
+
+If you only want the default local compose values, this step is still recommended so you can tweak port, image tag, or database settings without editing the compose file.
+
+If you prefer to keep compose-specific env files next to the compose manifest, you can also copy `deploy/docker-compose/.env.example` to `deploy/docker-compose/.env` and start with `--env-file deploy/docker-compose/.env`.
 
 1. Start the backend with Docker Compose:
 
@@ -48,7 +52,7 @@ When tenant is disabled, create/update operations ignore `tenant_id`, query path
 Start the service from the repository root:
 
 ```bash
-cp .env.example .env
+cp deploy/docker-compose/.env.example deploy/docker-compose/.env
 docker compose -f deploy/docker-compose/docker-compose.yaml up --build
 ```
 
@@ -66,7 +70,7 @@ The repository also includes the delivery artifacts needed for Phase 9 and the c
 - `.github/workflows/ci-cd.yml` for the unified backend + frontend CI/CD automation
 - `.github/workflows/web-ci-cd.yml` as a manual backup for frontend-only image publishing
 
-Environment toggles are exposed through `.env.example` and the YAML config files under `backend/config/`, including `tenant.enabled`.
+Environment toggles are exposed through `deploy/docker-compose/.env.example` and the YAML config files under `backend/config/`, including `tenant.enabled`.
 
 ### Health check
 
@@ -85,7 +89,7 @@ docker compose ps
 Build the backend binary:
 
 ```bash
-make -C backend build
+make backend-build
 ```
 
 Build the frontend bundle:
@@ -105,7 +109,7 @@ docker build -f deploy/docker/web.Dockerfile -t goadmin/web:local .
 Run tests:
 
 ```bash
-make -C backend test
+make test
 ```
 
 ## CLI generator
@@ -113,15 +117,15 @@ make -C backend test
 Build the CLI binary:
 
 ```bash
-make -C backend build-cli
+make backend-build-cli
 ```
 
 Run the generator from the backend module:
 
 ```bash
-make -C backend run-cli ARGS="generate module user"
-make -C backend run-cli ARGS="generate crud order --fields id:string,name:string,status:string --policy --frontend"
-make -C backend run-cli ARGS="generate plugin demo"
+make backend-run-cli ARGS="generate module user"
+make backend-run-cli ARGS="generate crud order --fields id:string,name:string,status:string --policy --frontend"
+make backend-run-cli ARGS="generate plugin demo"
 ```
 
 The generator will:

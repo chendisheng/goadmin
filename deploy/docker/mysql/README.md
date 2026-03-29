@@ -51,7 +51,7 @@
 如果你修改了数据库名或账号密码，请同步更新：
 
 - `deploy/docker-compose/docker-compose.yaml`
-- `.env.example`
+- `deploy/docker-compose/.env.example`
 - `backend/config/config.yaml`
 - `backend/config/config.dev.yaml`
 - `backend/config/config.prod.yaml`

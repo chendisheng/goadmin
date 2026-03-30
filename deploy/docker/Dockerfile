@@ -18,6 +18,8 @@ RUN apk add --no-cache bash ca-certificates tzdata \
 WORKDIR /app/backend
 COPY --from=builder /out/goadmin /usr/local/bin/goadmin
 COPY --from=builder /src/backend/config ./config
+COPY --from=builder /src/backend/core/auth/casbin/model ./core/auth/casbin/model
+COPY --from=builder /src/backend/core/auth/casbin/adapter/policy.csv ./core/auth/casbin/adapter/policy.csv
 COPY --from=builder /src/backend/scripts ./scripts
 RUN chmod +x ./scripts/*.sh \
     && chown -R goadmin:goadmin /app/backend

@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 
 import AppLayout from '@/layouts/AppLayout.vue';
+import DashboardView from '@/views/DashboardView.vue';
 import LoginView from '@/views/LoginView.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
 import PluginCenterDetailView from '@/views/plugin/center/detail.vue';
@@ -31,6 +32,16 @@ export const appRoutes: RouteRecordRaw[] = [
       hideInMenu: true,
     },
     children: [
+      {
+        path: 'dashboard',
+        name: 'dashboard',
+        component: DashboardView,
+        meta: {
+          title: '工作台',
+          requiresAuth: true,
+          hideInMenu: true,
+        },
+      },
       {
         path: 'system/plugins/:name',
         name: 'plugin-center-detail',

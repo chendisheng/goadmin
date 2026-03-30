@@ -1,4 +1,10 @@
-import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+} from 'axios';
 
 import { getStoredAccessToken } from '@/store/session';
 
@@ -28,18 +34,16 @@ function createHttpClient(): AxiosInstance {
   client.interceptors.request.use((config) => {
     const token = getStoredAccessToken();
     if (token) {
-      const headers = (config.headers ?? {}) as Record<string, string>;
-      config.headers = {
-        ...headers,
-        Authorization: `Bearer ${token}`,
-        'X-Requested-With': 'XMLHttpRequest',
-      } as typeof config.headers;
+      const headers = AxiosHeaders.from(config.headers);
+      headers.set('Authorization', `Bearer ${token}`);
+      headers.set('X-Requested-With', 'XMLHttpRequest');
+      config.headers = headers;
     }
     return config;
   });
 
   client.interceptors.response.use(
-    (response: AxiosResponse<unknown>) => {
+    ((response: AxiosResponse<unknown>) => {
       const payload = response.data;
       if (isApiEnvelope(payload)) {
         if (payload.code !== 200) {
@@ -48,8 +52,8 @@ function createHttpClient(): AxiosInstance {
         return payload.data;
       }
       return payload;
-    },
-    (error: unknown) => {
+    }) as any,
+    ((error: unknown) => {
       if (error instanceof ApiError) {
         if (error.code === 401) {
           unauthorizedHandler?.(error);
@@ -68,7 +72,7 @@ function createHttpClient(): AxiosInstance {
         return Promise.reject(new ApiError(axiosError.message || 'Network error', axiosError.response?.status ?? 500, data));
       }
       return Promise.reject(error);
-    },
+    }) as any,
   );
 
   return client;

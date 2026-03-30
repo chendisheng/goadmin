@@ -12,6 +12,7 @@ import { useSessionStore } from '@/store/session';
 
 const appTitle = import.meta.env.VITE_APP_TITLE || 'GoAdmin';
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const buildMode = import.meta.env.MODE;
 const appStore = useAppStore();
 const menuStore = useMenuStore();
 const sessionStore = useSessionStore();
@@ -67,7 +68,7 @@ async function onLogout() {
     </div>
 
     <div class="app-header__right">
-      <el-tag effect="plain" round type="info">{{ import.meta.env.MODE }}</el-tag>
+      <el-tag effect="plain" round type="info">{{ buildMode }}</el-tag>
       <el-tag effect="plain" round type="success">{{ apiBaseUrl }}</el-tag>
       <el-tag v-if="sessionStore.displayName" effect="plain" round type="warning">
         {{ sessionStore.displayName }}

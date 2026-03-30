@@ -103,7 +103,7 @@ function buildRouteRecord(node: BackendMenuRoute, parentPath = '/'): RouteRecord
   const hasChildren = children.length > 0;
   const componentName = (node.component || '').trim();
 
-  return {
+  const record: RouteRecordRaw = {
     path: childPath,
     name: node.name,
     component: componentName === 'Layout' || hasChildren ? RouteGroupView : resolveLeafComponent(componentName),
@@ -121,8 +121,10 @@ function buildRouteRecord(node: BackendMenuRoute, parentPath = '/'): RouteRecord
       alwaysShow: node.alwaysShow ?? hasChildren,
       order: node.meta.affix ? 0 : 10,
     },
-    children: hasChildren ? children : undefined,
+    children: hasChildren ? children : [],
   };
+
+  return record;
 }
 
 export function registerBackendRoutes(router: Router, nodes: BackendMenuRoute[]): string[] {

@@ -11,10 +11,25 @@ ENV VITE_APP_TITLE=${VITE_APP_TITLE} \
     VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 COPY web/package*.json ./
-RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+RUN set -eux; \
+    echo "[web builder] node version:"; node -v; \
+    echo "[web builder] npm version:"; npm -v; \
+    echo "[web builder] working directory:"; pwd; \
+    echo "[web builder] copied package files:"; ls -la; \
+    echo "[web builder] npm registry:"; npm config get registry; \
+    if [ -f package-lock.json ]; then \
+      echo "[web builder] package-lock.json detected, running npm ci"; \
+      npm ci --no-audit --no-fund --verbose; \
+    else \
+      echo "[web builder] package-lock.json missing, running npm install"; \
+      npm install --no-audit --no-fund --verbose; \
+    fi
 
 COPY web/ ./
-RUN npm run build
+RUN set -eux; \
+    echo "[web builder] source files copied, starting build"; \
+    ls -la; \
+    npm run build:vite
 
 FROM nginx:1.27-alpine AS runtime
 

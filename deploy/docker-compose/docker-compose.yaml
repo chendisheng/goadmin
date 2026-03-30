@@ -73,11 +73,10 @@ services:
       start_period: 10s
 
   mysql:
-    image: mysql:8.0
+    image: mysql:8.4.8
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
-      - --default-authentication-plugin=mysql_native_password
       - --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-goadmin}
@@ -90,7 +89,7 @@ services:
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql-data-v2:/var/lib/mysql
       - ../docker/mysql:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u $${MYSQL_USER:-goadmin} -p$${MYSQL_PASSWORD:-goadmin}"]
@@ -100,7 +99,7 @@ services:
       start_period: 10s
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.8
     command:
       - sh
       - -c
@@ -123,5 +122,5 @@ services:
       start_period: 10s
 
 volumes:
-  mysql-data:
+  mysql-data-v2:
   redis-data:

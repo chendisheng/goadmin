@@ -185,6 +185,7 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
           拖到这里，放在 <strong>{{ menu.name || menu.id || '当前菜单' }}</strong> 之后
         </div>
       </el-card>
+      </div>
     </div>
   </div>
 </template>

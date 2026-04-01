@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 
 import { login } from '@/api/auth';
+import { useMenuStore } from '@/store/menu';
 import { useSessionStore } from '@/store/session';
 
 interface LoginForm {
@@ -14,6 +15,7 @@ interface LoginForm {
 const router = useRouter();
 const route = useRoute();
 const sessionStore = useSessionStore();
+const menuStore = useMenuStore();
 const formRef = ref<FormInstance>();
 const loading = ref(false);
 const appTitle = import.meta.env.VITE_APP_TITLE || 'GoAdmin';
@@ -49,6 +51,7 @@ async function onSubmit() {
     try {
       const response = await login({ username: form.username.trim(), password: form.password });
       sessionStore.applyLoginResponse(response);
+      await menuStore.ensureLoaded(router);
       ElMessage.success('登录成功');
       await router.replace(redirectTarget.value);
     } catch (error) {

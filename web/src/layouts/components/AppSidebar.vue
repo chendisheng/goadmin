@@ -12,7 +12,7 @@ const menuStore = useMenuStore();
 </script>
 
 <template>
-  <el-aside class="app-sidebar" :width="appStore.sidebarCollapsed ? '72px' : '244px'">
+  <el-aside class="app-sidebar" :width="appStore.sidebarCollapsed ? '72px' : '220px'">
     <div class="app-sidebar__brand">
       <div class="app-sidebar__logo">G</div>
       <div v-if="!appStore.sidebarCollapsed" class="app-sidebar__brand-text">

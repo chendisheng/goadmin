@@ -133,10 +133,11 @@ export function registerBackendRoutes(router: Router, nodes: BackendMenuRoute[])
 
   for (const item of roots) {
     const record = buildRouteRecord(item, '/');
-    if (!router.hasRoute(String(record.name))) {
+    const routeName = String(record.name);
+    if (!router.hasRoute(routeName)) {
       router.addRoute('app-shell', record);
+      routeNames.push(routeName);
     }
-    routeNames.push(String(record.name));
   }
 
   return routeNames;

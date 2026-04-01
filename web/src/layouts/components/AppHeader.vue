@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRoute } from 'vue-router';
-import { Expand, Fold, RefreshRight } from '@element-plus/icons-vue';
+import { ArrowDown, Expand, Fold, RefreshRight, UserFilled } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
 import { logout as logoutApi } from '@/api/auth';
@@ -33,6 +33,21 @@ const pageSubtitle = computed(() => {
   return 'Vue 3 + TypeScript + Vite + Pinia + Axios';
 });
 
+const currentUserName = computed(() => sessionStore.displayName || 'System Admin');
+
+const currentUserRole = computed(() => {
+  const role = sessionStore.currentUser?.roles?.[0];
+  return typeof role === 'string' && role.trim() !== '' ? role : '管理员';
+});
+
+const currentUserInitial = computed(() => {
+  const source = currentUserName.value.trim();
+  if (source.length === 0) {
+    return 'G';
+  }
+  return source.slice(0, 1).toUpperCase();
+});
+
 function refreshPage() {
   window.location.reload();
 }
@@ -47,6 +62,15 @@ async function onLogout() {
     sessionStore.clearSession();
     ElMessage.success('已退出登录');
     await router.push({ path: '/login' });
+  }
+}
+
+function onCommand(command: string) {
+  if (command === 'refresh') {
+    refreshPage();
+  }
+  if (command === 'logout') {
+    void onLogout();
   }
 }
 </script>
@@ -70,13 +94,31 @@ async function onLogout() {
     <div class="app-header__right">
       <el-tag effect="plain" round type="info">{{ buildMode }}</el-tag>
       <el-tag effect="plain" round type="success">{{ apiBaseUrl }}</el-tag>
-      <el-tag v-if="sessionStore.displayName" effect="plain" round type="warning">
-        {{ sessionStore.displayName }}
-      </el-tag>
-      <el-button text type="primary" @click="onLogout">退出</el-button>
       <el-button circle text @click="refreshPage">
         <el-icon><RefreshRight /></el-icon>
       </el-button>
+
+      <el-dropdown trigger="click" @command="onCommand">
+        <button class="app-header__user" type="button">
+          <el-avatar class="app-header__avatar" :size="32">{{ currentUserInitial }}</el-avatar>
+          <span class="app-header__user-text">
+            <strong>{{ currentUserName }}</strong>
+            <small>{{ currentUserRole }}</small>
+          </span>
+          <el-icon class="app-header__user-arrow"><ArrowDown /></el-icon>
+        </button>
+
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item disabled>
+              <el-icon><UserFilled /></el-icon>
+              个人中心
+            </el-dropdown-item>
+            <el-dropdown-item command="refresh">刷新页面</el-dropdown-item>
+            <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
   </el-header>
 </template>

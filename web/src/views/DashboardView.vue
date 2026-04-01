@@ -18,6 +18,29 @@ const errorMessage = ref('');
 const shellStatus = computed(() => (appStore.sidebarCollapsed ? 'Sidebar collapsed' : 'Sidebar expanded'));
 const currentUser = computed(() => sessionStore.currentUser);
 
+const dashboardMetrics = computed(() => [
+  {
+    label: 'API 基址',
+    value: apiBaseUrl,
+    note: 'Axios 统一请求入口',
+  },
+  {
+    label: '布局状态',
+    value: shellStatus.value,
+    note: '侧边栏折叠状态已持久化',
+  },
+  {
+    label: '当前用户',
+    value: sessionStore.displayName || 'System Admin',
+    note: '会话信息已加载',
+  },
+  {
+    label: '登录模式',
+    value: 'JWT / RBAC',
+    note: '按钮权限与菜单权限待扩展',
+  },
+]);
+
 async function onPingHealth() {
   loading.value = true;
   errorMessage.value = '';
@@ -36,20 +59,30 @@ async function onPingHealth() {
 
 <template>
   <div class="dashboard-page">
+    <el-row :gutter="16" class="dashboard-metrics">
+      <el-col v-for="metric in dashboardMetrics" :key="metric.label" :xs="24" :sm="12" :lg="6">
+        <el-card class="page-card dashboard-metric-card" shadow="never">
+          <div class="dashboard-metric-card__label">{{ metric.label }}</div>
+          <div class="dashboard-metric-card__value">{{ metric.value }}</div>
+          <div class="dashboard-metric-card__note">{{ metric.note }}</div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <el-row :gutter="16">
       <el-col :xs="24" :lg="16">
         <el-card class="page-card dashboard-hero" shadow="never">
           <template #header>
             <div class="page-card__header">
-              <span>Frontend Core</span>
-              <el-tag effect="plain" round type="success">Phase 12</el-tag>
+              <span>系统概览</span>
+              <el-tag effect="plain" round type="success">在线</el-tag>
             </div>
           </template>
 
           <div class="dashboard-hero__content">
             <div>
-              <h2>{{ appTitle }} 动态菜单工作台</h2>
-              <p>当前项目已通过后端菜单驱动路由与侧边栏，后续可直接承接 Auth / CRUD / Plugin 阶段。</p>
+              <h2>{{ appTitle }} 管理后台</h2>
+              <p>统一的侧边栏、顶部导航与工作台首页，后续可直接承接 Auth、CRUD 和 Plugin 功能模块。</p>
             </div>
 
             <el-descriptions :column="1" border size="small">
@@ -69,12 +102,12 @@ async function onPingHealth() {
           <template #header>
             <div class="page-card__header">
               <span>API 验证</span>
-              <el-tag effect="plain" round type="info">/health</el-tag>
+              <el-tag effect="plain" round type="info">连通性</el-tag>
             </div>
           </template>
 
           <div class="dashboard-quick-actions__body">
-            <p>点击按钮发送一次健康检查请求，验证 Axios 拦截器和后端联通性。</p>
+            <p>点击按钮发送一次健康检查请求，快速验证前后端联通性与 Axios 拦截器。</p>
             <el-button type="primary" :loading="loading" @click="onPingHealth">发送健康检查</el-button>
           </div>
 
@@ -111,7 +144,7 @@ async function onPingHealth() {
     <el-row :gutter="16" class="dashboard-secondary-row">
       <el-col :xs="24" :md="8">
         <el-card class="page-card" shadow="never">
-          <template #header>工程标准</template>
+          <template #header>工程规范</template>
           <ul class="dashboard-list">
             <li>Vue 3 + TypeScript</li>
             <li>Vite 构建与热更新</li>
@@ -121,7 +154,7 @@ async function onPingHealth() {
       </el-col>
       <el-col :xs="24" :md="8">
         <el-card class="page-card" shadow="never">
-          <template #header>状态管理</template>
+          <template #header>状态中心</template>
           <ul class="dashboard-list">
             <li>Pinia 全局 Store 已初始化</li>
             <li>侧栏折叠状态持久化</li>
@@ -131,7 +164,7 @@ async function onPingHealth() {
       </el-col>
       <el-col :xs="24" :md="8">
         <el-card class="page-card" shadow="never">
-          <template #header>下一阶段</template>
+          <template #header>功能规划</template>
           <ul class="dashboard-list">
             <li>Admin Modules 基础管理页</li>
             <li>权限控制与按钮级授权</li>

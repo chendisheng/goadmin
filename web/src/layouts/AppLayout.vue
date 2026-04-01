@@ -6,7 +6,7 @@ import AppSidebar from './components/AppSidebar.vue';
 <template>
   <el-container class="app-layout">
     <AppSidebar />
-    <el-container class="app-layout__content">
+    <el-container class="app-layout__content" direction="vertical">
       <AppHeader />
       <el-main class="app-layout__main">
         <router-view />

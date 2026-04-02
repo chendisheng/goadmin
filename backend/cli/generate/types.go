@@ -29,16 +29,77 @@ type ModuleOptions struct {
 }
 
 type CRUDOptions struct {
-	Name             string
-	Fields           []Field
-	GenerateFrontend bool
-	GeneratePolicy   bool
-	Force            bool
+	Name                string
+	Fields              []Field
+	GenerateFrontend    bool
+	GeneratePolicy      bool
+	ManifestRoutes      []ManifestRoute
+	ManifestMenus       []ManifestMenu
+	ManifestPermissions []ManifestPermission
+	Force               bool
 }
 
 type PluginOptions struct {
 	Name  string
 	Force bool
+}
+
+type ManifestRoute struct {
+	Method string
+	Path   string
+}
+
+type ManifestMenu struct {
+	Name       string
+	Path       string
+	Component  string
+	Icon       string
+	Permission string
+	Type       string
+	Redirect   string
+	Visible    bool
+	Enabled    bool
+	Sort       int
+}
+
+type ManifestPermission struct {
+	Object      string
+	Action      string
+	Description string
+}
+
+type ManifestOptions struct {
+	Name        string
+	Module      string
+	Kind        string
+	Routes      []ManifestRoute
+	Menus       []ManifestMenu
+	Permissions []ManifestPermission
+	Force       bool
+}
+
+type ConfigOptions struct {
+	Name   string
+	Module string
+	Force  bool
+}
+
+type PageOptions struct {
+	ViewScope  string
+	RouteScope string
+	PageName   string
+	PageSlug   string
+	Title      string
+	RoutePath  string
+	Component  string
+	Permission string
+	Force      bool
+}
+
+type PermissionsOptions struct {
+	Scope       string
+	Permissions []string
+	Force       bool
 }
 
 type CRUDData struct {

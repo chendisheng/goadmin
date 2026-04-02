@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	coreauthbootstrap "goadmin/core/auth/bootstrap"
@@ -37,6 +39,11 @@ import (
 )
 
 func main() {
+	projectRoot, err := findProjectRoot()
+	if err != nil {
+		log.Fatalf("detect project root: %v", err)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("load config: %v", err)
@@ -156,6 +163,7 @@ func main() {
 		MenuService:    menuSvc,
 		PluginService:  pluginSvc,
 		PluginRegistry: pluginRegistry,
+		ProjectRoot:    projectRoot,
 		JWT:            authBundle.JWT,
 		Authorizer:     authBundle.Authorizer,
 		Revocations:    revocations,
@@ -179,4 +187,28 @@ func main() {
 	}
 
 	logger.Info("server stopped gracefully")
+}
+
+func findProjectRoot() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("detect cwd: %w", err)
+	}
+	current := cwd
+	for {
+		if fileExists(filepath.Join(current, "go.work")) {
+			return current, nil
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return cwd, nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

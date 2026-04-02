@@ -18,6 +18,13 @@ type Generator struct {
 	PolicyPath string
 }
 
+func renderManifestMenusOrDefault(menus []ManifestMenu, defaults []ManifestMenu) string {
+	if len(menus) > 0 {
+		return renderManifestMenus(menus)
+	}
+	return renderManifestMenus(defaults)
+}
+
 func buildModuleRenderData(name string, force bool) moduleRenderData {
 	entityLower := ToSnake(name)
 	if entityLower == "" {
@@ -31,12 +38,16 @@ func buildModuleRenderData(name string, force bool) moduleRenderData {
 		kind = "core-module"
 	}
 	return moduleRenderData{
-		Name:         entityLower,
-		PackageName:  entityLower,
-		EntityLower:  entityLower,
-		EntityPlural: Pluralize(entityLower),
-		Kind:         kind,
-		Force:        force,
+		Name:                entityLower,
+		PackageName:         entityLower,
+		EntityLower:         entityLower,
+		EntityPlural:        Pluralize(entityLower),
+		Module:              entityLower,
+		Kind:                kind,
+		ManifestRoutes:      renderCRUDManifestRoutes(buildCRUDManifestRoutes(Pluralize(entityLower))),
+		ManifestMenus:       "",
+		ManifestPermissions: "",
+		Force:               force,
 	}
 }
 
@@ -178,6 +189,7 @@ type scaffoldData struct {
 	Entity              string
 	EntityLower         string
 	EntityPlural        string
+	Module              string
 	Kind                string
 	Fields              []Field
 	ModelFields         string
@@ -192,7 +204,28 @@ type scaffoldData struct {
 	HasInputTime        bool
 	GenerateFrontend    bool
 	GeneratePolicy      bool
+	ManifestRoutes      string
+	ManifestMenus       string
+	ManifestPermissions string
 	Force               bool
+}
+
+type manifestRenderData struct {
+	Name                string
+	Module              string
+	EntityLower         string
+	Kind                string
+	ManifestRoutes      string
+	ManifestMenus       string
+	ManifestPermissions string
+	Force               bool
+}
+
+type configRenderData struct {
+	Name   string
+	Module string
+	Kind   string
+	Force  bool
 }
 
 type pluginRenderData struct {
@@ -205,13 +238,29 @@ type pluginRenderData struct {
 	Force       bool
 }
 
+type pageRenderData struct {
+	ViewScope  string
+	PageSlug   string
+	PageName   string
+	Title      string
+	RoutePath  string
+	RouteName  string
+	Component  string
+	Permission string
+	Force      bool
+}
+
 type moduleRenderData struct {
-	Name         string
-	PackageName  string
-	EntityLower  string
-	EntityPlural string
-	Kind         string
-	Force        bool
+	Name                string
+	PackageName         string
+	EntityLower         string
+	EntityPlural        string
+	Module              string
+	Kind                string
+	ManifestRoutes      string
+	ManifestMenus       string
+	ManifestPermissions string
+	Force               bool
 }
 
 func New(root string) *Generator {
@@ -241,7 +290,7 @@ func (g *Generator) GenerateCRUD(opts CRUDOptions) error {
 	if len(fields) == 0 {
 		fields, _ = ParseFields("", "", "", "")
 	}
-	data := buildScaffoldData(opts.Name, fields, opts.GenerateFrontend, opts.GeneratePolicy, opts.Force)
+	data := buildScaffoldData(opts.Name, fields, opts.GenerateFrontend, opts.GeneratePolicy, opts.ManifestRoutes, opts.ManifestMenus, opts.ManifestPermissions, opts.Force)
 	if err := g.writeScaffold(data); err != nil {
 		return err
 	}
@@ -269,7 +318,47 @@ func (g *Generator) GeneratePlugin(opts PluginOptions) error {
 	return nil
 }
 
-func buildScaffoldData(name string, fields []Field, frontend, policy, force bool) scaffoldData {
+func (g *Generator) GenerateManifest(opts ManifestOptions) error {
+	if g == nil {
+		return errors.New("generator is nil")
+	}
+	data := buildManifestRenderData(opts)
+	return g.writeGoOrText(filepath.Join(g.Root, "backend", "modules", data.Name, "manifest.yaml"), manifestTemplate, data, data.Force)
+}
+
+func (g *Generator) GenerateConfig(opts ConfigOptions) error {
+	if g == nil {
+		return errors.New("generator is nil")
+	}
+	data := buildConfigRenderData(opts)
+	fileName := "config." + data.Name + ".yaml"
+	if data.Name == "" {
+		fileName = "config.generated.yaml"
+	}
+	return g.writeGoOrText(filepath.Join(g.Root, "backend", "config", fileName), configTemplate, data, data.Force)
+}
+
+func (g *Generator) GeneratePage(opts PageOptions) error {
+	if g == nil {
+		return errors.New("generator is nil")
+	}
+	data := buildPageRenderData(opts)
+	viewFile := filepath.Join(g.Root, "backend", "web", "src", "views", data.ViewScope, data.PageSlug+".vue")
+	routeFile := filepath.Join(g.Root, "backend", "web", "src", "router", "modules", data.ViewScope+"-"+data.PageSlug+".ts")
+	if err := g.writeGoOrText(viewFile, pageViewTemplate, data, data.Force); err != nil {
+		return err
+	}
+	if err := g.writeGoOrText(routeFile, pageRouterTemplate, data, data.Force); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *Generator) AppendPolicyLines(lines []string) error {
+	return g.appendPolicyLines(lines)
+}
+
+func buildScaffoldData(name string, fields []Field, frontend, policy bool, manifestRoutes []ManifestRoute, manifestMenus []ManifestMenu, manifestPermissions []ManifestPermission, force bool) scaffoldData {
 	entity := ToCamel(name)
 	entityLower := ToSnake(name)
 	if entityLower == "" {
@@ -291,6 +380,7 @@ func buildScaffoldData(name string, fields []Field, frontend, policy, force bool
 		Entity:              entity,
 		EntityLower:         entityLower,
 		EntityPlural:        entityPlural,
+		Module:              entityLower,
 		Kind:                "business-module",
 		Fields:              sanitized,
 		ModelFields:         renderFieldBlock(sanitized, true),
@@ -305,8 +395,54 @@ func buildScaffoldData(name string, fields []Field, frontend, policy, force bool
 		HasInputTime:        hasTimeField(sanitized),
 		GenerateFrontend:    frontend,
 		GeneratePolicy:      policy,
+		ManifestRoutes:      renderManifestRoutesOrDefault(manifestRoutes, buildCRUDManifestRoutes(entityPlural)),
+		ManifestMenus:       renderManifestMenusOrDefault(manifestMenus, buildCRUDManifestMenus(entityLower, entityPlural, frontend)),
+		ManifestPermissions: renderManifestPermissionsOrDefault(manifestPermissions, buildCRUDManifestPermissions(entityLower, entityPlural)),
 		Force:               force,
 	}
+}
+
+func buildManifestRenderData(opts ManifestOptions) manifestRenderData {
+	name := ToSnake(opts.Name)
+	if name == "" {
+		name = NormalizeName(opts.Module)
+	}
+	if name == "" {
+		name = "manifest"
+	}
+	module := strings.TrimSpace(opts.Module)
+	if module == "" {
+		module = name
+	}
+	kind := strings.TrimSpace(opts.Kind)
+	if kind == "" {
+		kind = "business-module"
+	}
+	return manifestRenderData{
+		Name:                name,
+		Module:              module,
+		EntityLower:         name,
+		Kind:                kind,
+		ManifestRoutes:      renderManifestRoutes(opts.Routes),
+		ManifestMenus:       renderManifestMenus(opts.Menus),
+		ManifestPermissions: renderManifestPermissions(opts.Permissions),
+		Force:               opts.Force,
+	}
+}
+
+func buildConfigRenderData(opts ConfigOptions) configRenderData {
+	name := ToSnake(opts.Name)
+	if name == "" {
+		name = NormalizeName(opts.Module)
+	}
+	if name == "" {
+		name = "generated"
+	}
+	module := strings.TrimSpace(opts.Module)
+	if module == "" {
+		module = name
+	}
+	return configRenderData{Name: name, Module: module, Kind: "config", Force: opts.Force}
 }
 
 func (d scaffoldData) PolicyLines() []string {
@@ -322,6 +458,162 @@ func (d scaffoldData) PolicyLines() []string {
 		lines = append(lines, fmt.Sprintf("p, admin, %s, %s", route.Path, route.Method))
 	}
 	return lines
+}
+
+type crudRouteSpec struct {
+	Method string
+	Path   string
+	Action string
+}
+
+func buildCRUDManifestRoutes(entityPlural string) []crudRouteSpec {
+	base := "/api/v1/" + entityPlural
+	return []crudRouteSpec{
+		{Method: "GET", Path: base, Action: "list"},
+		{Method: "GET", Path: base + "/:id", Action: "view"},
+		{Method: "POST", Path: base, Action: "create"},
+		{Method: "PUT", Path: base + "/:id", Action: "update"},
+		{Method: "DELETE", Path: base + "/:id", Action: "delete"},
+	}
+}
+
+func buildCRUDManifestMenus(entityLower, entityPlural string, frontend bool) []ManifestMenu {
+	if !frontend {
+		return nil
+	}
+	rootPath := "/" + entityPlural
+	listPath := rootPath + "/list"
+	if entityPlural == "" {
+		rootPath = "/" + entityLower
+		listPath = rootPath
+	}
+	return []ManifestMenu{
+		{Name: ToCamel(entityPlural), Path: rootPath, Component: "Layout", Icon: "menu", Permission: entityLower + ":view", Type: "directory", Redirect: listPath, Visible: true, Enabled: true, Sort: 1},
+		{Name: "List", Path: listPath, Component: "view/" + entityLower + "/index", Icon: "menu", Permission: entityLower + ":list", Type: "menu", Visible: true, Enabled: true, Sort: 2},
+	}
+}
+
+func buildCRUDManifestPermissions(entityLower, entityPlural string) []ManifestPermission {
+	if entityPlural == "" {
+		entityPlural = entityLower
+	}
+	label := ToCamel(entityPlural)
+	return []ManifestPermission{
+		{Object: entityLower, Action: "list", Description: "List " + label},
+		{Object: entityLower, Action: "view", Description: "View " + label},
+		{Object: entityLower, Action: "create", Description: "Create " + label},
+		{Object: entityLower, Action: "update", Description: "Update " + label},
+		{Object: entityLower, Action: "delete", Description: "Delete " + label},
+	}
+}
+
+func renderManifestRoutes(routes []ManifestRoute) string {
+	if len(routes) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("routes:\n")
+	for _, route := range routes {
+		builder.WriteString("  - method: ")
+		builder.WriteString(route.Method)
+		builder.WriteString("\n")
+		builder.WriteString("    path: ")
+		builder.WriteString(route.Path)
+		builder.WriteString("\n")
+	}
+	return builder.String()
+}
+
+func renderCRUDManifestRoutes(routes []crudRouteSpec) string {
+	if len(routes) == 0 {
+		return ""
+	}
+	manifestRoutes := make([]ManifestRoute, 0, len(routes))
+	for _, route := range routes {
+		manifestRoutes = append(manifestRoutes, ManifestRoute{Method: route.Method, Path: route.Path})
+	}
+	return renderManifestRoutes(manifestRoutes)
+}
+
+func renderManifestRoutesOrDefault(routes []ManifestRoute, defaults []crudRouteSpec) string {
+	if len(routes) > 0 {
+		return renderManifestRoutes(routes)
+	}
+	return renderCRUDManifestRoutes(defaults)
+}
+
+func renderManifestMenus(menus []ManifestMenu) string {
+	if len(menus) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("menus:\n")
+	for _, menu := range menus {
+		builder.WriteString("  - name: ")
+		builder.WriteString(menu.Name)
+		builder.WriteString("\n")
+		builder.WriteString("    path: ")
+		builder.WriteString(menu.Path)
+		builder.WriteString("\n")
+		builder.WriteString("    component: ")
+		builder.WriteString(menu.Component)
+		builder.WriteString("\n")
+		if menu.Icon != "" {
+			builder.WriteString("    icon: ")
+			builder.WriteString(menu.Icon)
+			builder.WriteString("\n")
+		}
+		if menu.Permission != "" {
+			builder.WriteString("    permission: ")
+			builder.WriteString(menu.Permission)
+			builder.WriteString("\n")
+		}
+		builder.WriteString("    type: ")
+		builder.WriteString(menu.Type)
+		builder.WriteString("\n")
+		if menu.Redirect != "" {
+			builder.WriteString("    redirect: ")
+			builder.WriteString(menu.Redirect)
+			builder.WriteString("\n")
+		}
+		builder.WriteString("    visible: ")
+		builder.WriteString(fmt.Sprintf("%t", menu.Visible))
+		builder.WriteString("\n")
+		builder.WriteString("    enabled: ")
+		builder.WriteString(fmt.Sprintf("%t", menu.Enabled))
+		builder.WriteString("\n")
+		builder.WriteString("    sort: ")
+		builder.WriteString(fmt.Sprintf("%d", menu.Sort))
+		builder.WriteString("\n")
+	}
+	return builder.String()
+}
+
+func renderManifestPermissions(permissions []ManifestPermission) string {
+	if len(permissions) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("permissions:\n")
+	for _, permission := range permissions {
+		builder.WriteString("  - object: ")
+		builder.WriteString(permission.Object)
+		builder.WriteString("\n")
+		builder.WriteString("    action: ")
+		builder.WriteString(permission.Action)
+		builder.WriteString("\n")
+		builder.WriteString("    description: ")
+		builder.WriteString(permission.Description)
+		builder.WriteString("\n")
+	}
+	return builder.String()
+}
+
+func renderManifestPermissionsOrDefault(permissions []ManifestPermission, defaults []ManifestPermission) string {
+	if len(permissions) > 0 {
+		return renderManifestPermissions(permissions)
+	}
+	return renderManifestPermissions(defaults)
 }
 
 func buildPluginRenderData(name string, force bool) pluginRenderData {
@@ -341,6 +633,88 @@ func buildPluginRenderData(name string, force bool) pluginRenderData {
 		ViewPath:    "view/plugin/" + entityLower + "/index",
 		Force:       force,
 	}
+}
+
+func buildPageRenderData(opts PageOptions) pageRenderData {
+	viewScope := NormalizeName(opts.ViewScope)
+	if viewScope == "" {
+		viewScope = "page"
+	}
+	pageSlug := ToSnake(opts.PageSlug)
+	if pageSlug == "" {
+		pageSlug = ToSnake(opts.PageName)
+	}
+	if pageSlug == "" {
+		pageSlug = "index"
+	}
+	title := strings.TrimSpace(opts.Title)
+	if title == "" {
+		title = strings.TrimSpace(opts.PageName)
+	}
+	if title == "" {
+		title = ToCamel(pageSlug)
+	}
+	routePath := normalizePath(opts.RoutePath)
+	if routePath == "" {
+		routeScope := NormalizeName(opts.RouteScope)
+		if routeScope == "" {
+			routeScope = viewScope
+		}
+		routePath = normalizePath("/" + routeScope + "/" + pageSlug)
+	}
+	component := normalizeViewComponent(opts.Component)
+	if component == "" {
+		component = viewScope + "/" + pageSlug
+	}
+	routeName := strings.TrimSpace(opts.RouteScope)
+	if routeName == "" {
+		routeName = viewScope
+	}
+	routeName = NormalizeName(routeName)
+	if routeName == "" {
+		routeName = viewScope
+	}
+	if routeName != "" {
+		routeName += "-"
+	}
+	routeName += pageSlug
+	return pageRenderData{
+		ViewScope:  viewScope,
+		PageSlug:   pageSlug,
+		PageName:   strings.TrimSpace(opts.PageName),
+		Title:      title,
+		RoutePath:  routePath,
+		RouteName:  routeName,
+		Component:  component,
+		Permission: strings.TrimSpace(opts.Permission),
+		Force:      opts.Force,
+	}
+}
+
+func normalizeViewComponent(component string) string {
+	trimmed := strings.TrimSpace(component)
+	if trimmed == "" {
+		return ""
+	}
+	trimmed = strings.TrimPrefix(trimmed, "@/views/")
+	trimmed = strings.TrimPrefix(trimmed, "views/")
+	trimmed = strings.TrimPrefix(trimmed, "view/")
+	trimmed = strings.Trim(trimmed, "/")
+	return trimmed
+}
+
+func normalizePath(path string) string {
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		return ""
+	}
+	if !strings.HasPrefix(trimmed, "/") {
+		trimmed = "/" + trimmed
+	}
+	if trimmed != "/" {
+		trimmed = strings.TrimRight(trimmed, "/")
+	}
+	return trimmed
 }
 
 func (g *Generator) writeScaffold(data scaffoldData) error {

@@ -24,3 +24,5 @@ p, admin, /api/v1/plugins, POST
 p, admin, /api/v1/plugins/:name, GET
 p, admin, /api/v1/plugins/:name, PUT
 p, admin, /api/v1/plugins/:name, DELETE
+p, admin, /api/v1/codegen/dsl/preview, POST
+p, admin, /api/v1/codegen/dsl/generate, POST

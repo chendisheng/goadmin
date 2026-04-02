@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	codegenhttp "goadmin/codegen/transport/http"
 	coreauthbootstrap "goadmin/core/auth/bootstrap"
 	coreauthjwt "goadmin/core/auth/jwt"
 	"goadmin/core/config"
@@ -41,6 +42,7 @@ type Dependencies struct {
 	MenuService    *menuservice.Service
 	PluginService  *pluginservice.Service
 	PluginRegistry *pluginregistry.Registry
+	ProjectRoot    string
 	JWT            *coreauthjwt.Manager
 	Authorizer     coreauthbootstrap.Authorizer
 	Revocations    coreauthbootstrap.RevocationStore
@@ -73,6 +75,7 @@ func Register(engine *gin.Engine, deps Dependencies) {
 		userhttp.Register(protected, userhttp.Dependencies{Service: deps.UserService, Logger: deps.Logger})
 		rolehttp.Register(protected, rolehttp.Dependencies{Service: deps.RoleService, Logger: deps.Logger})
 		menuhttp.Register(protected, menuhttp.Dependencies{Service: deps.MenuService, Logger: deps.Logger})
+		codegenhttp.Register(protected, codegenhttp.Dependencies{ProjectRoot: deps.ProjectRoot})
 		pluginhttp.Register(protected, pluginhttp.Dependencies{Service: deps.PluginService, Logger: deps.Logger})
 		registerPluginRoutes(api, protected, deps.PluginRegistry)
 	}

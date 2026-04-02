@@ -1,7 +1,7 @@
 <template>
   <div class="codegen-page">
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="14">
+    <el-row :gutter="20" class="codegen-grid">
+      <el-col :xs="24" :lg="11" :xl="11">
         <el-card shadow="never" class="codegen-card">
           <template #header>
             <div class="card-header">
@@ -37,7 +37,7 @@
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :lg="10">
+      <el-col :xs="24" :lg="13" :xl="13">
         <el-space direction="vertical" size="16" fill class="side-stack">
           <el-card shadow="never" class="codegen-card">
             <template #header>
@@ -58,33 +58,35 @@
             />
             <div v-else class="result-empty">尚未执行预览或生成。</div>
 
-            <el-table :data="previewItems" class="preview-table" size="small" border>
-              <el-table-column prop="index" label="#" width="64" />
-              <el-table-column prop="kind" label="Kind" width="150" />
-              <el-table-column prop="name" label="Name" min-width="140" />
-              <el-table-column label="Force" width="84">
+            <div class="preview-table-wrap">
+              <el-table :data="previewItems" class="preview-table" size="small" border>
+                <el-table-column prop="index" label="#" width="60" />
+                <el-table-column prop="kind" label="Kind" min-width="130" show-overflow-tooltip />
+                <el-table-column prop="name" label="Name" min-width="160" show-overflow-tooltip />
+                <el-table-column label="Force" width="88">
                 <template #default="scope">
                   <el-tag :type="scope.row.force ? 'warning' : 'info'" effect="light">
                     {{ scope.row.force ? 'Yes' : 'No' }}
                   </el-tag>
                 </template>
-              </el-table-column>
-              <el-table-column label="Actions" min-width="220">
-                <template #default="scope">
-                  <div class="action-tags">
-                    <el-tag
-                      v-for="action in scope.row.actions"
-                      :key="action"
-                      size="small"
-                      effect="plain"
-                      class="action-tag"
-                    >
-                      {{ action }}
-                    </el-tag>
-                  </div>
-                </template>
-              </el-table-column>
-            </el-table>
+                </el-table-column>
+                <el-table-column label="Actions" min-width="280">
+                  <template #default="scope">
+                    <div class="action-tags">
+                      <el-tag
+                        v-for="action in scope.row.actions"
+                        :key="action"
+                        size="small"
+                        effect="plain"
+                        class="action-tag"
+                      >
+                        {{ action }}
+                      </el-tag>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </el-card>
 
           <el-card shadow="never" class="codegen-card">
@@ -221,6 +223,14 @@ async function handleGenerate() {
   padding: 16px;
 }
 
+.codegen-grid {
+  align-items: flex-start;
+}
+
+.codegen-grid :deep(.el-col) {
+  min-width: 0;
+}
+
 .codegen-card {
   border-radius: 14px;
 }
@@ -260,20 +270,31 @@ async function handleGenerate() {
   width: 100%;
 }
 
+.side-stack :deep(.el-card__body) {
+  min-width: 0;
+}
+
 .result-empty {
   padding: 20px 0;
   color: var(--el-text-color-secondary);
   text-align: center;
 }
 
-.preview-table {
+.preview-table-wrap {
   margin-top: 16px;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.preview-table {
+  min-width: 820px;
 }
 
 .action-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-width: 100%;
 }
 
 .action-tag {
@@ -285,5 +306,6 @@ async function handleGenerate() {
   padding-left: 18px;
   color: var(--el-text-color-primary);
   line-height: 1.7;
+  word-break: break-word;
 }
 </style>

@@ -20,6 +20,12 @@ database:
   dsn: goadmin:goadmin@tcp(127.0.0.1:3306)/goadmin_prod?charset=utf8mb4&parseTime=True&loc=Local
   auto_migrate: true
 
+codegen:
+  artifact:
+    enabled: true
+    base_dir: /tmp/goadmin/codegen
+    ttl: 24h
+
 # tenant.enabled controls whether multi-tenant behavior is enabled.
 tenant:
   enabled: true

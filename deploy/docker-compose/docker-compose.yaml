@@ -28,6 +28,8 @@ services:
       dockerfile: deploy/docker/Dockerfile
       target: runtime
     image: goadmin/backend:local
+    volumes:
+      - ../..:/app
     env_file:
       - path: ../../.env
         required: false

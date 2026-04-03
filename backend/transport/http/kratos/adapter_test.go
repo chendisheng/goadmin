@@ -30,8 +30,14 @@ func (c *fakeContext) SetRequestContext(ctx context.Context) { c.requestContext 
 func (c *fakeContext) Method() string           { return c.method }
 func (c *fakeContext) Path() string             { return c.path }
 func (c *fakeContext) Header(key string) string { return c.headers[key] }
-func (c *fakeContext) Param(key string) string  { return c.params[key] }
-func (c *fakeContext) Query(key string) string  { return c.queries[key] }
+func (c *fakeContext) SetHeader(key, value string) {
+	if c.headers == nil {
+		c.headers = make(map[string]string)
+	}
+	c.headers[key] = value
+}
+func (c *fakeContext) Param(key string) string { return c.params[key] }
+func (c *fakeContext) Query(key string) string { return c.queries[key] }
 func (c *fakeContext) Set(key string, value any) {
 	if c.values == nil {
 		c.values = make(map[string]any)
@@ -42,11 +48,12 @@ func (c *fakeContext) Get(key string) (any, bool) {
 	value, ok := c.values[key]
 	return value, ok
 }
-func (c *fakeContext) ShouldBindJSON(any) error     { return nil }
-func (c *fakeContext) ShouldBindQuery(any) error    { c.bindQueryCalled = true; return nil }
-func (c *fakeContext) BindJSON(v any) error         { return c.ShouldBindJSON(v) }
-func (c *fakeContext) JSON(int, any)                {}
-func (c *fakeContext) AbortWithStatusJSON(int, any) {}
+func (c *fakeContext) ShouldBindJSON(any) error      { return nil }
+func (c *fakeContext) ShouldBindQuery(any) error     { c.bindQueryCalled = true; return nil }
+func (c *fakeContext) BindJSON(v any) error          { return c.ShouldBindJSON(v) }
+func (c *fakeContext) JSON(int, any)                 {}
+func (c *fakeContext) FileAttachment(string, string) {}
+func (c *fakeContext) AbortWithStatusJSON(int, any)  {}
 
 type fakeRouter struct {
 	used   int

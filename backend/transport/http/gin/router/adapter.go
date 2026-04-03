@@ -136,6 +136,13 @@ func (c *ginContextAdapter) Header(key string) string {
 	return c.Context.GetHeader(key)
 }
 
+func (c *ginContextAdapter) SetHeader(key, value string) {
+	if c == nil || c.Context == nil {
+		return
+	}
+	c.Context.Header(key, value)
+}
+
 func (c *ginContextAdapter) Param(key string) string {
 	if c == nil || c.Context == nil {
 		return ""
@@ -187,6 +194,13 @@ func (c *ginContextAdapter) JSON(status int, payload any) {
 		return
 	}
 	c.Context.JSON(status, payload)
+}
+
+func (c *ginContextAdapter) FileAttachment(path, name string) {
+	if c == nil || c.Context == nil {
+		return
+	}
+	c.Context.FileAttachment(path, name)
 }
 
 func (c *ginContextAdapter) AbortWithStatusJSON(status int, payload any) {

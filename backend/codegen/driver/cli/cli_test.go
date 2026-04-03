@@ -84,7 +84,14 @@ resources:
 	if len(report.Items[0].Actions) == 0 {
 		t.Fatalf("expected preview actions")
 	}
-	if !strings.Contains(report.Items[0].Actions[0], "generate page") {
+	hasPageAction := false
+	for _, action := range report.Items[0].Actions {
+		if strings.Contains(action, "generate page") {
+			hasPageAction = true
+			break
+		}
+	}
+	if !hasPageAction {
 		t.Fatalf("unexpected preview action: %v", report.Items[0].Actions)
 	}
 	if _, err := os.Stat(filepath.Join(root, "backend", "web", "src", "views", "system", "codegen", "index.vue")); !os.IsNotExist(err) {

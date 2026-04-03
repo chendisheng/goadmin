@@ -26,3 +26,5 @@ p, admin, /api/v1/plugins/:name, PUT
 p, admin, /api/v1/plugins/:name, DELETE
 p, admin, /api/v1/codegen/dsl/preview, POST
 p, admin, /api/v1/codegen/dsl/generate, POST
+p, admin, /api/v1/codegen/dsl/generate-download, POST
+p, admin, /api/v1/codegen/artifacts/:taskID, GET

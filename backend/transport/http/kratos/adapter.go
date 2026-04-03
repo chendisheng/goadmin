@@ -69,6 +69,13 @@ func (c *Context) Header(key string) string {
 	return c.Context.Header(key)
 }
 
+func (c *Context) SetHeader(key, value string) {
+	if c == nil || c.Context == nil {
+		return
+	}
+	c.Context.SetHeader(key, value)
+}
+
 func (c *Context) Param(key string) string {
 	if c == nil || c.Context == nil {
 		return ""
@@ -120,6 +127,13 @@ func (c *Context) JSON(status int, payload any) {
 		return
 	}
 	c.Context.JSON(status, payload)
+}
+
+func (c *Context) FileAttachment(path, name string) {
+	if c == nil || c.Context == nil {
+		return
+	}
+	c.Context.FileAttachment(path, name)
 }
 
 func (c *Context) AbortWithStatusJSON(status int, payload any) {

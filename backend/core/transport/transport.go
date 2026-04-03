@@ -27,6 +27,7 @@ type Context interface {
 	Method() string
 	Path() string
 	Header(string) string
+	SetHeader(string, string)
 	Param(string) string
 	Query(string) string
 	Set(string, any)
@@ -35,6 +36,7 @@ type Context interface {
 	ShouldBindQuery(any) error
 	BindJSON(any) error
 	JSON(int, any)
+	FileAttachment(string, string)
 	AbortWithStatusJSON(int, any)
 }
 

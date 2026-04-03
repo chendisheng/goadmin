@@ -75,7 +75,20 @@ func Register(engine *gin.Engine, deps Dependencies) {
 		userhttp.Register(protected, userhttp.Dependencies{Service: deps.UserService, Logger: deps.Logger})
 		rolehttp.Register(protected, rolehttp.Dependencies{Service: deps.RoleService, Logger: deps.Logger})
 		menuhttp.Register(protected, menuhttp.Dependencies{Service: deps.MenuService, Logger: deps.Logger})
-		codegenhttp.Register(protected, codegenhttp.Dependencies{ProjectRoot: deps.ProjectRoot})
+		artifactTTL := time.Duration(0)
+		artifactEnabled := false
+		artifactBaseDir := ""
+		if deps.Config != nil {
+			artifactEnabled = deps.Config.CodeGen.Artifact.Enabled
+			artifactBaseDir = deps.Config.CodeGen.Artifact.BaseDir
+			artifactTTL, _ = deps.Config.CodeGen.Artifact.TTLDuration()
+		}
+		codegenhttp.Register(protected, codegenhttp.Dependencies{
+			ProjectRoot:     deps.ProjectRoot,
+			ArtifactEnabled: artifactEnabled,
+			ArtifactBaseDir: artifactBaseDir,
+			ArtifactTTL:     artifactTTL,
+		})
 		pluginhttp.Register(protected, pluginhttp.Dependencies{Service: deps.PluginService, Logger: deps.Logger})
 		registerPluginRoutes(api, protected, deps.PluginRegistry)
 	}

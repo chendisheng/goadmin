@@ -20,6 +20,7 @@ const (
 	CodeUnauthorized Code = 40100
 	CodeForbidden    Code = 40300
 	CodeNotFound     Code = 40400
+	CodeGone         Code = 41000
 	CodeConflict     Code = 40900
 	CodeInternal     Code = 50000
 )
@@ -98,6 +99,8 @@ func defaultHTTPStatus(code Code) int {
 		return http.StatusForbidden
 	case CodeNotFound:
 		return http.StatusNotFound
+	case CodeGone:
+		return http.StatusGone
 	case CodeConflict:
 		return http.StatusConflict
 	case CodeOK:

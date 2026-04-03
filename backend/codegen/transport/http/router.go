@@ -7,7 +7,10 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 		return
 	}
 	h := NewHandler(deps)
-	routes := group.Group("/codegen").Group("/dsl")
-	routes.POST("/preview", h.Preview)
-	routes.POST("/generate", h.Generate)
+	root := group.Group("/codegen")
+	dsl := root.Group("/dsl")
+	dsl.POST("/preview", h.Preview)
+	dsl.POST("/generate", h.Generate)
+	dsl.POST("/generate-download", h.GenerateDownload)
+	root.GET("/artifacts/:taskID", h.DownloadArtifact)
 }

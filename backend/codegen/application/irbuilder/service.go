@@ -32,6 +32,7 @@ type DatabaseBuildOptions struct {
 	Force            bool
 	GenerateFrontend *bool
 	GeneratePolicy   *bool
+	Semantic         *SemanticOptions
 }
 
 // NewService creates an IR builder service with sensible defaults.
@@ -99,6 +100,7 @@ func (s *Service) BuildFromReaderWithOptions(reader insp.Reader, opts DatabaseBu
 }
 
 func buildResource(reader insp.Reader, table dbschema.Table, opts DatabaseBuildOptions) (irmodel.Resource, error) {
+	rules := normalizeSemanticOptions(opts.Semantic)
 	columns := append([]dbschema.Column(nil), table.Columns...)
 	if len(columns) == 0 {
 		var err error
@@ -129,11 +131,15 @@ func buildResource(reader insp.Reader, table dbschema.Table, opts DatabaseBuildO
 		Metadata:   map[string]any{},
 	}
 	for _, column := range columns {
-		resource.Fields = append(resource.Fields, buildField(column))
+		field := buildField(column)
+		applyFieldSemanticHints(&field, table, column, rules)
+		resource.Fields = append(resource.Fields, field)
 	}
 	for _, fk := range foreignKeys {
 		resource.Relations = append(resource.Relations, buildRelation(fk))
 	}
+	applyRelationSemanticHints(&resource, table, columns, rules)
+	resource.Semantic = buildResourceSemantic(resource, table, rules)
 	resource.Metadata["source"] = string(irmodel.SourceKindDatabase)
 	resource.Metadata["table_name"] = table.Name
 	if table.Schema != "" {

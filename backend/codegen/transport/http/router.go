@@ -12,5 +12,8 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 	dsl.POST("/preview", h.Preview)
 	dsl.POST("/generate", h.Generate)
 	dsl.POST("/generate-download", h.GenerateDownload)
+	db := root.Group("/db")
+	db.POST("/preview", h.PreviewDatabase)
+	db.POST("/generate", h.GenerateDatabase)
 	root.GET("/artifacts/:taskID", h.DownloadArtifact)
 }

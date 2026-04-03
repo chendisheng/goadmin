@@ -1,10 +1,16 @@
 package cli
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 func TestRunGenerateDSL(t *testing.T) {
@@ -99,6 +105,45 @@ resources:
 	}
 }
 
+func TestRunGenerateDBPreview(t *testing.T) {
+	root := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "codegen.db")
+	db := openCLIIntegrationSQLiteDB(t, dbPath)
+	if err := db.Exec(`CREATE TABLE books (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL
+	);`).Error; err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	output, err := captureCLIStdout(t, func() error {
+		return Run(root, []string{
+			"generate",
+			"db",
+			"preview",
+			"--driver", "sqlite",
+			"--dsn", dbPath,
+			"--database", "codegen",
+			"--table", "books",
+		})
+	})
+	if err != nil {
+		t.Fatalf("Run(generate db preview) returned error: %v", err)
+	}
+	if !strings.Contains(output, "dsl dry-run: no files will be written") {
+		t.Fatalf("preview output missing dry-run message:\n%s", output)
+	}
+	if !strings.Contains(output, "resource[0]") {
+		t.Fatalf("preview output missing resource index:\n%s", output)
+	}
+	if !strings.Contains(output, "kind=crud") {
+		t.Fatalf("preview output missing kind=crud:\n%s", output)
+	}
+	if !strings.Contains(output, "name=book") {
+		t.Fatalf("preview output missing name=book:\n%s", output)
+	}
+}
+
 func assertFileContains(t *testing.T, path string, want string) {
 	t.Helper()
 	content, err := os.ReadFile(path)
@@ -115,4 +160,46 @@ func assertFileExists(t *testing.T, path string) {
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("stat %s: %v", path, err)
 	}
+}
+
+func openCLIIntegrationSQLiteDB(t *testing.T, path string) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{Logger: gormlogger.Default.LogMode(gormlogger.Silent)})
+	if err != nil {
+		t.Fatalf("open sqlite db: %v", err)
+	}
+	return db
+}
+
+func captureCLIStdout(t *testing.T, fn func() error) (string, error) {
+	t.Helper()
+	original := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe stdout: %v", err)
+	}
+	os.Stdout = w
+	defer func() { os.Stdout = original }()
+
+	outputCh := make(chan string, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		var buf bytes.Buffer
+		_, copyErr := io.Copy(&buf, r)
+		if copyErr != nil {
+			errCh <- copyErr
+			return
+		}
+		outputCh <- buf.String()
+	}()
+
+	runErr := fn()
+	_ = w.Close()
+	output := <-outputCh
+	select {
+	case copyErr := <-errCh:
+		return output, copyErr
+	default:
+	}
+	return output, runErr
 }

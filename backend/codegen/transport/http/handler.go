@@ -6,6 +6,7 @@ import (
 	"time"
 
 	downloadapp "goadmin/codegen/application/download"
+	irbuilderapp "goadmin/codegen/application/irbuilder"
 	codegencli "goadmin/codegen/driver/cli"
 	apperrors "goadmin/core/errors"
 	"goadmin/core/response"
@@ -23,6 +24,7 @@ type Handler struct {
 	projectRoot     string
 	artifactEnabled bool
 	downloads       *downloadapp.Service
+	dbgen           *irbuilderapp.Service
 }
 
 type DSLRequest struct {
@@ -39,6 +41,17 @@ type GenerateDownloadRequest struct {
 	IncludeDSL    *bool  `json:"include_dsl,omitempty"`
 }
 
+type DatabaseRequest struct {
+	Driver           string   `json:"driver"`
+	DSN              string   `json:"dsn"`
+	Database         string   `json:"database"`
+	Schema           string   `json:"schema,omitempty"`
+	Tables           []string `json:"tables,omitempty"`
+	Force            bool     `json:"force,omitempty"`
+	GenerateFrontend *bool    `json:"generate_frontend,omitempty"`
+	GeneratePolicy   *bool    `json:"generate_policy,omitempty"`
+}
+
 func NewHandler(deps Dependencies) *Handler {
 	var downloads *downloadapp.Service
 	if deps.ArtifactEnabled {
@@ -51,6 +64,7 @@ func NewHandler(deps Dependencies) *Handler {
 		projectRoot:     strings.TrimSpace(deps.ProjectRoot),
 		artifactEnabled: deps.ArtifactEnabled,
 		downloads:       downloads,
+		dbgen:           irbuilderapp.NewService(irbuilderapp.Dependencies{}),
 	}
 }
 
@@ -129,6 +143,53 @@ func (h *Handler) GenerateDownload(c coretransport.Context) {
 		return
 	}
 	c.JSON(stdhttp.StatusOK, response.Success(artifact, requestID(c)))
+}
+
+func (h *Handler) PreviewDatabase(c coretransport.Context) {
+	h.generateDatabase(c, true)
+}
+
+func (h *Handler) GenerateDatabase(c coretransport.Context) {
+	h.generateDatabase(c, false)
+}
+
+func (h *Handler) generateDatabase(c coretransport.Context, dryRun bool) {
+	if err := h.ensureProjectRoot(); err != nil {
+		h.writeError(c, err)
+		return
+	}
+	var req DatabaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "invalid request body"))
+		return
+	}
+	if strings.TrimSpace(req.Driver) == "" {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "driver is required"))
+		return
+	}
+	if strings.TrimSpace(req.DSN) == "" {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "dsn is required"))
+		return
+	}
+	if strings.TrimSpace(req.Database) == "" {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "database is required"))
+		return
+	}
+	report, err := codegencli.ExecuteDatabaseDocument(h.projectRoot, h.dbgen, codegencli.DatabaseExecutionRequest{
+		Driver:           req.Driver,
+		DSN:              req.DSN,
+		Database:         req.Database,
+		Schema:           req.Schema,
+		Tables:           append([]string(nil), req.Tables...),
+		Force:            req.Force,
+		GenerateFrontend: req.GenerateFrontend,
+		GeneratePolicy:   req.GeneratePolicy,
+	}, dryRun)
+	if err != nil {
+		h.writeError(c, err)
+		return
+	}
+	c.JSON(stdhttp.StatusOK, response.Success(report, requestID(c)))
 }
 
 func (h *Handler) DownloadArtifact(c coretransport.Context) {

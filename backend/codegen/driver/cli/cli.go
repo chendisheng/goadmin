@@ -14,14 +14,14 @@ import (
 
 func Run(root string, args []string) error {
 	if len(args) == 0 {
-		return errors.New("generate requires a subcommand: module, crud, plugin, dsl")
+		return errors.New("generate requires a subcommand: module, crud, plugin, dsl, db")
 	}
 	gen := legacygenerate.New(root)
 	plan := planner.New()
 
 	switch args[0] {
 	case "generate":
-		return runGenerate(gen, plan, args[1:])
+		return runGenerate(root, gen, plan, args[1:])
 	case "help", "-h", "--help":
 		usage()
 		return nil
@@ -44,9 +44,9 @@ func generateSchemaResourceConfig(gen *legacygenerate.Generator, resource schema
 	return gen.GenerateConfig(buildConfigOptions(resource, force))
 }
 
-func runGenerate(gen *legacygenerate.Generator, plan planner.Default, args []string) error {
+func runGenerate(root string, gen *legacygenerate.Generator, plan planner.Default, args []string) error {
 	if len(args) == 0 {
-		return errors.New("generate requires a subcommand: module, crud, plugin, dsl")
+		return errors.New("generate requires a subcommand: module, crud, plugin, dsl, db")
 	}
 	switch args[0] {
 	case "module":
@@ -57,6 +57,8 @@ func runGenerate(gen *legacygenerate.Generator, plan planner.Default, args []str
 		return runGeneratePlugin(gen, plan, args[1:])
 	case "dsl":
 		return runGenerateDSL(gen, plan, args[1:])
+	case "db":
+		return runGenerateDB(root, args[1:])
 	default:
 		return fmt.Errorf("unknown generate subcommand %q", args[0])
 	}
@@ -529,12 +531,15 @@ Usage:
   goadmin-cli generate crud <name> [--fields name:string,status:string] [--primary id] [--index name] [--unique code] [--frontend] [--policy] [--force]
   goadmin-cli generate plugin <name> [--force]
   goadmin-cli generate dsl <dsl.yaml> [--force]
+  goadmin-cli generate db preview --driver mysql --dsn "..." --database goadmin [--table books] [--schema public] [--generate_frontend] [--generate_policy]
+  goadmin-cli generate db generate --driver mysql --dsn "..." --database goadmin [--table books] [--schema public] [--generate_frontend] [--generate_policy]
 
 Examples:
   goadmin-cli generate module user
   goadmin-cli generate crud order --fields id:string,name:string,status:string --policy
   goadmin-cli generate plugin demo
   goadmin-cli generate dsl deploy/codegen/inventory.yaml
+  goadmin-cli generate db preview --driver sqlite --dsn "file:./tmp/codegen.db?cache=shared&mode=rwc" --database codegen --table books --generate_frontend --generate_policy
 `))
 }
 

@@ -3,12 +3,18 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	downloadapp "goadmin/codegen/application/download"
+	cli "goadmin/codegen/driver/cli"
 	"goadmin/core/response"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 type fakeContext struct {
@@ -147,4 +153,57 @@ permissions:
 	if got := downloadCtx.headers["Cache-Control"]; got != "private, max-age=300" {
 		t.Fatalf("Cache-Control = %q, want private, max-age=300", got)
 	}
+}
+
+func TestHandlerPreviewDatabase(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "codegen.db")
+	db := openHTTPIntegrationSQLiteDB(t, dbPath)
+	if err := db.Exec(`CREATE TABLE books (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL
+	);`).Error; err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	handler := NewHandler(Dependencies{ProjectRoot: root})
+	ctx := &fakeContext{payload: DatabaseRequest{
+		Driver:   "sqlite",
+		DSN:      dbPath,
+		Database: "codegen",
+		Tables:   []string{"books"},
+	}}
+
+	handler.PreviewDatabase(ctx)
+	if ctx.status != 200 {
+		t.Fatalf("PreviewDatabase status = %d, want 200, body=%#v", ctx.status, ctx.jsonBody)
+	}
+	envelope, ok := ctx.jsonBody.(response.Envelope)
+	if !ok {
+		t.Fatalf("PreviewDatabase body type = %T, want response.Envelope", ctx.jsonBody)
+	}
+	report, ok := envelope.Data.(cli.DSLExecutionReport)
+	if !ok {
+		t.Fatalf("PreviewDatabase data type = %T, want cli.DSLExecutionReport", envelope.Data)
+	}
+	if !report.DryRun {
+		t.Fatal("expected dry-run report")
+	}
+	if len(report.Items) != 1 {
+		t.Fatalf("expected 1 preview item, got %d", len(report.Items))
+	}
+	if report.Items[0].Name != "book" {
+		t.Fatalf("expected preview item name book, got %q", report.Items[0].Name)
+	}
+}
+
+func openHTTPIntegrationSQLiteDB(t *testing.T, path string) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{Logger: gormlogger.Default.LogMode(gormlogger.Silent)})
+	if err != nil {
+		t.Fatalf("open sqlite db: %v", err)
+	}
+	return db
 }

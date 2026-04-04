@@ -132,6 +132,50 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	}
 }
 
+func TestGenerateCRUDPreservesManualGoChanges(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+	fields, err := ParseFields("name:string", "", "", "")
+	if err != nil {
+		t.Fatalf("ParseFields returned error: %v", err)
+	}
+
+	opts := CRUDOptions{Name: "Book", Fields: fields, GenerateFrontend: false, GeneratePolicy: false}
+	if err := gen.GenerateCRUD(opts); err != nil {
+		t.Fatalf("GenerateCRUD returned error: %v", err)
+	}
+
+	routerPath := filepath.Join(root, "backend", "modules", "book", "transport", "http", "router.go")
+	manual := strings.TrimSpace(`
+
+func ManualDebug() string {
+	return "manual"
+}
+`)
+	handle, err := os.OpenFile(routerPath, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatalf("open router for manual edit: %v", err)
+	}
+	if _, err := handle.WriteString("\n" + manual + "\n"); err != nil {
+		handle.Close()
+		t.Fatalf("append manual edit: %v", err)
+	}
+	if err := handle.Close(); err != nil {
+		t.Fatalf("close router after manual edit: %v", err)
+	}
+
+	if err := gen.GenerateCRUD(opts); err != nil {
+		t.Fatalf("second GenerateCRUD returned error: %v", err)
+	}
+
+	assertFileContains(t, routerPath, "func ManualDebug() string")
+	assertFileContains(t, routerPath, `return "manual"`)
+	assertFileContains(t, routerPath, `root.GET("", h.List)`)
+	assertFileContains(t, routerPath, `import (`)
+}
+
 func TestGeneratePlugin(t *testing.T) {
 	t.Parallel()
 

@@ -11,6 +11,9 @@ import (
 	"strings"
 	"text/template"
 	"unicode"
+
+	codegenmerger "goadmin/codegen/merger"
+	codegenpostprocess "goadmin/codegen/postprocess"
 )
 
 type Generator struct {
@@ -786,14 +789,7 @@ func (g *Generator) appendPolicyLines(lines []string) error {
 	if g == nil || len(lines) == 0 {
 		return nil
 	}
-	cleaned := make([]string, 0, len(lines))
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			continue
-		}
-		cleaned = append(cleaned, trimmed)
-	}
+	cleaned := codegenmerger.UniqueLines(lines)
 	if len(cleaned) == 0 {
 		return nil
 	}
@@ -817,14 +813,12 @@ func (g *Generator) appendPolicyLines(lines []string) error {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("read policy file: %w", err)
 	}
-	for _, line := range cleaned {
-		if _, ok := existing[line]; ok {
-			continue
-		}
-		existing[line] = struct{}{}
-		kept = append(kept, line)
+	merged := append([]string(nil), kept...)
+	merged = append(merged, cleaned...)
+	output := strings.Join(codegenpostprocess.NormalizePolicyLines(merged), "\n")
+	if output != "" {
+		output += "\n"
 	}
-	output := strings.Join(kept, "\n") + "\n"
 	return os.WriteFile(g.PolicyPath, []byte(output), 0o644)
 }
 
@@ -852,22 +846,45 @@ func (g *Generator) writeTextTemplate(path, tmpl string, data any, force bool) e
 	if err != nil {
 		return err
 	}
-	return g.writeFile(path, []byte(rendered), force)
+	content := []byte(rendered)
+	if shouldWrapGeneratedText(path) {
+		content = codegenpostprocess.WrapGeneratedContent(path, content)
+	}
+	content = codegenpostprocess.EnsureTrailingNewline(content)
+	return g.writeFile(path, content, force)
 }
 
 func (g *Generator) writeFile(path string, content []byte, force bool) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create directory %s: %w", filepath.Dir(path), err)
 	}
-	if _, err := os.Stat(path); err == nil && !force {
-		return nil
-	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+	current, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("stat file %s: %w", path, err)
 	}
-	if err := os.WriteFile(path, content, 0o644); err != nil {
+	merged, err := codegenmerger.MergeContent(path, current, content, force)
+	if err != nil {
+		return err
+	}
+	if merged.Conflict && !force {
+		return fmt.Errorf("merge conflict for %s: %d conflict(s)", path, merged.Diff.ConflictCount())
+	}
+	if len(current) > 0 && !merged.Changed && !force {
+		return nil
+	}
+	if err := os.WriteFile(path, merged.Content, 0o644); err != nil {
 		return fmt.Errorf("write file %s: %w", path, err)
 	}
 	return nil
+}
+
+func shouldWrapGeneratedText(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".yaml", ".yml", ".csv", ".md":
+		return true
+	default:
+		return false
+	}
 }
 
 func renderTemplate(tmpl string, data any) (string, error) {

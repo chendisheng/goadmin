@@ -203,6 +203,67 @@ func TestHandlerPreviewDatabase(t *testing.T) {
 	}
 }
 
+func TestHandlerGenerateDatabaseDownloadAndArtifact(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "codegen.db")
+	db := openHTTPIntegrationSQLiteDB(t, dbPath)
+	if err := db.Exec(`CREATE TABLE books (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL
+	);`).Error; err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	handler := NewHandler(Dependencies{
+		ProjectRoot:     root,
+		ArtifactEnabled: true,
+		ArtifactBaseDir: t.TempDir(),
+		ArtifactTTL:     time.Hour,
+	})
+	generateCtx := &fakeContext{payload: DatabaseRequest{
+		Driver:   "sqlite",
+		DSN:      dbPath,
+		Database: "codegen",
+		Tables:   []string{"books"},
+	}}
+
+	handler.GenerateDatabaseDownload(generateCtx)
+	if generateCtx.status != 200 {
+		t.Fatalf("GenerateDatabaseDownload status = %d, want 200, body=%#v", generateCtx.status, generateCtx.jsonBody)
+	}
+	envelope, ok := generateCtx.jsonBody.(response.Envelope)
+	if !ok {
+		t.Fatalf("GenerateDatabaseDownload body type = %T, want response.Envelope", generateCtx.jsonBody)
+	}
+	artifact, ok := envelope.Data.(downloadapp.ArtifactInfo)
+	if !ok {
+		t.Fatalf("GenerateDatabaseDownload data type = %T, want download.ArtifactInfo", envelope.Data)
+	}
+	if artifact.TaskID == "" {
+		t.Fatal("expected task id")
+	}
+	if artifact.DownloadURL == "" {
+		t.Fatal("expected download url")
+	}
+
+	downloadCtx := &fakeContext{params: map[string]string{"taskID": artifact.TaskID}}
+	handler.DownloadArtifact(downloadCtx)
+	if downloadCtx.attachmentPath == "" {
+		t.Fatal("expected attachment path")
+	}
+	if downloadCtx.attachmentName == "" {
+		t.Fatal("expected attachment name")
+	}
+	if got := downloadCtx.headers["Cache-Control"]; got != "private, max-age=300" {
+		t.Fatalf("Cache-Control = %q, want private, max-age=300", got)
+	}
+	if strings.Contains(mustJSONString(t, envelope), dbPath) {
+		t.Fatalf("HTTP generate-download response leaked DSN/path %q in JSON: %s", dbPath, mustJSONString(t, envelope))
+	}
+}
+
 func TestHandlerGenerateDatabase(t *testing.T) {
 	t.Parallel()
 

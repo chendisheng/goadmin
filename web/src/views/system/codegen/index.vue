@@ -19,6 +19,7 @@
                 <el-button v-if="activeMode === 'dsl'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
                 <el-button v-if="activeMode === 'db'" type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
                 <el-button v-if="activeMode === 'db'" type="success" :loading="generateLoading" @click="handleGenerate">一键生成</el-button>
+                <el-button v-if="activeMode === 'db'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
               </el-space>
             </div>
           </template>
@@ -341,7 +342,7 @@
             </ul>
           </el-card>
 
-          <el-card v-if="activeMode === 'dsl'" shadow="never" class="codegen-card">
+          <el-card v-if="artifactInfo" shadow="never" class="codegen-card">
             <template #header>
               <div class="card-header compact artifact-header">
                 <div>
@@ -428,6 +429,7 @@ import {
   generateCodegenDatabase,
   generateCodegenDsl,
   generateDownloadCodegenDsl,
+  generateDownloadCodegenDatabase,
   previewCodegenDatabase,
   previewCodegenDsl,
   type CodegenArtifactInfo,
@@ -762,6 +764,15 @@ function clearDbInputs() {
   dbGenerateFrontend.value = true;
   dbGeneratePolicy.value = true;
   dbReport.value = null;
+  artifactInfo.value = null;
+  artifactForceExpired.value = false;
+  lastDownloadAt.value = '';
+  lastArtifactError.value = '';
+  lastArtifactErrorAt.value = '';
+  lastArtifactErrorType.value = 'unknown';
+  lastDownloadDuration.value = 0;
+  downloadStartAt.value = 0;
+  resetCopyFeedback();
   operationStatus.value = '';
   lastRunSuccess.value = false;
 }
@@ -858,7 +869,14 @@ async function handleGenerate() {
 }
 
 async function handleGenerateDownload() {
-  if (!dslText.value.trim()) {
+  const isDbMode = activeMode.value === 'db';
+  if (isDbMode) {
+    const validationError = validateDatabaseInputs();
+    if (validationError) {
+      ElMessage.warning(validationError);
+      return;
+    }
+  } else if (!dslText.value.trim()) {
     ElMessage.warning('请先填写 DSL 内容');
     return;
   }
@@ -867,27 +885,31 @@ async function handleGenerateDownload() {
   operationStatus.value = '';
   lastRunSuccess.value = false;
   try {
-    const artifact = await generateDownloadCodegenDsl({
-      dsl: dslText.value,
-      force: force.value,
-      package_name: packageName.value.trim() || undefined,
-      include_readme: includeReadme.value,
-      include_report: includeReport.value,
-      include_dsl: includeDsl.value,
-    });
+    const artifact = isDbMode
+      ? await generateDownloadCodegenDatabase(buildDatabaseRequest())
+      : await generateDownloadCodegenDsl({
+          dsl: dslText.value,
+          force: force.value,
+          package_name: packageName.value.trim() || undefined,
+          include_readme: includeReadme.value,
+          include_report: includeReport.value,
+          include_dsl: includeDsl.value,
+        });
     artifactInfo.value = artifact;
     artifactForceExpired.value = false;
     lastRunSuccess.value = true;
     lastArtifactError.value = '';
     lastArtifactErrorAt.value = '';
     lastArtifactErrorType.value = 'unknown';
-    operationStatus.value = `代码包已生成，共 ${artifact.file_count} 个文件，浏览器将开始下载 ${artifact.filename}`;
+    operationStatus.value = isDbMode
+      ? `数据库代码包已生成，共 ${artifact.file_count} 个文件，浏览器将开始下载 ${artifact.filename}`
+      : `代码包已生成，共 ${artifact.file_count} 个文件，浏览器将开始下载 ${artifact.filename}`;
     await downloadCodegenArtifact(artifact.download_url, artifact.filename);
     lastDownloadAt.value = new Date().toISOString();
     lastDownloadDuration.value = downloadStartAt.value ? Date.now() - downloadStartAt.value : 0;
     ElMessage.success(`下载已开始：${artifact.filename}`);
   } catch (error) {
-    handleArtifactError(error, '生成下载包失败');
+    handleArtifactError(error, isDbMode ? '生成数据库下载包失败' : '生成下载包失败');
   } finally {
     downloadLoading.value = false;
     downloadStartAt.value = 0;

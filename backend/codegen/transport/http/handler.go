@@ -158,6 +158,33 @@ func (h *Handler) GenerateDownload(c coretransport.Context) {
 	c.JSON(stdhttp.StatusOK, response.Success(artifact, requestID(c)))
 }
 
+func (h *Handler) GenerateDatabaseDownload(c coretransport.Context) {
+	if err := h.ensureProjectRoot(); err != nil {
+		h.writeError(c, err)
+		return
+	}
+	if !h.artifactEnabled || h.downloads == nil {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "codegen artifact download is disabled"))
+		return
+	}
+	var req DatabaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "invalid request body"))
+		return
+	}
+	executionReq := req.toExecutionRequest()
+	if err := executionReq.Validate(); err != nil {
+		h.writeError(c, err)
+		return
+	}
+	artifact, err := h.downloads.GenerateDatabase(executionReq)
+	if err != nil {
+		h.writeError(c, err)
+		return
+	}
+	c.JSON(stdhttp.StatusOK, response.Success(artifact, requestID(c)))
+}
+
 func (h *Handler) PreviewDatabase(c coretransport.Context) {
 	h.generateDatabase(c, true)
 }

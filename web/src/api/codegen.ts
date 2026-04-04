@@ -210,6 +210,10 @@ export function generateCodegenDatabase(payload: CodegenDatabaseRequest) {
   return http.post<CodegenDatabasePreviewReport>('/codegen/db/generate', payload);
 }
 
+export function generateDownloadCodegenDatabase(payload: CodegenDatabaseRequest) {
+  return http.post<CodegenArtifactInfo>('/codegen/db/generate-download', payload);
+}
+
 export async function downloadCodegenArtifact(downloadUrl: string, fallbackFilename?: string) {
   const token = getStoredAccessToken();
   const response = await fetch(resolveApiUrl(downloadUrl), {

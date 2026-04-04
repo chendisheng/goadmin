@@ -50,7 +50,7 @@ permissions:
 
 	modulePath := filepath.Join(root, "backend", "modules", "inventory", "module.go")
 	crudModelPath := filepath.Join(root, "backend", "modules", "item", "domain", "model", "item.go")
-	frontendViewPath := filepath.Join(root, "backend", "web", "src", "views", "item", "index.vue")
+	frontendViewPath := filepath.Join(root, "web", "src", "views", "item", "index.vue")
 	policyPath := filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv")
 
 	assertFileContains(t, modulePath, "package inventory")
@@ -100,7 +100,7 @@ resources:
 	if !hasPageAction {
 		t.Fatalf("unexpected preview action: %v", report.Items[0].Actions)
 	}
-	if _, err := os.Stat(filepath.Join(root, "backend", "web", "src", "views", "system", "codegen", "index.vue")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(root, "web", "src", "views", "system", "codegen", "index.vue")); !os.IsNotExist(err) {
 		t.Fatalf("dry-run should not create output files, got err=%v", err)
 	}
 }

@@ -346,8 +346,8 @@ func (g *Generator) GeneratePage(opts PageOptions) error {
 		return errors.New("generator is nil")
 	}
 	data := buildPageRenderData(opts)
-	viewFile := filepath.Join(g.Root, "backend", "web", "src", "views", data.ViewScope, data.PageSlug+".vue")
-	routeFile := filepath.Join(g.Root, "backend", "web", "src", "router", "modules", data.ViewScope+"-"+data.PageSlug+".ts")
+	viewFile := filepath.Join(g.Root, "web", "src", "views", data.ViewScope, data.PageSlug+".vue")
+	routeFile := filepath.Join(g.Root, "web", "src", "router", "modules", data.ViewScope+"-"+data.PageSlug+".ts")
 	if err := g.writeGoOrText(viewFile, pageViewTemplate, data, data.Force); err != nil {
 		return err
 	}
@@ -743,9 +743,9 @@ func (g *Generator) writeScaffold(data scaffoldData) error {
 	}
 	if data.GenerateFrontend {
 		frontendFiles := map[string]string{
-			filepath.Join(g.Root, "backend", "web", "src", "api", data.EntityLower+".ts"):               frontendApiTemplate,
-			filepath.Join(g.Root, "backend", "web", "src", "router", "modules", data.EntityLower+".ts"): frontendRouterTemplate,
-			filepath.Join(g.Root, "backend", "web", "src", "views", data.EntityLower, "index.vue"):      frontendViewTemplate,
+			filepath.Join(g.Root, "web", "src", "api", data.EntityLower+".ts"):               frontendApiTemplate,
+			filepath.Join(g.Root, "web", "src", "router", "modules", data.EntityLower+".ts"): frontendRouterTemplate,
+			filepath.Join(g.Root, "web", "src", "views", data.EntityLower, "index.vue"):      frontendViewTemplate,
 		}
 		for path, tmpl := range frontendFiles {
 			if err := g.writeGoOrText(path, tmpl, data, data.Force); err != nil {
@@ -773,9 +773,9 @@ func (g *Generator) writeModuleScaffold(data moduleRenderData) error {
 func (g *Generator) writePluginScaffold(data pluginRenderData) error {
 	base := filepath.Join(g.Root, "backend", "plugin", "builtin", data.EntityLower)
 	files := map[string]string{
-		filepath.Join(base, data.EntityLower+".go"):                                                      pluginTemplate,
-		filepath.Join(g.Root, "backend", "web", "src", "plugins", data.EntityLower+".ts"):                pluginFrontendTemplate,
-		filepath.Join(g.Root, "backend", "web", "src", "views", "plugin", data.EntityLower, "index.vue"): pluginViewTemplate,
+		filepath.Join(base, data.EntityLower+".go"):                                           pluginTemplate,
+		filepath.Join(g.Root, "web", "src", "plugins", data.EntityLower+".ts"):                pluginFrontendTemplate,
+		filepath.Join(g.Root, "web", "src", "views", "plugin", data.EntityLower, "index.vue"): pluginViewTemplate,
 	}
 	for path, tmpl := range files {
 		if err := g.writeGoOrText(path, tmpl, data, data.Force); err != nil {

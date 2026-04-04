@@ -132,6 +132,42 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	}
 }
 
+func TestGenerateCRUDFrontendPathsUseRepoWebRoot(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+	fields, err := ParseFields("name:string", "", "", "")
+	if err != nil {
+		t.Fatalf("ParseFields returned error: %v", err)
+	}
+
+	if err := gen.GenerateCRUD(CRUDOptions{Name: "Article", Fields: fields, GenerateFrontend: true, GeneratePolicy: false}); err != nil {
+		t.Fatalf("GenerateCRUD returned error: %v", err)
+	}
+
+	assertPathExists(t, filepath.Join(root, "web", "src", "api", "article.ts"))
+	assertPathExists(t, filepath.Join(root, "web", "src", "router", "modules", "article.ts"))
+	assertPathExists(t, filepath.Join(root, "web", "src", "views", "article", "index.vue"))
+	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "api", "article.ts"))
+	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "views", "article", "index.vue"))
+}
+
+func TestGeneratePageUsesRepoWebRoot(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+	if err := gen.GeneratePage(PageOptions{ViewScope: "system", PageName: "Report", PageSlug: "report", RoutePath: "/system/report"}); err != nil {
+		t.Fatalf("GeneratePage returned error: %v", err)
+	}
+
+	assertPathExists(t, filepath.Join(root, "web", "src", "views", "system", "report.vue"))
+	assertPathExists(t, filepath.Join(root, "web", "src", "router", "modules", "system-report.ts"))
+	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "views", "system", "report.vue"))
+	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "router", "modules", "system-report.ts"))
+}
+
 func TestGenerateCRUDPreservesManualGoChanges(t *testing.T) {
 	t.Parallel()
 
@@ -210,6 +246,22 @@ func assertFileContains(t *testing.T, path string, want string) {
 	}
 	if !strings.Contains(string(content), want) {
 		t.Fatalf("%s does not contain %q\ncontent:\n%s", path, want, string(content))
+	}
+}
+
+func assertPathExists(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected %s to exist: %v", path, err)
+	}
+}
+
+func assertPathNotExists(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err == nil {
+		t.Fatalf("expected %s to not exist", path)
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat %s: %v", path, err)
 	}
 }
 

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -202,6 +203,80 @@ func TestHandlerPreviewDatabase(t *testing.T) {
 	}
 }
 
+func TestHandlerGenerateDatabase(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "codegen.db")
+	db := openHTTPIntegrationSQLiteDB(t, dbPath)
+	if err := db.Exec(`CREATE TABLE books (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL
+	);`).Error; err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	handler := NewHandler(Dependencies{ProjectRoot: root})
+	ctx := &fakeContext{payload: DatabaseRequest{
+		Driver:   "sqlite",
+		DSN:      dbPath,
+		Database: "codegen",
+		Tables:   []string{"books"},
+	}}
+
+	handler.GenerateDatabase(ctx)
+	if ctx.status != 200 {
+		t.Fatalf("GenerateDatabase status = %d, want 200, body=%#v", ctx.status, ctx.jsonBody)
+	}
+	envelope, ok := ctx.jsonBody.(response.Envelope)
+	if !ok {
+		t.Fatalf("GenerateDatabase body type = %T, want response.Envelope", ctx.jsonBody)
+	}
+	report, ok := envelope.Data.(cli.DatabasePreviewReport)
+	if !ok {
+		t.Fatalf("GenerateDatabase data type = %T, want cli.DatabasePreviewReport", envelope.Data)
+	}
+	if report.DryRun {
+		t.Fatal("expected generate report, got dry-run")
+	}
+	assertExists(t, filepath.Join(root, "backend", "modules", "book", "module.go"))
+	assertExists(t, filepath.Join(root, "web", "src", "views", "book", "index.vue"))
+	if !strings.Contains(strings.Join(report.Messages, " "), "generated 1 resource(s)") {
+		t.Fatalf("GenerateDatabase report missing generated message: %+v", report.Messages)
+	}
+	if report.Audit.RecordedAt == "" {
+		t.Fatal("expected audit record timestamp")
+	}
+	if len(report.Audit.Steps) == 0 {
+		t.Fatal("expected audit steps")
+	}
+	if report.Audit.Output.FileCount != len(report.Files) {
+		t.Fatalf("audit file count = %d, want %d", report.Audit.Output.FileCount, len(report.Files))
+	}
+	if strings.Contains(mustJSONString(t, envelope), dbPath) {
+		t.Fatalf("HTTP generate response leaked DSN/path %q in JSON: %s", dbPath, mustJSONString(t, envelope))
+	}
+}
+
+func TestHandlerGenerateDatabaseValidation(t *testing.T) {
+	t.Parallel()
+
+	handler := NewHandler(Dependencies{ProjectRoot: t.TempDir()})
+	ctx := &fakeContext{payload: DatabaseRequest{DSN: "sqlite.db", Database: "codegen"}}
+
+	handler.GenerateDatabase(ctx)
+	if ctx.status != 400 {
+		t.Fatalf("GenerateDatabase status = %d, want 400", ctx.status)
+	}
+	envelope, ok := ctx.jsonBody.(response.Envelope)
+	if !ok {
+		t.Fatalf("GenerateDatabase body type = %T, want response.Envelope", ctx.jsonBody)
+	}
+	if !strings.Contains(strings.ToLower(envelope.Message), "database driver is required") {
+		t.Fatalf("GenerateDatabase message = %q, want database driver is required", envelope.Message)
+	}
+}
+
 func openHTTPIntegrationSQLiteDB(t *testing.T, path string) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{Logger: gormlogger.Default.LogMode(gormlogger.Silent)})
@@ -209,4 +284,20 @@ func openHTTPIntegrationSQLiteDB(t *testing.T, path string) *gorm.DB {
 		t.Fatalf("open sqlite db: %v", err)
 	}
 	return db
+}
+
+func assertExists(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected %s to exist: %v", path, err)
+	}
+}
+
+func mustJSONString(t *testing.T, value any) string {
+	t.Helper()
+	data, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal json: %v", err)
+	}
+	return string(data)
 }

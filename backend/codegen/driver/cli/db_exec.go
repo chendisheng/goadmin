@@ -8,6 +8,7 @@ import (
 
 	irbuilderapp "goadmin/codegen/application/irbuilder"
 	"goadmin/core/config"
+	apperrors "goadmin/core/errors"
 	infradb "goadmin/infrastructure/db"
 )
 
@@ -23,6 +24,19 @@ type DatabaseExecutionRequest struct {
 	GeneratePolicy   *bool
 }
 
+func (req DatabaseExecutionRequest) Validate() error {
+	if strings.TrimSpace(req.Driver) == "" {
+		return apperrors.New(apperrors.CodeBadRequest, "database driver is required")
+	}
+	if strings.TrimSpace(req.DSN) == "" {
+		return apperrors.New(apperrors.CodeBadRequest, "database dsn is required")
+	}
+	if strings.TrimSpace(req.Database) == "" {
+		return apperrors.New(apperrors.CodeBadRequest, "database name is required")
+	}
+	return nil
+}
+
 // ExecuteDatabaseDocument inspects the configured database, converts it through
 // IR/DSL/planner, and optionally writes files via the existing generator flow.
 func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req DatabaseExecutionRequest, dryRun bool) (DatabasePreviewReport, error) {
@@ -30,20 +44,14 @@ func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req Dat
 		builder = irbuilderapp.NewService(irbuilderapp.Dependencies{})
 	}
 	if strings.TrimSpace(root) == "" {
-		return DatabasePreviewReport{}, fmt.Errorf("project root is required")
+		return DatabasePreviewReport{}, apperrors.New(apperrors.CodeBadRequest, "project root is required")
 	}
-	if strings.TrimSpace(req.Driver) == "" {
-		return DatabasePreviewReport{}, fmt.Errorf("database driver is required")
-	}
-	if strings.TrimSpace(req.DSN) == "" {
-		return DatabasePreviewReport{}, fmt.Errorf("database dsn is required")
-	}
-	if strings.TrimSpace(req.Database) == "" {
-		return DatabasePreviewReport{}, fmt.Errorf("database name is required")
+	if err := req.Validate(); err != nil {
+		return DatabasePreviewReport{}, err
 	}
 	conn, err := infradb.Open(config.DatabaseConfig{Driver: req.Driver, DSN: req.DSN})
 	if err != nil {
-		return DatabasePreviewReport{}, err
+		return DatabasePreviewReport{}, apperrors.New(apperrors.CodeInternal, "open database connection failed")
 	}
 	opts := irbuilderapp.DatabaseBuildOptions{
 		Tables:           append([]string(nil), req.Tables...),
@@ -106,15 +114,6 @@ func runGenerateDBCommand(root string, args []string) error {
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
-	if strings.TrimSpace(*driver) == "" {
-		return fmt.Errorf("generate db requires --driver")
-	}
-	if strings.TrimSpace(*dsn) == "" {
-		return fmt.Errorf("generate db requires --dsn")
-	}
-	if strings.TrimSpace(*database) == "" {
-		return fmt.Errorf("generate db requires --database")
-	}
 	request := DatabaseExecutionRequest{
 		Driver:           *driver,
 		DSN:              *dsn,
@@ -124,6 +123,9 @@ func runGenerateDBCommand(root string, args []string) error {
 		Force:            *force,
 		GenerateFrontend: frontend,
 		GeneratePolicy:   policy,
+	}
+	if err := request.Validate(); err != nil {
+		return err
 	}
 	switch mode {
 	case "preview":

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -150,6 +151,43 @@ func TestRunGenerateDBPreview(t *testing.T) {
 	}
 }
 
+func TestRunGenerateDBGenerate(t *testing.T) {
+	root := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "codegen.db")
+	db := openCLIIntegrationSQLiteDB(t, dbPath)
+	if err := db.Exec(`CREATE TABLE books (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL
+	);`).Error; err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	if err := Run(root, []string{
+		"generate",
+		"db",
+		"generate",
+		"--driver", "sqlite",
+		"--dsn", dbPath,
+		"--database", "codegen",
+		"--table", "books",
+	}); err != nil {
+		t.Fatalf("Run(generate db generate) returned error: %v", err)
+	}
+
+	assertFileExists(t, filepath.Join(root, "backend", "modules", "book", "module.go"))
+	assertFileExists(t, filepath.Join(root, "web", "src", "views", "book", "index.vue"))
+	assertFileContains(t, filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv"), "p, admin, /api/v1/books, GET")
+}
+
+func TestRunGenerateDBValidation(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	if err := Run(root, []string{"generate", "db", "preview", "--dsn", "sqlite.db", "--database", "codegen"}); err == nil || !strings.Contains(err.Error(), "database driver is required") {
+		t.Fatalf("Run(generate db preview) validation error = %v, want database driver is required", err)
+	}
+}
+
 func TestExecuteDatabaseDocumentDryRunReport(t *testing.T) {
 	t.Parallel()
 
@@ -198,12 +236,45 @@ func TestExecuteDatabaseDocumentDryRunReport(t *testing.T) {
 	if len(resource.Permissions) == 0 {
 		t.Fatal("expected permission items in preview report")
 	}
-	if len(resource.Files) == 0 {
+	if len(report.Files) == 0 {
 		t.Fatal("expected file plan entries in preview report")
+	}
+	if report.Audit.RecordedAt == "" {
+		t.Fatal("expected audit record timestamp")
+	}
+	if len(report.Audit.Steps) == 0 {
+		t.Fatal("expected audit steps")
+	}
+	if report.Audit.Output.FileCount != len(report.Files) {
+		t.Fatalf("audit file count = %d, want %d", report.Audit.Output.FileCount, len(report.Files))
+	}
+	if report.Audit.Output.ConflictCount != len(report.Conflicts) {
+		t.Fatalf("audit conflict count = %d, want %d", report.Audit.Output.ConflictCount, len(report.Conflicts))
+	}
+	if got := report.Audit.Input.Driver; got != "sqlite" {
+		t.Fatalf("audit input driver = %q, want sqlite", got)
+	}
+	if got := report.Audit.Input.Database; got != "codegen" {
+		t.Fatalf("audit input database = %q, want codegen", got)
+	}
+	if report.Audit.Input.DryRun != true {
+		t.Fatal("expected audit dry-run input")
+	}
+	if secret := dbPath; strings.Contains(mustJSON(t, report), secret) {
+		t.Fatalf("report leaked DSN/path %q in JSON: %s", secret, mustJSON(t, report))
 	}
 	if _, err := os.Stat(filepath.Join(root, "backend", "modules", "book", "module.go")); !os.IsNotExist(err) {
 		t.Fatalf("dry-run should not create output files, got err=%v", err)
 	}
+}
+
+func mustJSON(t *testing.T, value any) string {
+	t.Helper()
+	data, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal json: %v", err)
+	}
+	return string(data)
 }
 
 func assertFileContains(t *testing.T, path string, want string) {

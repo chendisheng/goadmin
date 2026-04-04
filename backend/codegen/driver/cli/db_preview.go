@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	modelpkg "goadmin/codegen/model"
 	irmodel "goadmin/codegen/model/ir"
@@ -116,6 +117,38 @@ type DatabasePreviewConflict struct {
 	Reason   string `json:"reason"`
 }
 
+type DatabaseAuditInput struct {
+	ProjectRoot      string   `json:"project_root,omitempty"`
+	Driver           string   `json:"driver"`
+	Database         string   `json:"database"`
+	Schema           string   `json:"schema,omitempty"`
+	Tables           []string `json:"tables,omitempty"`
+	Force            bool     `json:"force,omitempty"`
+	GenerateFrontend bool     `json:"generate_frontend,omitempty"`
+	GeneratePolicy   bool     `json:"generate_policy,omitempty"`
+	DryRun           bool     `json:"dry_run"`
+}
+
+type DatabaseAuditStep struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	Detail string `json:"detail,omitempty"`
+}
+
+type DatabaseAuditOutput struct {
+	Files         []DatabasePreviewFile     `json:"files,omitempty"`
+	Conflicts     []DatabasePreviewConflict `json:"conflicts,omitempty"`
+	FileCount     int                       `json:"file_count"`
+	ConflictCount int                       `json:"conflict_count"`
+}
+
+type DatabaseAuditRecord struct {
+	RecordedAt string              `json:"recorded_at"`
+	Input      DatabaseAuditInput  `json:"input"`
+	Steps      []DatabaseAuditStep `json:"steps,omitempty"`
+	Output     DatabaseAuditOutput `json:"output"`
+}
+
 type DatabasePreviewResource struct {
 	TableName   string                      `json:"table_name,omitempty"`
 	Kind        string                      `json:"kind,omitempty"`
@@ -141,6 +174,7 @@ type DatabasePreviewReport struct {
 	Resources []DatabasePreviewResource `json:"resources,omitempty"`
 	Files     []DatabasePreviewFile     `json:"files,omitempty"`
 	Conflicts []DatabasePreviewConflict `json:"conflicts,omitempty"`
+	Audit     DatabaseAuditRecord       `json:"audit,omitempty"`
 }
 
 func BuildDatabasePreviewReport(root string, req DatabaseExecutionRequest, irDoc irmodel.Document, schemaDoc schema.Document, plan modelpkg.Plan, dryRun bool) (DatabasePreviewReport, error) {
@@ -185,7 +219,54 @@ func BuildDatabasePreviewReport(root string, req DatabaseExecutionRequest, irDoc
 	}
 	report.Files = sortDatabasePreviewFiles(report.Files)
 	report.Conflicts = sortDatabasePreviewConflicts(report.Conflicts)
+	report.Audit = buildDatabaseAuditRecord(root, req, dryRun, report.Files, report.Conflicts, len(irDoc.Resources), len(plan.Resources), len(report.Resources))
 	return report, nil
+}
+
+func buildDatabaseAuditRecord(root string, req DatabaseExecutionRequest, dryRun bool, files []DatabasePreviewFile, conflicts []DatabasePreviewConflict, irCount int, planCount int, resourceCount int) DatabaseAuditRecord {
+	steps := []DatabaseAuditStep{
+		{
+			Name:   "inspect-database",
+			Status: "ok",
+			Detail: fmt.Sprintf("driver=%s database=%s schema=%s tables=%d", strings.TrimSpace(req.Driver), strings.TrimSpace(req.Database), strings.TrimSpace(req.Schema), len(req.Tables)),
+		},
+		{
+			Name:   "build-ir",
+			Status: "ok",
+			Detail: fmt.Sprintf("resources=%d", irCount),
+		},
+		{
+			Name:   "plan-schema",
+			Status: "ok",
+			Detail: fmt.Sprintf("planned=%d", planCount),
+		},
+	}
+	if dryRun {
+		steps = append(steps, DatabaseAuditStep{Name: "preview-output", Status: "ok", Detail: fmt.Sprintf("dry-run resources=%d", resourceCount)})
+	} else {
+		steps = append(steps, DatabaseAuditStep{Name: "write-output", Status: "ok", Detail: fmt.Sprintf("generated resources=%d", resourceCount)})
+	}
+	return DatabaseAuditRecord{
+		RecordedAt: time.Now().UTC().Format(time.RFC3339Nano),
+		Input: DatabaseAuditInput{
+			ProjectRoot:      strings.TrimSpace(root),
+			Driver:           strings.TrimSpace(req.Driver),
+			Database:         strings.TrimSpace(req.Database),
+			Schema:           strings.TrimSpace(req.Schema),
+			Tables:           append([]string(nil), req.Tables...),
+			Force:            req.Force,
+			GenerateFrontend: req.GenerateFrontend != nil && *req.GenerateFrontend,
+			GeneratePolicy:   req.GeneratePolicy != nil && *req.GeneratePolicy,
+			DryRun:           dryRun,
+		},
+		Steps: steps,
+		Output: DatabaseAuditOutput{
+			Files:         append([]DatabasePreviewFile(nil), files...),
+			Conflicts:     append([]DatabasePreviewConflict(nil), conflicts...),
+			FileCount:     len(files),
+			ConflictCount: len(conflicts),
+		},
+	}
 }
 
 func toDatabasePreviewPlanResource(resource modelpkg.Resource) DatabasePreviewPlanResource {
@@ -590,6 +671,30 @@ func previewDatabaseReportText(report DatabasePreviewReport) string {
 		builder.WriteString(" [dry-run]")
 	}
 	builder.WriteString("\n")
+	if report.Audit.RecordedAt != "" {
+		builder.WriteString("audit:\n")
+		builder.WriteString("  recorded_at: ")
+		builder.WriteString(report.Audit.RecordedAt)
+		builder.WriteString("\n")
+		if report.Audit.Input.ProjectRoot != "" {
+			builder.WriteString("  project_root: ")
+			builder.WriteString(report.Audit.Input.ProjectRoot)
+			builder.WriteString("\n")
+		}
+		builder.WriteString(fmt.Sprintf("  input: driver=%s database=%s schema=%s force=%t frontend=%t policy=%t dry_run=%t\n", report.Audit.Input.Driver, report.Audit.Input.Database, report.Audit.Input.Schema, report.Audit.Input.Force, report.Audit.Input.GenerateFrontend, report.Audit.Input.GeneratePolicy, report.Audit.Input.DryRun))
+		if len(report.Audit.Input.Tables) > 0 {
+			builder.WriteString("  tables: ")
+			builder.WriteString(strings.Join(report.Audit.Input.Tables, ", "))
+			builder.WriteString("\n")
+		}
+		if len(report.Audit.Steps) > 0 {
+			builder.WriteString("  steps:\n")
+			for _, step := range report.Audit.Steps {
+				builder.WriteString(fmt.Sprintf("    - %s [%s] %s\n", step.Name, step.Status, step.Detail))
+			}
+		}
+		builder.WriteString(fmt.Sprintf("  outputs: files=%d conflicts=%d\n", report.Audit.Output.FileCount, report.Audit.Output.ConflictCount))
+	}
 	if len(report.Messages) > 0 {
 		builder.WriteString("messages:\n")
 		for _, msg := range report.Messages {

@@ -52,6 +52,19 @@ type DatabaseRequest struct {
 	GeneratePolicy   *bool    `json:"generate_policy,omitempty"`
 }
 
+func (req DatabaseRequest) toExecutionRequest() codegencli.DatabaseExecutionRequest {
+	return codegencli.DatabaseExecutionRequest{
+		Driver:           req.Driver,
+		DSN:              req.DSN,
+		Database:         req.Database,
+		Schema:           req.Schema,
+		Tables:           append([]string(nil), req.Tables...),
+		Force:            req.Force,
+		GenerateFrontend: req.GenerateFrontend,
+		GeneratePolicy:   req.GeneratePolicy,
+	}
+}
+
 func NewHandler(deps Dependencies) *Handler {
 	var downloads *downloadapp.Service
 	if deps.ArtifactEnabled {
@@ -163,28 +176,12 @@ func (h *Handler) generateDatabase(c coretransport.Context, dryRun bool) {
 		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "invalid request body"))
 		return
 	}
-	if strings.TrimSpace(req.Driver) == "" {
-		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "driver is required"))
+	executionReq := req.toExecutionRequest()
+	if err := executionReq.Validate(); err != nil {
+		h.writeError(c, err)
 		return
 	}
-	if strings.TrimSpace(req.DSN) == "" {
-		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "dsn is required"))
-		return
-	}
-	if strings.TrimSpace(req.Database) == "" {
-		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "database is required"))
-		return
-	}
-	report, err := codegencli.ExecuteDatabaseDocument(h.projectRoot, h.dbgen, codegencli.DatabaseExecutionRequest{
-		Driver:           req.Driver,
-		DSN:              req.DSN,
-		Database:         req.Database,
-		Schema:           req.Schema,
-		Tables:           append([]string(nil), req.Tables...),
-		Force:            req.Force,
-		GenerateFrontend: req.GenerateFrontend,
-		GeneratePolicy:   req.GeneratePolicy,
-	}, dryRun)
+	report, err := codegencli.ExecuteDatabaseDocument(h.projectRoot, h.dbgen, executionReq, dryRun)
 	if err != nil {
 		h.writeError(c, err)
 		return

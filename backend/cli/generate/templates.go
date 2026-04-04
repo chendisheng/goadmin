@@ -164,8 +164,8 @@ const gormRepositoryTemplate = `package repo
 import (
 	"context"
 	"fmt"
+	{{if .NeedsStringsImport}}"strings"{{end}}
 {{if .NeedsPrimaryIDGeneration}}
-	"strings"
 	"time"
 {{end}}
 
@@ -197,12 +197,14 @@ func (r *GormRepository) List(ctx context.Context, keyword string, page int, pag
 		return nil, 0, fmt.Errorf("{{.EntityLower}} gorm repository is not configured")
 	}
 	base := r.db.WithContext(ctx).Model(&model.{{.Entity}}{})
+	{{.SearchFilterBlock}}
 	var total int64
 	if err := base.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
+	page, pageSize = normalizePage(page, pageSize)
 	var items []model.{{.Entity}}
-	if err := base.Find(&items).Error; err != nil {
+	if err := base.Order("updated_at DESC, created_at DESC, id ASC").Limit(pageSize).Offset((page - 1) * pageSize).Find(&items).Error; err != nil {
 		return nil, 0, err
 	}
 	return items, total, nil
@@ -265,6 +267,16 @@ func nextRecordID(prefix string) string {
 	return fmt.Sprintf("%s-%d", prefix, time.Now().UTC().UnixNano())
 }
 {{end}}
+
+func normalizePage(page, pageSize int) (int, int) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	return page, pageSize
+}
 `
 
 const requestTemplate = `package request

@@ -155,6 +155,13 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	assertFileContains(t, modelPath, "Tags")
 	assertFileContains(t, modelPath, "[]string")
 	assertFileContains(t, modelPath, "append([]string(nil), m.Tags...)")
+	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;size:64"`)
+
+	repoPath := filepath.Join(root, "backend", "modules", "article", "infrastructure", "repo", "gorm.go")
+	assertFileContains(t, repoPath, "LOWER(name) LIKE ?")
+	assertFileContains(t, repoPath, "normalizePage(page, pageSize)")
+	assertFileContains(t, repoPath, "Order(\"updated_at DESC, created_at DESC, id ASC\")")
+	assertFileContains(t, repoPath, "strings.TrimSpace(strings.ToLower(keyword))")
 	assertFileContains(t, requestPath, "Name")
 	assertFileContains(t, requestPath, `json:"name,omitempty"`)
 	assertFileContains(t, requestPath, `form:"name"`)

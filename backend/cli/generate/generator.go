@@ -234,6 +234,53 @@ func (d scaffoldData) FormFields() []Field {
 	return nonPrimaryFields(d.Fields)
 }
 
+func (d scaffoldData) SearchFields() []Field {
+	result := make([]Field, 0, len(d.Fields))
+	for _, field := range d.Fields {
+		if field.Primary {
+			continue
+		}
+		if field.GoType != "string" {
+			continue
+		}
+		result = append(result, field)
+	}
+	return result
+}
+
+func (d scaffoldData) NeedsStringsImport() bool {
+	return d.NeedsPrimaryIDGeneration() || len(d.SearchFields()) > 0
+}
+
+func (d scaffoldData) SearchFilterBlock() string {
+	fields := d.SearchFields()
+	if len(fields) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("\tif kw := strings.TrimSpace(strings.ToLower(keyword)); kw != \"\" {\n")
+	builder.WriteString("\t\tlike := \"%\" + kw + \"%\"\n")
+	builder.WriteString("\t\tbase = base.Where(\n")
+	builder.WriteString("\t\t\t\"")
+	for i, field := range fields {
+		if i > 0 {
+			builder.WriteString(" OR ")
+		}
+		builder.WriteString("LOWER(")
+		builder.WriteString(field.Column)
+		builder.WriteString(") LIKE ?")
+	}
+	builder.WriteString("\",\n")
+	for range fields {
+		builder.WriteString("\t\t\tlike")
+		builder.WriteString(",")
+		builder.WriteString("\n")
+	}
+	builder.WriteString("\t\t)\n")
+	builder.WriteString("\t}\n")
+	return builder.String()
+}
+
 type manifestRenderData struct {
 	Name                string
 	Module              string

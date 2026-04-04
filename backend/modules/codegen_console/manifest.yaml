@@ -1,0 +1,60 @@
+# codegen:begin
+name: codegen_console
+version: v1
+kind: business-module
+module: codegen_console
+dependencies:
+  - core/auth/bootstrap
+  - core/auth/casbin
+routes:
+  - method: GET
+    path: /api/v1/codegen-consoles
+  - method: GET
+    path: /api/v1/codegen-consoles/:id
+  - method: POST
+    path: /api/v1/codegen-consoles
+  - method: PUT
+    path: /api/v1/codegen-consoles/:id
+  - method: DELETE
+    path: /api/v1/codegen-consoles/:id
+menus:
+  - name: Codegen
+    path: /codegen
+    component: Layout
+    icon: menu
+    permission: codegen:view
+    type: directory
+    redirect: /system/codegen
+    visible: true
+    enabled: true
+    sort: 1
+  - name: console
+    path: /system/codegen
+    component: system/codegen/index
+    icon: menu
+    permission: codegen:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 2
+permissions:
+  - object: codegen-console
+    action: list
+    description: List CodegenConsole
+  - object: codegen-console
+    action: view
+    description: View CodegenConsole
+  - object: codegen-console
+    action: create
+    description: Create CodegenConsole
+  - object: codegen-console
+    action: update
+    description: Update CodegenConsole
+  - object: codegen-console
+    action: delete
+    description: Delete CodegenConsole
+capabilities:
+  - basic-crud
+  - policy-generated
+  - frontend-generated
+# codegen:end

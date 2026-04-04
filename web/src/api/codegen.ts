@@ -31,6 +31,156 @@ export interface CodegenDslExecutionReport {
   items: CodegenDslPreviewItem[];
 }
 
+export interface CodegenDatabaseRequest {
+  driver: string;
+  dsn: string;
+  database: string;
+  schema?: string;
+  tables?: string[];
+  force?: boolean;
+  generate_frontend?: boolean;
+  generate_policy?: boolean;
+}
+
+export interface CodegenDatabasePreviewSource {
+  driver: string;
+  database: string;
+  schema?: string;
+}
+
+export interface CodegenDatabasePreviewPlanField {
+  name: string;
+  type: string;
+  primary: boolean;
+  index: boolean;
+  unique: boolean;
+}
+
+export interface CodegenDatabasePreviewPlanResource {
+  kind: string;
+  name: string;
+  generate_frontend: boolean;
+  generate_policy: boolean;
+  force: boolean;
+  fields: CodegenDatabasePreviewPlanField[];
+}
+
+export interface CodegenDatabasePreviewPlan {
+  messages: string[];
+  resources: CodegenDatabasePreviewPlanResource[];
+}
+
+export interface CodegenDatabasePreviewField {
+  name: string;
+  column_name: string;
+  semantic_type: string;
+  ui_type: string;
+  required: boolean;
+  editable: boolean;
+  sortable: boolean;
+}
+
+export interface CodegenDatabasePreviewRelation {
+  field: string;
+  ref_table: string;
+  ref_field: string;
+  type: string;
+  cardinality: string;
+}
+
+export interface CodegenDatabasePreviewPage {
+  title: string;
+  path: string;
+  component: string;
+  permission: string;
+}
+
+export interface CodegenDatabasePreviewPermission {
+  resource: string;
+  action: string;
+  name: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface CodegenDatabasePreviewRoute {
+  method: string;
+  path: string;
+  policy: string;
+}
+
+export interface CodegenDatabasePreviewFile {
+  path: string;
+  action: string;
+  kind: string;
+  exists?: boolean;
+  conflict?: boolean;
+}
+
+export interface CodegenDatabasePreviewConflict {
+  path: string;
+  resource?: string;
+  reason: string;
+}
+
+export interface CodegenDatabasePreviewResource {
+  table_name: string;
+  kind: string;
+  name: string;
+  module: string;
+  entity_name: string;
+  fields: CodegenDatabasePreviewField[];
+  relations: CodegenDatabasePreviewRelation[];
+  pages: CodegenDatabasePreviewPage[];
+  permissions: CodegenDatabasePreviewPermission[];
+  routes: CodegenDatabasePreviewRoute[];
+  actions: string[];
+  files: CodegenDatabasePreviewFile[];
+  conflicts: CodegenDatabasePreviewConflict[];
+}
+
+export interface CodegenDatabaseAuditInput {
+  project_root?: string;
+  driver: string;
+  database: string;
+  schema?: string;
+  tables?: string[];
+  force?: boolean;
+  generate_frontend?: boolean;
+  generate_policy?: boolean;
+  dry_run: boolean;
+}
+
+export interface CodegenDatabaseAuditStep {
+  name: string;
+  status: string;
+  detail?: string;
+}
+
+export interface CodegenDatabaseAuditOutput {
+  files: CodegenDatabasePreviewFile[];
+  conflicts: CodegenDatabasePreviewConflict[];
+  file_count: number;
+  conflict_count: number;
+}
+
+export interface CodegenDatabaseAuditRecord {
+  recorded_at: string;
+  input: CodegenDatabaseAuditInput;
+  steps: CodegenDatabaseAuditStep[];
+  output: CodegenDatabaseAuditOutput;
+}
+
+export interface CodegenDatabasePreviewReport {
+  dry_run: boolean;
+  source: CodegenDatabasePreviewSource;
+  messages: string[];
+  planner: CodegenDatabasePreviewPlan;
+  resources: CodegenDatabasePreviewResource[];
+  files: CodegenDatabasePreviewFile[];
+  conflicts: CodegenDatabasePreviewConflict[];
+  audit: CodegenDatabaseAuditRecord;
+}
+
 export interface CodegenArtifactInfo {
   task_id: string;
   download_url: string;
@@ -50,6 +200,14 @@ export function generateCodegenDsl(payload: CodegenDslRequest) {
 
 export function generateDownloadCodegenDsl(payload: CodegenDslDownloadRequest) {
   return http.post<CodegenArtifactInfo>('/codegen/dsl/generate-download', payload);
+}
+
+export function previewCodegenDatabase(payload: CodegenDatabaseRequest) {
+  return http.post<CodegenDatabasePreviewReport>('/codegen/db/preview', payload);
+}
+
+export function generateCodegenDatabase(payload: CodegenDatabaseRequest) {
+  return http.post<CodegenDatabasePreviewReport>('/codegen/db/generate', payload);
 }
 
 export async function downloadCodegenArtifact(downloadUrl: string, fallbackFilename?: string) {

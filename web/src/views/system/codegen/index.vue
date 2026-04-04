@@ -7,44 +7,168 @@
             <div class="card-header">
               <div>
                 <div class="title">CodeGen Console</div>
-                <div class="subtitle">上传 DSL、预览 dry-run，并支持服务端生成后下载代码包。</div>
+                <div class="subtitle">在同一页面中切换 DSL 与 DB 输入模式，复用统一结果区。</div>
               </div>
               <el-space wrap>
-                <el-button @click="loadSample">载入示例</el-button>
-                <el-button @click="clearDsl">清空</el-button>
-                <el-button @click="triggerFileSelect">上传 DSL</el-button>
-                <el-button type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
-                <el-button type="success" :loading="generateLoading" @click="handleGenerate">一键生成</el-button>
-                <el-button type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
+                <el-button v-if="activeMode === 'dsl'" @click="loadSample">载入示例</el-button>
+                <el-button v-else @click="loadDbSample">载入示例</el-button>
+                <el-button @click="clearCurrentInputs">清空</el-button>
+                <el-button v-if="activeMode === 'dsl'" @click="triggerFileSelect">上传 DSL</el-button>
+                <el-button v-if="activeMode === 'dsl'" type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
+                <el-button v-if="activeMode === 'dsl'" type="success" :loading="generateLoading" @click="handleGenerate">一键生成</el-button>
+                <el-button v-if="activeMode === 'dsl'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
+                <el-button v-if="activeMode === 'db'" type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
+                <el-button v-if="activeMode === 'db'" type="success" :loading="generateLoading" @click="handleGenerate">一键生成</el-button>
               </el-space>
             </div>
           </template>
 
-          <el-form label-position="top" class="codegen-form">
-            <el-form-item label="Force overwrite">
-              <el-switch v-model="force" inline-prompt active-text="On" inactive-text="Off" />
-            </el-form-item>
-            <el-form-item label="下载包名称">
-              <el-input v-model="packageName" placeholder="留空则由系统自动生成 zip 名称" />
-            </el-form-item>
-            <el-form-item label="下载包内容">
-              <el-space wrap>
-                <el-switch v-model="includeReadme" inline-prompt active-text="README" inactive-text="README" />
-                <el-switch v-model="includeReport" inline-prompt active-text="Report" inactive-text="Report" />
-                <el-switch v-model="includeDsl" inline-prompt active-text="DSL" inactive-text="DSL" />
-              </el-space>
-            </el-form-item>
-            <el-form-item label="DSL 内容">
-              <el-input
-                v-model="dslText"
-                type="textarea"
-                :rows="28"
-                resize="none"
-                placeholder="在这里粘贴或编辑 DSL YAML"
-              />
-            </el-form-item>
-          </el-form>
-          <input ref="fileInputRef" class="hidden-file-input" type="file" accept=".yaml,.yml,.json,.txt" @change="handleFileChange" />
+          <el-tabs v-model="activeMode" class="codegen-tabs" stretch>
+            <el-tab-pane label="DSL" name="dsl">
+              <el-form label-position="top" class="codegen-form">
+                <el-form-item label="Force overwrite">
+                  <el-switch v-model="force" inline-prompt active-text="On" inactive-text="Off" />
+                </el-form-item>
+                <el-form-item label="下载包名称">
+                  <el-input v-model="packageName" placeholder="留空则由系统自动生成 zip 名称" />
+                </el-form-item>
+                <el-form-item label="下载包内容">
+                  <el-space wrap>
+                    <el-switch v-model="includeReadme" inline-prompt active-text="README" inactive-text="README" />
+                    <el-switch v-model="includeReport" inline-prompt active-text="Report" inactive-text="Report" />
+                    <el-switch v-model="includeDsl" inline-prompt active-text="DSL" inactive-text="DSL" />
+                  </el-space>
+                </el-form-item>
+                <el-form-item label="DSL 内容">
+                  <el-input
+                    v-model="dslText"
+                    type="textarea"
+                    :rows="28"
+                    resize="none"
+                    placeholder="在这里粘贴或编辑 DSL YAML"
+                  />
+                </el-form-item>
+              </el-form>
+              <input ref="fileInputRef" class="hidden-file-input" type="file" accept=".yaml,.yml,.json,.txt" @change="handleFileChange" />
+            </el-tab-pane>
+
+            <el-tab-pane label="DB" name="db">
+              <div class="db-mode-panel">
+                <div class="db-hero">
+                  <div>
+                    <div class="db-hero-title">数据库输入向导</div>
+                    <div class="db-hero-subtitle">先选驱动，再填连接串与扫描范围。建议先预览，确认结果后再生成。</div>
+                  </div>
+                  <el-space wrap>
+                    <el-tag type="info" effect="light">{{ dbDriverLabel }}</el-tag>
+                    <el-tag type="success" effect="light">{{ dbParsedTables.length ? `${dbParsedTables.length} 个表` : '全部表' }}</el-tag>
+                  </el-space>
+                </div>
+
+                <el-alert
+                  title="推荐先执行 Dry-run 预览，确认文件计划和冲突后再执行生成。"
+                  type="info"
+                  :closable="false"
+                  show-icon
+                />
+
+                <div class="db-preset-row">
+                  <div>
+                    <div class="db-section-title">快速模板</div>
+                    <div class="db-section-hint">一键预填常见数据库的连接格式。</div>
+                  </div>
+                  <el-space wrap>
+                    <el-button size="small" :type="dbDriver === 'mysql' ? 'primary' : 'default'" plain @click="applyDbPreset('mysql')">MySQL</el-button>
+                    <el-button size="small" :type="dbDriver === 'postgres' ? 'primary' : 'default'" plain @click="applyDbPreset('postgres')">PostgreSQL</el-button>
+                    <el-button size="small" :type="dbDriver === 'sqlite' ? 'primary' : 'default'" plain @click="applyDbPreset('sqlite')">SQLite</el-button>
+                  </el-space>
+                </div>
+
+                <el-form label-position="top" class="codegen-form db-form">
+                  <el-row :gutter="16">
+                    <el-col :xs="24" :md="8">
+                      <el-form-item label="数据库驱动">
+                        <el-select v-model="dbDriver" placeholder="请选择数据库驱动" filterable>
+                          <el-option label="MySQL" value="mysql" />
+                          <el-option label="PostgreSQL" value="postgres" />
+                          <el-option label="SQLite" value="sqlite" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :xs="24" :md="8">
+                      <el-form-item label="数据库名">
+                        <el-input v-model="dbDatabase" placeholder="请输入数据库名称" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :xs="24" :md="8">
+                      <el-form-item label="Schema">
+                        <el-input v-model="dbSchema" placeholder="可选，PostgreSQL 等场景使用" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+
+                  <el-form-item label="DSN" class="db-form-item">
+                    <el-input
+                      v-model="dbDsn"
+                      type="password"
+                      show-password
+                      placeholder="请输入数据库连接串"
+                    >
+                      <template #append>
+                        <el-button text @click="dbDsn = ''">清空</el-button>
+                      </template>
+                    </el-input>
+                    <div class="db-field-help">
+                      <span>连接串仅用于当前页面请求，不会在结果区明文回显。</span>
+                    </div>
+                  </el-form-item>
+
+                  <el-form-item label="表名范围" class="db-form-item db-form-item--wide">
+                    <el-input
+                      v-model="dbTablesText"
+                      type="textarea"
+                      :rows="6"
+                      resize="none"
+                      placeholder="支持逗号、换行分隔，例如：books, orders"
+                    />
+                    <div class="db-form-row">
+                      <span class="db-field-help">留空则表示扫描全部表；建议优先预填少量表进行预览。</span>
+                      <el-space wrap>
+                        <el-button text size="small" @click="loadDbSample">载入示例</el-button>
+                        <el-button text size="small" @click="clearDbTables">清空范围</el-button>
+                      </el-space>
+                    </div>
+                    <div v-if="dbParsedTables.length" class="db-table-chip-list">
+                      <el-tag
+                        v-for="table in dbParsedTables"
+                        :key="table"
+                        size="small"
+                        effect="plain"
+                        class="db-table-chip"
+                      >
+                        {{ table }}
+                      </el-tag>
+                    </div>
+                  </el-form-item>
+
+                  <div class="db-advanced">
+                    <div class="db-section-header">
+                      <div>
+                        <div class="db-section-title">生成选项</div>
+                        <div class="db-section-hint">控制是否覆盖现有文件、是否输出前端和权限策略。</div>
+                      </div>
+                      <el-tag size="small" type="success" effect="light">{{ dbOptionSummary }}</el-tag>
+                    </div>
+                    <el-space wrap>
+                      <el-switch v-model="dbForce" inline-prompt active-text="Force" inactive-text="Force" />
+                      <el-switch v-model="dbGenerateFrontend" inline-prompt active-text="Frontend" inactive-text="Frontend" />
+                      <el-switch v-model="dbGeneratePolicy" inline-prompt active-text="Policy" inactive-text="Policy" />
+                    </el-space>
+                  </div>
+                </el-form>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
         </el-card>
       </el-col>
 
@@ -75,11 +199,11 @@
                 <el-table-column prop="kind" label="Kind" min-width="130" show-overflow-tooltip />
                 <el-table-column prop="name" label="Name" min-width="160" show-overflow-tooltip />
                 <el-table-column label="Force" width="88">
-                <template #default="scope">
-                  <el-tag :type="scope.row.force ? 'warning' : 'info'" effect="light">
-                    {{ scope.row.force ? 'Yes' : 'No' }}
-                  </el-tag>
-                </template>
+                  <template #default="scope">
+                    <el-tag :type="scope.row.force ? 'warning' : 'info'" effect="light">
+                      {{ scope.row.force ? 'Yes' : 'No' }}
+                    </el-tag>
+                  </template>
                 </el-table-column>
                 <el-table-column label="Actions" min-width="280">
                   <template #default="scope">
@@ -100,6 +224,107 @@
             </div>
           </el-card>
 
+          <el-card v-if="activeMode === 'db'" shadow="never" class="codegen-card">
+            <template #header>
+              <div class="card-header compact">
+                <div>
+                  <div class="title">文件计划</div>
+                  <div class="subtitle">显示数据库预览阶段推导出的文件清单。</div>
+                </div>
+              </div>
+            </template>
+
+            <el-empty v-if="!filePlans.length" description="暂无文件计划" />
+            <el-table v-else :data="filePlans" size="small" border class="preview-table">
+              <el-table-column prop="path" label="Path" min-width="220" show-overflow-tooltip />
+              <el-table-column prop="action" label="Action" width="120" />
+              <el-table-column prop="kind" label="Kind" width="140" show-overflow-tooltip />
+              <el-table-column label="Exists" width="88">
+                <template #default="scope">
+                  <el-tag :type="scope.row.exists ? 'warning' : 'success'" effect="light">
+                    {{ scope.row.exists ? 'Yes' : 'No' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="Conflict" width="96">
+                <template #default="scope">
+                  <el-tag :type="scope.row.conflict ? 'danger' : 'success'" effect="light">
+                    {{ scope.row.conflict ? 'Yes' : 'No' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+
+          <el-card v-if="activeMode === 'db'" shadow="never" class="codegen-card">
+            <template #header>
+              <div class="card-header compact">
+                <div>
+                  <div class="title">冲突</div>
+                  <div class="subtitle">展示文件覆盖风险与路径冲突信息。</div>
+                </div>
+              </div>
+            </template>
+
+            <el-empty v-if="!conflicts.length" description="暂无冲突" />
+            <el-table v-else :data="conflicts" size="small" border class="preview-table">
+              <el-table-column prop="path" label="Path" min-width="220" show-overflow-tooltip />
+              <el-table-column prop="resource" label="Resource" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="reason" label="Reason" min-width="260" show-overflow-tooltip />
+            </el-table>
+          </el-card>
+
+          <el-card v-if="activeMode === 'db'" shadow="never" class="codegen-card">
+            <template #header>
+              <div class="card-header compact">
+                <div>
+                  <div class="title">审计</div>
+                  <div class="subtitle">记录输入、执行步骤与输出统计。</div>
+                </div>
+              </div>
+            </template>
+
+            <el-empty v-if="!auditRecord" description="暂无审计记录" />
+            <div v-else class="artifact-panel">
+              <div class="artifact-summary-grid">
+                <div class="artifact-summary-card">
+                  <span class="artifact-summary-label">记录时间</span>
+                  <span class="artifact-summary-value">{{ formatDateTime(auditRecord.recorded_at) }}</span>
+                  <span class="artifact-summary-meta">{{ auditRecord.recorded_at }}</span>
+                </div>
+                <div class="artifact-summary-card">
+                  <span class="artifact-summary-label">输入</span>
+                  <span class="artifact-summary-value">{{ auditRecord.input.driver }} / {{ auditRecord.input.database }}</span>
+                  <span class="artifact-summary-meta">dry-run: {{ auditRecord.input.dry_run ? 'yes' : 'no' }}</span>
+                </div>
+                <div class="artifact-summary-card">
+                  <span class="artifact-summary-label">输出文件</span>
+                  <span class="artifact-summary-value">{{ auditRecord.output.file_count }}</span>
+                  <span class="artifact-summary-meta">冲突：{{ auditRecord.output.conflict_count }}</span>
+                </div>
+                <div class="artifact-summary-card">
+                  <span class="artifact-summary-label">表范围</span>
+                  <span class="artifact-summary-value">{{ auditRecord.input.tables?.length ?? 0 }}</span>
+                  <span class="artifact-summary-meta">{{ (auditRecord.input.tables ?? []).join(', ') || '全部表' }}</span>
+                </div>
+              </div>
+              <div class="artifact-grid artifact-grid--compact">
+                <div class="artifact-item artifact-item--wide">
+                  <span class="artifact-label">执行步骤</span>
+                  <ul class="message-list compact-list">
+                    <li v-for="step in auditRecord.steps" :key="step.name">
+                      {{ step.name }} [{{ step.status }}]{{ step.detail ? ` - ${step.detail}` : '' }}
+                    </li>
+                  </ul>
+                </div>
+                <div class="artifact-item artifact-item--wide">
+                  <span class="artifact-label">输出概览</span>
+                  <span class="artifact-value">文件 {{ auditRecord.output.files.length }} · 冲突 {{ auditRecord.output.conflicts.length }}</span>
+                </div>
+              </div>
+            </div>
+          </el-card>
+
           <el-card shadow="never" class="codegen-card">
             <template #header>
               <div class="card-header compact">
@@ -116,7 +341,7 @@
             </ul>
           </el-card>
 
-          <el-card shadow="never" class="codegen-card">
+          <el-card v-if="activeMode === 'dsl'" shadow="never" class="codegen-card">
             <template #header>
               <div class="card-header compact artifact-header">
                 <div>
@@ -200,14 +425,30 @@ import { ElMessage } from 'element-plus';
 
 import {
   downloadCodegenArtifact,
+  generateCodegenDatabase,
   generateCodegenDsl,
   generateDownloadCodegenDsl,
+  previewCodegenDatabase,
   previewCodegenDsl,
   type CodegenArtifactInfo,
+  type CodegenDatabasePreviewReport,
+  type CodegenDatabasePreviewResource,
+  type CodegenDatabaseRequest,
   type CodegenDslExecutionReport,
-  type CodegenDslPreviewItem,
 } from '@/api/codegen';
 import { ApiError } from '@/api/types';
+
+type CodegenMode = 'dsl' | 'db';
+
+type PreviewRow = {
+  index: number;
+  kind: string;
+  name: string;
+  force: boolean;
+  actions: string[];
+};
+
+const activeMode = ref<CodegenMode>('dsl');
 
 const dslText = ref('');
 const force = ref(false);
@@ -215,10 +456,22 @@ const packageName = ref('');
 const includeReadme = ref(true);
 const includeReport = ref(true);
 const includeDsl = ref(true);
+
+const dbDriver = ref('mysql');
+const dbDsn = ref('');
+const dbDatabase = ref('');
+const dbSchema = ref('');
+const dbTablesText = ref('');
+const dbForce = ref(false);
+const dbGenerateFrontend = ref(true);
+const dbGeneratePolicy = ref(true);
+
 const previewLoading = ref(false);
 const generateLoading = ref(false);
 const downloadLoading = ref(false);
-const report = ref<CodegenDslExecutionReport | null>(null);
+
+const dslReport = ref<CodegenDslExecutionReport | null>(null);
+const dbReport = ref<CodegenDatabasePreviewReport | null>(null);
 const artifactInfo = ref<CodegenArtifactInfo | null>(null);
 const artifactForceExpired = ref(false);
 const lastDownloadAt = ref('');
@@ -236,8 +489,47 @@ const currentTime = ref(Date.now());
 let artifactTicker: ReturnType<typeof window.setInterval> | null = null;
 let copyFeedbackTimer: ReturnType<typeof window.setTimeout> | null = null;
 
-const previewItems = computed<CodegenDslPreviewItem[]>(() => report.value?.items ?? []);
-const messages = computed(() => report.value?.messages ?? []);
+const currentReport = computed(() => (activeMode.value === 'db' ? dbReport.value : dslReport.value));
+const dbParsedTables = computed(() => parseTableNames(dbTablesText.value));
+const dbDriverLabel = computed(() => {
+  const map: Record<string, string> = {
+    mysql: 'MySQL',
+    postgres: 'PostgreSQL',
+    sqlite: 'SQLite',
+  };
+  return map[dbDriver.value] || dbDriver.value || '未选择';
+});
+const dbOptionSummary = computed(() => {
+  const parts: string[] = [];
+  parts.push(dbForce.value ? '覆盖现有文件' : '安全覆盖关闭');
+  parts.push(dbGenerateFrontend.value ? '生成前端' : '跳过前端');
+  parts.push(dbGeneratePolicy.value ? '生成权限' : '跳过权限');
+  return parts.join(' · ');
+});
+
+const previewItems = computed<PreviewRow[]>(() => {
+  if (activeMode.value === 'db') {
+    return mapDatabaseResourcesToPreviewRows(dbReport.value?.resources ?? [], dbForce.value);
+  }
+  return (dslReport.value?.items ?? []).map((item) => ({
+    index: item.index,
+    kind: item.kind,
+    name: item.name,
+    force: item.force,
+    actions: item.actions,
+  }));
+});
+
+const messages = computed(() => {
+  const base = currentReport.value?.messages ?? [];
+  if (activeMode.value === 'db') {
+    return [...base, ...(dbReport.value?.planner.messages ?? [])];
+  }
+  return base;
+});
+const filePlans = computed(() => (activeMode.value === 'db' ? dbReport.value?.files ?? [] : []));
+const conflicts = computed(() => (activeMode.value === 'db' ? dbReport.value?.conflicts ?? [] : []));
+const auditRecord = computed(() => (activeMode.value === 'db' ? dbReport.value?.audit ?? null : null));
 const statusMessage = computed(() => {
   if (operationStatus.value) {
     return operationStatus.value;
@@ -377,6 +669,7 @@ onBeforeUnmount(() => {
 });
 
 function loadSample() {
+  activeMode.value = 'dsl';
   dslText.value = `version: v1
 module: codegen
 framework:
@@ -394,10 +687,55 @@ resources:
   ElMessage.success('示例 DSL 已载入');
 }
 
-function clearDsl() {
+function loadDbSample() {
+  activeMode.value = 'db';
+  applyDbPreset('sqlite');
+  dbDatabase.value = 'codegen';
+  dbSchema.value = '';
+  dbTablesText.value = 'books, orders';
+  dbForce.value = false;
+  dbGenerateFrontend.value = true;
+  dbGeneratePolicy.value = true;
+  ElMessage.success('示例数据库配置已载入');
+}
+
+function applyDbPreset(driver: 'mysql' | 'postgres' | 'sqlite') {
+  const presets: Record<'mysql' | 'postgres' | 'sqlite', { dsn: string; database: string; schema: string }> = {
+    mysql: {
+      dsn: 'root:password@tcp(127.0.0.1:3306)/goadmin?charset=utf8mb4&parseTime=True&loc=Local',
+      database: 'goadmin',
+      schema: '',
+    },
+    postgres: {
+      dsn: 'postgres://postgres:password@127.0.0.1:5432/goadmin?sslmode=disable',
+      database: 'goadmin',
+      schema: 'public',
+    },
+    sqlite: {
+      dsn: 'file:./tmp/codegen.db?cache=shared&mode=rwc',
+      database: 'codegen',
+      schema: '',
+    },
+  };
+  const preset = presets[driver];
+  dbDriver.value = driver;
+  dbDsn.value = preset.dsn;
+  dbDatabase.value = preset.database;
+  dbSchema.value = preset.schema;
+}
+
+function clearCurrentInputs() {
+  if (activeMode.value === 'db') {
+    clearDbInputs();
+    return;
+  }
+  clearDslInputs();
+}
+
+function clearDslInputs() {
   dslText.value = '';
   packageName.value = '';
-  report.value = null;
+  dslReport.value = null;
   artifactInfo.value = null;
   artifactForceExpired.value = false;
   lastDownloadAt.value = '';
@@ -407,6 +745,23 @@ function clearDsl() {
   lastDownloadDuration.value = 0;
   downloadStartAt.value = 0;
   resetCopyFeedback();
+  operationStatus.value = '';
+  lastRunSuccess.value = false;
+}
+
+function clearDbTables() {
+  dbTablesText.value = '';
+}
+
+function clearDbInputs() {
+  dbDsn.value = '';
+  dbDatabase.value = '';
+  dbSchema.value = '';
+  dbTablesText.value = '';
+  dbForce.value = false;
+  dbGenerateFrontend.value = true;
+  dbGeneratePolicy.value = true;
+  dbReport.value = null;
   operationStatus.value = '';
   lastRunSuccess.value = false;
 }
@@ -435,15 +790,29 @@ async function handleFileChange(event: Event) {
 }
 
 async function handlePreview() {
-  if (!dslText.value.trim()) {
-    ElMessage.warning('请先填写 DSL 内容');
-    return;
+  if (activeMode.value === 'db') {
+    const validationError = validateDatabaseInputs();
+    if (validationError) {
+      ElMessage.warning(validationError);
+      return;
+    }
   }
   previewLoading.value = true;
   operationStatus.value = '';
   lastRunSuccess.value = false;
   try {
-    report.value = await previewCodegenDsl({ dsl: dslText.value, force: force.value });
+    if (activeMode.value === 'db') {
+      dbReport.value = await previewCodegenDatabase(buildDatabaseRequest());
+      operationStatus.value = '数据库 Dry-run 预览完成';
+      ElMessage.success('数据库 Dry-run 预览完成');
+      lastRunSuccess.value = true;
+      return;
+    }
+    if (!dslText.value.trim()) {
+      ElMessage.warning('请先填写 DSL 内容');
+      return;
+    }
+    dslReport.value = await previewCodegenDsl({ dsl: dslText.value, force: force.value });
     lastRunSuccess.value = true;
     operationStatus.value = 'Dry-run 预览完成';
     ElMessage.success('Dry-run 预览完成');
@@ -455,15 +824,29 @@ async function handlePreview() {
 }
 
 async function handleGenerate() {
-  if (!dslText.value.trim()) {
-    ElMessage.warning('请先填写 DSL 内容');
-    return;
+  if (activeMode.value === 'db') {
+    const validationError = validateDatabaseInputs();
+    if (validationError) {
+      ElMessage.warning(validationError);
+      return;
+    }
   }
   generateLoading.value = true;
   operationStatus.value = '';
   lastRunSuccess.value = false;
   try {
-    report.value = await generateCodegenDsl({ dsl: dslText.value, force: force.value });
+    if (activeMode.value === 'db') {
+      dbReport.value = await generateCodegenDatabase(buildDatabaseRequest());
+      lastRunSuccess.value = true;
+      operationStatus.value = '数据库代码已直接生成到服务端工程';
+      ElMessage.success('数据库生成已完成');
+      return;
+    }
+    if (!dslText.value.trim()) {
+      ElMessage.warning('请先填写 DSL 内容');
+      return;
+    }
+    dslReport.value = await generateCodegenDsl({ dsl: dslText.value, force: force.value });
     lastRunSuccess.value = true;
     operationStatus.value = '代码已直接生成到服务端工程';
     ElMessage.success('生成已完成');
@@ -595,6 +978,50 @@ function handleArtifactError(error: unknown, fallbackMessage: string) {
   lastArtifactErrorType.value = 'unknown';
   rememberArtifactError(error instanceof Error ? error.message : fallbackMessage);
   ElMessage.error(error instanceof Error ? error.message : fallbackMessage);
+}
+
+function buildDatabaseRequest(): CodegenDatabaseRequest {
+  const tables = parseTableNames(dbTablesText.value);
+  return {
+    driver: dbDriver.value.trim(),
+    dsn: dbDsn.value.trim(),
+    database: dbDatabase.value.trim(),
+    schema: dbSchema.value.trim() || undefined,
+    tables: tables.length > 0 ? tables : undefined,
+    force: dbForce.value,
+    generate_frontend: dbGenerateFrontend.value,
+    generate_policy: dbGeneratePolicy.value,
+  };
+}
+
+function validateDatabaseInputs(): string {
+  if (!dbDriver.value.trim()) {
+    return '请先选择数据库驱动';
+  }
+  if (!dbDsn.value.trim()) {
+    return '请先填写 DSN';
+  }
+  if (!dbDatabase.value.trim()) {
+    return '请先填写数据库名';
+  }
+  return '';
+}
+
+function parseTableNames(value: string): string[] {
+  return value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+function mapDatabaseResourcesToPreviewRows(resources: CodegenDatabasePreviewResource[], forceValue: boolean): PreviewRow[] {
+  return resources.map((resource, index) => ({
+    index: index + 1,
+    kind: resource.kind || 'resource',
+    name: resource.name || resource.entity_name || resource.table_name,
+    force: forceValue,
+    actions: resource.actions ?? [],
+  }));
 }
 
 function rememberArtifactError(message: string) {
@@ -797,6 +1224,117 @@ function formatRemainingTime(value: string, now: number, expired: boolean): stri
   margin-top: 4px;
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+
+.db-mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.db-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--el-fill-color-blank) 0%, var(--el-fill-color-extra-light) 100%);
+}
+
+.db-hero-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--el-text-color-primary);
+}
+
+.db-hero-subtitle {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-color-secondary);
+}
+
+.db-preset-row,
+.db-section-header,
+.db-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.db-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.db-section-hint,
+.db-field-help {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.5;
+}
+
+.db-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.db-form :deep(.el-row) {
+  margin-bottom: 0;
+}
+
+.db-form :deep(.el-col) {
+  min-width: 0;
+}
+
+.db-form :deep(.el-input),
+.db-form :deep(.el-select),
+.db-form :deep(.el-textarea),
+.db-form :deep(.el-input__wrapper),
+.db-form :deep(.el-select__wrapper) {
+  width: 100%;
+}
+
+.db-form-item {
+  margin-bottom: 12px;
+}
+
+.db-form-item--wide {
+  margin-bottom: 0;
+}
+
+.db-field-help {
+  margin-top: 8px;
+}
+
+.db-table-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.db-table-chip {
+  border-radius: 999px;
+}
+
+.db-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 14px;
+  background: var(--el-fill-color-extra-light);
+}
+
+.db-advanced :deep(.el-space) {
+  width: 100%;
 }
 
 .codegen-form :deep(.el-form-item) {

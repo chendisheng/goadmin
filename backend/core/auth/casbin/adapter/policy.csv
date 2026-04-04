@@ -27,4 +27,12 @@ p, admin, /api/v1/plugins/:name, DELETE
 p, admin, /api/v1/codegen/dsl/preview, POST
 p, admin, /api/v1/codegen/dsl/generate, POST
 p, admin, /api/v1/codegen/dsl/generate-download, POST
+p, admin, /api/v1/codegen/db/preview, POST
+p, admin, /api/v1/codegen/db/generate, POST
 p, admin, /api/v1/codegen/artifacts/:taskID, GET
+p, admin, /api/v1/books, GET
+p, admin, /api/v1/books/:id, GET
+p, admin, /api/v1/books, POST
+p, admin, /api/v1/books/:id, PUT
+p, admin, /api/v1/books/:id, DELETE
+p, admin, /system/codegen, GET

@@ -70,6 +70,7 @@ type Resource struct {
 	Kind             Kind         `yaml:"kind" json:"kind"`
 	Name             string       `yaml:"name" json:"name"`
 	Module           string       `yaml:"module,omitempty" json:"module,omitempty"`
+	MountParentPath  string       `yaml:"mount_parent_path,omitempty" json:"mount_parent_path,omitempty"`
 	Framework        Framework    `yaml:"framework,omitempty" json:"framework,omitempty"`
 	Entity           Entity       `yaml:"entity,omitempty" json:"entity,omitempty"`
 	Fields           []Field      `yaml:"fields,omitempty" json:"fields,omitempty"`

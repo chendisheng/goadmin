@@ -32,6 +32,7 @@ type DatabaseBuildOptions struct {
 	Force            bool
 	GenerateFrontend *bool
 	GeneratePolicy   *bool
+	MountParentPath  string
 	Semantic         *SemanticOptions
 }
 
@@ -184,6 +185,9 @@ func buildResource(reader insp.Reader, table dbschema.Table, opts DatabaseBuildO
 	}
 	if opts.GeneratePolicy != nil {
 		resource.Metadata["generate_policy"] = *opts.GeneratePolicy
+	}
+	if mountParentPath := strings.TrimSpace(opts.MountParentPath); mountParentPath != "" {
+		resource.Metadata["mount_parent_path"] = mountParentPath
 	}
 	return resource, nil
 }

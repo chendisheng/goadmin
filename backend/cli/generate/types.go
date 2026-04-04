@@ -52,6 +52,7 @@ type ManifestRoute struct {
 type ManifestMenu struct {
 	Name       string
 	Path       string
+	ParentPath string
 	Component  string
 	Icon       string
 	Permission string

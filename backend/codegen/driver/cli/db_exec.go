@@ -22,6 +22,7 @@ type DatabaseExecutionRequest struct {
 	Force            bool
 	GenerateFrontend *bool
 	GeneratePolicy   *bool
+	MountParentPath  string
 }
 
 func (req DatabaseExecutionRequest) Validate() error {
@@ -58,6 +59,7 @@ func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req Dat
 		Force:            req.Force,
 		GenerateFrontend: req.GenerateFrontend,
 		GeneratePolicy:   req.GeneratePolicy,
+		MountParentPath:  req.MountParentPath,
 	}
 	irDoc, err := builder.BuildFromDatabaseWithOptions(conn, req.Database, req.Schema, opts)
 	if err != nil {
@@ -108,6 +110,7 @@ func runGenerateDBCommand(root string, args []string) error {
 	force := fs.Bool("force", false, "overwrite existing files")
 	frontend := fs.Bool("generate_frontend", true, "generate frontend scaffolding")
 	policy := fs.Bool("generate_policy", true, "append Casbin policy lines")
+	mountParentPath := fs.String("mount_parent_path", "", "parent menu path used to mount generated menus")
 	var tables stringListFlag
 	fs.Var(&tables, "table", "database table to include; repeat for multiple tables")
 	fs.SetOutput(os.Stderr)
@@ -123,6 +126,7 @@ func runGenerateDBCommand(root string, args []string) error {
 		Force:            *force,
 		GenerateFrontend: frontend,
 		GeneratePolicy:   policy,
+		MountParentPath:  *mountParentPath,
 	}
 	if err := request.Validate(); err != nil {
 		return err

@@ -1,50 +1,61 @@
 # codegen:begin
 name: book
 version: v1
-kind: business-module
+kind: crud
 module: book
 dependencies:
-- core/auth/bootstrap
-- core/auth/casbin
+  - core/auth/bootstrap
+  - core/auth/casbin
 routes:
-- method: GET
-path: /api/v1/books
-path: /api/v1/books/:id
-- method: POST
-- method: PUT
-- method: DELETE
-menus:
-- name: Books
-path: /books
-component: Layout
-icon: menu
-permission: book:view
-type: directory
-redirect: /books/list
-visible: true
-enabled: true
-sort: 1
-- name: List
-path: /books/list
-component: view/book/index
-permission: book:list
-type: menu
-sort: 2
+  - method: GET
+    path: /api/v1/books
+  - method: GET
+    path: /api/v1/books/:id
+  - method: POST
+    path: /api/v1/books
+  - method: PUT
+    path: /api/v1/books/:id
+  - method: DELETE
+    path: /api/v1/books/:id
 permissions:
-- object: book
-action: list
-description: List Book
-action: view
-description: View Book
-action: create
-description: Create Book
-action: update
-description: Update Book
-action: delete
-description: Delete Book
+  - object: book
+    action: list
+    description: List Book
+  - object: book
+    action: view
+    description: View Book
+  - object: book
+    action: create
+    description: Create Book
+  - object: book
+    action: update
+    description: Update Book
+  - object: book
+    action: delete
+    description: Delete Book
+menus:
+  - name: Books
+    path: /books
+    component: Layout
+    icon: menu
+    permission: book:view
+    type: directory
+    redirect: /books/list
+    visible: true
+    enabled: true
+    sort: 1
+  - name: List
+    path: /books/list
+    parent_path: /books
+    component: view/book/index
+    icon: menu
+    permission: book:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 2
 capabilities:
-- basic-crud
-- policy-generated
-- frontend-generated
+  - basic-crud
+  - policy-generated
+  - frontend-generated
 # codegen:end
-kind: crud

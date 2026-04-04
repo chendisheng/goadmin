@@ -18,7 +18,7 @@
                 <el-button v-if="activeMode === 'dsl'" type="success" :loading="generateLoading" @click="handleGenerate">一键生成</el-button>
                 <el-button v-if="activeMode === 'dsl'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
                 <el-button v-if="activeMode === 'db'" type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
-                <el-button v-if="activeMode === 'db'" type="success" :loading="generateLoading" @click="handleGenerate">一键生成</el-button>
+                <el-button v-if="activeMode === 'db'" type="success" :loading="generateLoading || installLoading" @click="handleGenerateAndInstall">生成并安装</el-button>
                 <el-button v-if="activeMode === 'db'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
               </el-space>
             </div>
@@ -87,7 +87,7 @@
 
                 <el-form label-position="top" class="codegen-form db-form">
                   <el-row :gutter="16">
-                    <el-col :xs="24" :md="8">
+                    <el-col :xs="24" :md="6">
                       <el-form-item label="数据库驱动">
                         <el-select v-model="dbDriver" placeholder="请选择数据库驱动" filterable>
                           <el-option label="MySQL" value="mysql" />
@@ -96,14 +96,27 @@
                         </el-select>
                       </el-form-item>
                     </el-col>
-                    <el-col :xs="24" :md="8">
+                    <el-col :xs="24" :md="6">
                       <el-form-item label="数据库名">
                         <el-input v-model="dbDatabase" placeholder="请输入数据库名称" />
                       </el-form-item>
                     </el-col>
-                    <el-col :xs="24" :md="8">
+                    <el-col :xs="24" :md="6">
                       <el-form-item label="Schema">
                         <el-input v-model="dbSchema" placeholder="可选，PostgreSQL 等场景使用" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :xs="24" :md="6">
+                      <el-form-item label="挂载根菜单">
+                        <el-select v-model="dbMountParentPath" clearable filterable placeholder="留空为顶层根菜单">
+                          <el-option label="顶层根菜单" value="" />
+                          <el-option
+                            v-for="option in dbMountMenuOptions"
+                            :key="option.value"
+                            :label="option.label"
+                            :value="option.value"
+                          />
+                        </el-select>
                       </el-form-item>
                     </el-col>
                   </el-row>
@@ -422,7 +435,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
   downloadCodegenArtifact,
@@ -430,6 +443,7 @@ import {
   generateCodegenDsl,
   generateDownloadCodegenDsl,
   generateDownloadCodegenDatabase,
+  installCodegenManifest,
   previewCodegenDatabase,
   previewCodegenDsl,
   type CodegenArtifactInfo,
@@ -438,7 +452,9 @@ import {
   type CodegenDatabaseRequest,
   type CodegenDslExecutionReport,
 } from '@/api/codegen';
+import { fetchMenuTree } from '@/api/system-menus';
 import { ApiError } from '@/api/types';
+import type { MenuItem } from '@/types/admin';
 
 type CodegenMode = 'dsl' | 'db';
 
@@ -448,6 +464,11 @@ type PreviewRow = {
   name: string;
   force: boolean;
   actions: string[];
+};
+
+type MenuMountOption = {
+  label: string;
+  value: string;
 };
 
 const activeMode = ref<CodegenMode>('dsl');
@@ -467,10 +488,12 @@ const dbTablesText = ref('');
 const dbForce = ref(false);
 const dbGenerateFrontend = ref(true);
 const dbGeneratePolicy = ref(true);
+const dbMountParentPath = ref('');
 
 const previewLoading = ref(false);
 const generateLoading = ref(false);
 const downloadLoading = ref(false);
+const installLoading = ref(false);
 
 const dslReport = ref<CodegenDslExecutionReport | null>(null);
 const dbReport = ref<CodegenDatabasePreviewReport | null>(null);
@@ -490,6 +513,7 @@ const currentTime = ref(Date.now());
 
 let artifactTicker: ReturnType<typeof window.setInterval> | null = null;
 let copyFeedbackTimer: ReturnType<typeof window.setTimeout> | null = null;
+const dbMountMenuOptions = ref<MenuMountOption[]>([]);
 
 const currentReport = computed(() => (activeMode.value === 'db' ? dbReport.value : dslReport.value));
 const dbParsedTables = computed(() => parseTableNames(dbTablesText.value));
@@ -506,7 +530,16 @@ const dbOptionSummary = computed(() => {
   parts.push(dbForce.value ? '覆盖现有文件' : '安全覆盖关闭');
   parts.push(dbGenerateFrontend.value ? '生成前端' : '跳过前端');
   parts.push(dbGeneratePolicy.value ? '生成权限' : '跳过权限');
+  parts.push(dbMountParentPath.value ? `挂载：${dbMountMenuLabel.value}` : '挂载：顶层根菜单');
   return parts.join(' · ');
+});
+const dbGeneratedModuleName = computed(() => dbReport.value?.resources?.[0]?.module?.trim() || '');
+const dbMountMenuLabel = computed(() => {
+  if (!dbMountParentPath.value) {
+    return '顶层根菜单';
+  }
+  const option = dbMountMenuOptions.value.find((item) => item.value === dbMountParentPath.value);
+  return option?.label || dbMountParentPath.value;
 });
 
 const previewItems = computed<PreviewRow[]>(() => {
@@ -657,6 +690,7 @@ onMounted(() => {
   artifactTicker = window.setInterval(() => {
     currentTime.value = Date.now();
   }, 1000);
+  void loadDbMountMenuOptions();
 });
 
 onBeforeUnmount(() => {
@@ -698,6 +732,7 @@ function loadDbSample() {
   dbForce.value = false;
   dbGenerateFrontend.value = true;
   dbGeneratePolicy.value = true;
+  dbMountParentPath.value = '';
   ElMessage.success('示例数据库配置已载入');
 }
 
@@ -747,6 +782,7 @@ function clearDslInputs() {
   lastDownloadDuration.value = 0;
   downloadStartAt.value = 0;
   resetCopyFeedback();
+  installLoading.value = false;
   operationStatus.value = '';
   lastRunSuccess.value = false;
 }
@@ -763,6 +799,7 @@ function clearDbInputs() {
   dbForce.value = false;
   dbGenerateFrontend.value = true;
   dbGeneratePolicy.value = true;
+  dbMountParentPath.value = '';
   dbReport.value = null;
   artifactInfo.value = null;
   artifactForceExpired.value = false;
@@ -864,6 +901,59 @@ async function handleGenerate() {
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '生成失败');
   } finally {
+    generateLoading.value = false;
+  }
+}
+
+async function handleGenerateAndInstall() {
+  if (activeMode.value !== 'db') {
+    ElMessage.warning('请先切换到 DB 模式');
+    return;
+  }
+  const validationError = validateDatabaseInputs();
+  if (validationError) {
+    ElMessage.warning(validationError);
+    return;
+  }
+  generateLoading.value = true;
+  operationStatus.value = '';
+  lastRunSuccess.value = false;
+  try {
+    dbReport.value = await generateCodegenDatabase(buildDatabaseRequest());
+    lastRunSuccess.value = true;
+    operationStatus.value = '数据库代码已生成，等待确认安装到系统';
+    ElMessage.success('数据库生成已完成');
+
+    if (!dbGeneratedModuleName.value) {
+      ElMessage.warning('无法识别生成模块，请先重新生成');
+      return;
+    }
+
+    await ElMessageBox.confirm(
+      `即将把模块 ${dbGeneratedModuleName.value} 的 manifest 安装到系统菜单中，是否继续？`,
+      '确认安装到系统',
+      {
+        confirmButtonText: '继续安装',
+        cancelButtonText: '取消',
+        type: 'warning',
+        distinguishCancelAndClose: true,
+      },
+    );
+
+    installLoading.value = true;
+    const result = await installCodegenManifest({ module: dbGeneratedModuleName.value });
+    lastRunSuccess.value = true;
+    operationStatus.value = `模块 ${result.module || dbGeneratedModuleName.value} 已安装到系统，共 ${result.menu_total} 个菜单`;
+    ElMessage.success('安装到系统完成');
+    await loadDbMountMenuOptions();
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      ElMessage.info('已取消安装');
+      return;
+    }
+    ElMessage.error(error instanceof Error ? error.message : '生成并安装失败');
+  } finally {
+    installLoading.value = false;
     generateLoading.value = false;
   }
 }
@@ -1013,7 +1103,35 @@ function buildDatabaseRequest(): CodegenDatabaseRequest {
     force: dbForce.value,
     generate_frontend: dbGenerateFrontend.value,
     generate_policy: dbGeneratePolicy.value,
+    mount_parent_path: dbMountParentPath.value.trim() || undefined,
   };
+}
+
+async function loadDbMountMenuOptions() {
+  try {
+    const response = await fetchMenuTree();
+    dbMountMenuOptions.value = flattenMenuMountOptions(response.items ?? []);
+  } catch {
+    dbMountMenuOptions.value = [];
+  }
+}
+
+function flattenMenuMountOptions(items: MenuItem[], depth = 0): MenuMountOption[] {
+  const options: MenuMountOption[] = [];
+  for (const item of items) {
+    const name = item.name?.trim() || item.path || '未命名菜单';
+    const labelPrefix = depth > 0 ? `${'—'.repeat(depth)} ` : '';
+    if ((item.type || '').toLowerCase() === 'directory') {
+      options.push({
+        label: `${labelPrefix}${name}${item.path ? ` (${item.path})` : ''}`,
+        value: item.path,
+      });
+    }
+    if (item.children?.length) {
+      options.push(...flattenMenuMountOptions(item.children, depth + 1));
+    }
+  }
+  return options;
 }
 
 function validateDatabaseInputs(): string {

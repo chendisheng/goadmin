@@ -246,6 +246,7 @@ func convertIRResource(resource irmodel.Resource) schema.Resource {
 		Kind:             schema.Kind(kind),
 		Name:             name,
 		Module:           normalizeSchemaName(resource.Module),
+		MountParentPath:  strings.TrimSpace(func() string { text, _ := stringMetadata(resource.Metadata, "mount_parent_path"); return text }()),
 		Entity:           schema.Entity{Name: name},
 		Fields:           make([]schema.Field, 0, len(resource.Fields)),
 		Pages:            make([]schema.Page, 0, len(resource.Pages)),

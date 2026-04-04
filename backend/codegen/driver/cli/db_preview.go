@@ -126,6 +126,7 @@ type DatabaseAuditInput struct {
 	Force            bool     `json:"force,omitempty"`
 	GenerateFrontend bool     `json:"generate_frontend,omitempty"`
 	GeneratePolicy   bool     `json:"generate_policy,omitempty"`
+	MountParentPath  string   `json:"mount_parent_path,omitempty"`
 	DryRun           bool     `json:"dry_run"`
 }
 
@@ -257,6 +258,7 @@ func buildDatabaseAuditRecord(root string, req DatabaseExecutionRequest, dryRun 
 			Force:            req.Force,
 			GenerateFrontend: req.GenerateFrontend != nil && *req.GenerateFrontend,
 			GeneratePolicy:   req.GeneratePolicy != nil && *req.GeneratePolicy,
+			MountParentPath:  strings.TrimSpace(req.MountParentPath),
 			DryRun:           dryRun,
 		},
 		Steps: steps,
@@ -685,6 +687,11 @@ func previewDatabaseReportText(report DatabasePreviewReport) string {
 		if len(report.Audit.Input.Tables) > 0 {
 			builder.WriteString("  tables: ")
 			builder.WriteString(strings.Join(report.Audit.Input.Tables, ", "))
+			builder.WriteString("\n")
+		}
+		if report.Audit.Input.MountParentPath != "" {
+			builder.WriteString("  mount_parent_path: ")
+			builder.WriteString(report.Audit.Input.MountParentPath)
 			builder.WriteString("\n")
 		}
 		if len(report.Audit.Steps) > 0 {

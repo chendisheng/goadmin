@@ -233,7 +233,12 @@ func writeSupportFiles(workspaceRoot string, req GenerateRequest, report codegen
 }
 
 func writeDatabaseSupportFiles(workspaceRoot string, req codegencli.DatabaseExecutionRequest, report codegencli.DatabasePreviewReport, generatedFiles []string) error {
-	if err := os.WriteFile(filepath.Join(workspaceRoot, "README.md"), []byte(buildDatabaseReadme(report, generatedFiles)), 0o644); err != nil {
+	readme := buildDatabaseReadme(report, generatedFiles)
+	if mountParentPath := strings.TrimSpace(req.MountParentPath); mountParentPath != "" {
+		readme += "\n## 挂载目录\n\n"
+		readme += "- " + mountParentPath + "\n"
+	}
+	if err := os.WriteFile(filepath.Join(workspaceRoot, "README.md"), []byte(readme), 0o644); err != nil {
 		return fmt.Errorf("write README.md: %w", err)
 	}
 	sanitizedRequest := struct {
@@ -244,6 +249,7 @@ func writeDatabaseSupportFiles(workspaceRoot string, req codegencli.DatabaseExec
 		Force            bool     `json:"force,omitempty"`
 		GenerateFrontend bool     `json:"generate_frontend,omitempty"`
 		GeneratePolicy   bool     `json:"generate_policy,omitempty"`
+		MountParentPath  string   `json:"mount_parent_path,omitempty"`
 	}{
 		Driver:           strings.TrimSpace(req.Driver),
 		Database:         strings.TrimSpace(req.Database),
@@ -252,6 +258,7 @@ func writeDatabaseSupportFiles(workspaceRoot string, req codegencli.DatabaseExec
 		Force:            req.Force,
 		GenerateFrontend: boolPtrValue(req.GenerateFrontend, true),
 		GeneratePolicy:   boolPtrValue(req.GeneratePolicy, true),
+		MountParentPath:  strings.TrimSpace(req.MountParentPath),
 	}
 	requestData, err := json.MarshalIndent(sanitizedRequest, "", "  ")
 	if err != nil {

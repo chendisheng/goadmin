@@ -88,6 +88,7 @@ func Register(engine *gin.Engine, deps Dependencies) {
 			ArtifactEnabled: artifactEnabled,
 			ArtifactBaseDir: artifactBaseDir,
 			ArtifactTTL:     artifactTTL,
+			MenuService:     deps.MenuService,
 		})
 		pluginhttp.Register(protected, pluginhttp.Dependencies{Service: deps.PluginService, Logger: deps.Logger})
 		registerPluginRoutes(api, protected, deps.PluginRegistry)

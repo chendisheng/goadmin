@@ -176,6 +176,8 @@ func TestRunGenerateDBGenerate(t *testing.T) {
 
 	assertFileExists(t, filepath.Join(root, "backend", "modules", "book", "module.go"))
 	assertFileExists(t, filepath.Join(root, "web", "src", "views", "book", "index.vue"))
+	assertFileContains(t, filepath.Join(root, "backend", "modules", "book", "manifest.yaml"), "menus:")
+	assertFileContains(t, filepath.Join(root, "backend", "modules", "book", "manifest.yaml"), "path: /books")
 	assertFileContains(t, filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv"), "p, admin, /api/v1/books, GET")
 }
 
@@ -210,6 +212,7 @@ func TestExecuteDatabaseDocumentDryRunReport(t *testing.T) {
 		Tables:           []string{"books"},
 		GenerateFrontend: &frontend,
 		GeneratePolicy:   &policy,
+		MountParentPath:  "/system",
 	}, true)
 	if err != nil {
 		t.Fatalf("ExecuteDatabaseDocument(dry-run) returned error: %v", err)
@@ -238,6 +241,9 @@ func TestExecuteDatabaseDocumentDryRunReport(t *testing.T) {
 	}
 	if len(report.Files) == 0 {
 		t.Fatal("expected file plan entries in preview report")
+	}
+	if got := report.Audit.Input.MountParentPath; got != "/system" {
+		t.Fatalf("audit mount parent path = %q, want %q", got, "/system")
 	}
 	if report.Audit.RecordedAt == "" {
 		t.Fatal("expected audit record timestamp")

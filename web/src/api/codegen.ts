@@ -40,6 +40,7 @@ export interface CodegenDatabaseRequest {
   force?: boolean;
   generate_frontend?: boolean;
   generate_policy?: boolean;
+  mount_parent_path?: string;
 }
 
 export interface CodegenDatabasePreviewSource {
@@ -181,6 +182,32 @@ export interface CodegenDatabasePreviewReport {
   audit: CodegenDatabaseAuditRecord;
 }
 
+export interface CodegenInstallManifestRequest {
+  manifest_path?: string;
+  module?: string;
+}
+
+export interface CodegenInstallManifestMenuResult {
+  path: string;
+  parent_path?: string;
+  menu_id: string;
+  parent_id?: string;
+  action: string;
+}
+
+export interface CodegenInstallManifestResult {
+  manifest_path: string;
+  name?: string;
+  module?: string;
+  kind?: string;
+  menu_total: number;
+  created_count: number;
+  updated_count: number;
+  skipped_count: number;
+  menus?: CodegenInstallManifestMenuResult[];
+  messages?: string[];
+}
+
 export interface CodegenArtifactInfo {
   task_id: string;
   download_url: string;
@@ -212,6 +239,10 @@ export function generateCodegenDatabase(payload: CodegenDatabaseRequest) {
 
 export function generateDownloadCodegenDatabase(payload: CodegenDatabaseRequest) {
   return http.post<CodegenArtifactInfo>('/codegen/db/generate-download', payload);
+}
+
+export function installCodegenManifest(payload: CodegenInstallManifestRequest) {
+  return http.post<CodegenInstallManifestResult>('/codegen/install/manifest', payload);
 }
 
 export async function downloadCodegenArtifact(downloadUrl: string, fallbackFilename?: string) {

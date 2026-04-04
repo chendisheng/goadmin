@@ -132,6 +132,29 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	}
 }
 
+func TestGenerateManifestRendersMenuParentPath(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+	if err := gen.GenerateManifest(ManifestOptions{
+		Name:   "Book",
+		Module: "book",
+		Kind:   "crud",
+		Menus: []ManifestMenu{
+			{Name: "Books", Path: "/books", Component: "Layout", Redirect: "/books/list", Type: "directory", Visible: true, Enabled: true, Sort: 1},
+			{Name: "List", Path: "/books/list", ParentPath: "/books", Component: "view/book/index", Type: "menu", Visible: true, Enabled: true, Sort: 2},
+		},
+	}); err != nil {
+		t.Fatalf("GenerateManifest returned error: %v", err)
+	}
+
+	manifestPath := filepath.Join(root, "backend", "modules", "book", "manifest.yaml")
+	assertFileContains(t, manifestPath, "menus:")
+	assertFileContains(t, manifestPath, "parent_path: /books")
+	assertFileContains(t, manifestPath, "path: /books/list")
+}
+
 func TestGenerateCRUDFrontendPathsUseRepoWebRoot(t *testing.T) {
 	t.Parallel()
 

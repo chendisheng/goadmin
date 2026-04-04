@@ -10,8 +10,12 @@ import (
 	"time"
 
 	downloadapp "goadmin/codegen/application/download"
+	installapp "goadmin/codegen/application/install"
 	cli "goadmin/codegen/driver/cli"
 	"goadmin/core/response"
+	menuservice "goadmin/modules/menu/application/service"
+	menumodel "goadmin/modules/menu/domain/model"
+	menurepopkg "goadmin/modules/menu/infrastructure/repo"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -264,6 +268,108 @@ func TestHandlerGenerateDatabaseDownloadAndArtifact(t *testing.T) {
 	}
 }
 
+func TestHandlerInstallManifest(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	manifestDir := filepath.Join(root, "backend", "modules", "book")
+	if err := os.MkdirAll(manifestDir, 0o755); err != nil {
+		t.Fatalf("mkdir manifest dir: %v", err)
+	}
+	manifestPath := filepath.Join(manifestDir, "manifest.yaml")
+	if err := os.WriteFile(manifestPath, []byte(strings.TrimSpace(`
+name: book
+version: v1
+kind: crud
+module: book
+menus:
+  - name: Books
+    path: /books
+    parent_path: /system
+    component: Layout
+    type: directory
+    redirect: /books/list
+    visible: true
+    enabled: true
+    sort: 1
+  - name: List
+    path: /books/list
+    parent_path: /books
+    component: view/book/index
+    type: menu
+    visible: true
+    enabled: true
+    sort: 2
+`)), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	dbPath := filepath.Join(t.TempDir(), "menus.db")
+	db := openHTTPIntegrationSQLiteDB(t, dbPath)
+	if err := menurepopkg.Migrate(db); err != nil {
+		t.Fatalf("migrate menus: %v", err)
+	}
+	if err := menurepopkg.SeedDefaults(db); err != nil {
+		t.Fatalf("seed default menus: %v", err)
+	}
+	menuRepo, err := menurepopkg.NewGormRepository(db)
+	if err != nil {
+		t.Fatalf("new menu repository: %v", err)
+	}
+	menuSvc, err := menuservice.New(menuRepo)
+	if err != nil {
+		t.Fatalf("new menu service: %v", err)
+	}
+
+	handler := NewHandler(Dependencies{ProjectRoot: root, MenuService: menuSvc})
+	ctx := &fakeContext{payload: InstallManifestRequest{Module: "book"}}
+
+	handler.InstallManifest(ctx)
+	if ctx.status != 200 {
+		t.Fatalf("InstallManifest status = %d, want 200, body=%#v", ctx.status, ctx.jsonBody)
+	}
+	envelope, ok := ctx.jsonBody.(response.Envelope)
+	if !ok {
+		t.Fatalf("InstallManifest body type = %T, want response.Envelope", ctx.jsonBody)
+	}
+	result, ok := envelope.Data.(installapp.InstallResult)
+	if !ok {
+		t.Fatalf("InstallManifest data type = %T, want install.InstallResult", envelope.Data)
+	}
+	if result.MenuTotal != 2 {
+		t.Fatalf("menu_total = %d, want 2", result.MenuTotal)
+	}
+	if result.CreatedCount != 2 {
+		t.Fatalf("created_count = %d, want 2", result.CreatedCount)
+	}
+
+	tree, err := menuSvc.Tree(context.Background())
+	if err != nil {
+		t.Fatalf("load menu tree: %v", err)
+	}
+	booksMenu, ok := findMenuByPath(tree, "/books")
+	if !ok {
+		t.Fatal("expected /books menu to exist after install")
+	}
+	if booksMenu.ParentID == "" {
+		t.Fatal("expected /books menu to have a parent id from /system")
+	}
+	systemMenu, ok := findMenuByPath(tree, "/system")
+	if !ok {
+		t.Fatal("expected /system menu to exist")
+	}
+	if booksMenu.ParentID != systemMenu.ID {
+		t.Fatalf("books menu parent_id = %q, want %q", booksMenu.ParentID, systemMenu.ID)
+	}
+	listMenu, ok := findMenuByPath(tree, "/books/list")
+	if !ok {
+		t.Fatal("expected /books/list menu to exist after install")
+	}
+	if listMenu.ParentID != booksMenu.ID {
+		t.Fatalf("list menu parent_id = %q, want %q", listMenu.ParentID, booksMenu.ID)
+	}
+}
+
 func TestHandlerGenerateDatabase(t *testing.T) {
 	t.Parallel()
 
@@ -361,4 +467,19 @@ func mustJSONString(t *testing.T, value any) string {
 		t.Fatalf("marshal json: %v", err)
 	}
 	return string(data)
+}
+
+func findMenuByPath(items []menumodel.Menu, targetPath string) (menumodel.Menu, bool) {
+	for _, item := range items {
+		if strings.EqualFold(strings.TrimSpace(item.Path), strings.TrimSpace(targetPath)) {
+			return item, true
+		}
+		if len(item.Children) == 0 {
+			continue
+		}
+		if found, ok := findMenuByPath(item.Children, targetPath); ok {
+			return found, true
+		}
+	}
+	return menumodel.Menu{}, false
 }

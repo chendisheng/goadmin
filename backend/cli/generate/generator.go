@@ -558,6 +558,11 @@ func renderManifestMenus(menus []ManifestMenu) string {
 		builder.WriteString("    path: ")
 		builder.WriteString(menu.Path)
 		builder.WriteString("\n")
+		if menu.ParentPath != "" {
+			builder.WriteString("    parent_path: ")
+			builder.WriteString(menu.ParentPath)
+			builder.WriteString("\n")
+		}
 		builder.WriteString("    component: ")
 		builder.WriteString(menu.Component)
 		builder.WriteString("\n")

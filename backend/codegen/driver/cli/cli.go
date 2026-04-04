@@ -634,11 +634,15 @@ func buildManifestRoutes(resource schema.Resource) []legacygenerate.ManifestRout
 }
 
 func buildManifestMenus(resource schema.Resource) []legacygenerate.ManifestMenu {
+	mountParentPath := strings.TrimSpace(resource.MountParentPath)
 	pages := resource.Pages
 	if len(pages) == 0 {
 		if resource.Kind == schema.KindFrontendPage || resource.Kind == schema.KindFrontendModuleRoute {
 			pages = []schema.Page{{Name: resource.Name, Type: string(resource.Kind)}}
 		}
+	}
+	if len(pages) == 0 && hasCRUDContent(resource) {
+		return buildCRUDManifestMenus(resource, mountParentPath)
 	}
 	if len(pages) == 0 {
 		return nil
@@ -652,6 +656,7 @@ func buildManifestMenus(resource schema.Resource) []legacygenerate.ManifestMenu 
 	menus = append(menus, legacygenerate.ManifestMenu{
 		Name:       titleizeScope(scope),
 		Path:       "/" + scope,
+		ParentPath: mountParentPath,
 		Component:  "Layout",
 		Icon:       "menu",
 		Permission: scope + ":view",
@@ -665,6 +670,7 @@ func buildManifestMenus(resource schema.Resource) []legacygenerate.ManifestMenu 
 		menus = append(menus, legacygenerate.ManifestMenu{
 			Name:       page.Title(),
 			Path:       page.RoutePath(scope),
+			ParentPath: "/" + scope,
 			Component:  page.ComponentName(scope),
 			Icon:       "menu",
 			Permission: choosePagePermission(resource, page, scope),
@@ -675,6 +681,44 @@ func buildManifestMenus(resource schema.Resource) []legacygenerate.ManifestMenu 
 		})
 	}
 	return menus
+}
+
+func buildCRUDManifestMenus(resource schema.Resource, mountParentPath string) []legacygenerate.ManifestMenu {
+	name := chooseCRUDName(resource)
+	if name == "" {
+		name = chooseModuleName(resource)
+	}
+	if name == "" {
+		name = strings.TrimSpace(resource.Name)
+	}
+	if name == "" {
+		name = "item"
+	}
+	entityLower := schema.NormalizeName(name)
+	if entityLower == "" {
+		entityLower = "item"
+	}
+	entityPlural := legacygenerate.Pluralize(entityLower)
+	if entityPlural == "" {
+		entityPlural = entityLower
+	}
+	rootPath := "/" + entityPlural
+	listPath := rootPath + "/list"
+	if entityPlural == "" {
+		rootPath = "/" + entityLower
+		listPath = rootPath
+	}
+	rootName := legacygenerate.ToCamel(entityPlural)
+	if rootName == "" {
+		rootName = legacygenerate.ToCamel(entityLower)
+	}
+	if rootName == "" {
+		rootName = "Menu"
+	}
+	return []legacygenerate.ManifestMenu{
+		{Name: rootName, Path: rootPath, ParentPath: mountParentPath, Component: "Layout", Icon: "menu", Permission: entityLower + ":view", Type: "directory", Redirect: listPath, Visible: true, Enabled: true, Sort: 1},
+		{Name: "List", Path: listPath, ParentPath: rootPath, Component: "view/" + entityLower + "/index", Icon: "menu", Permission: entityLower + ":list", Type: "menu", Visible: true, Enabled: true, Sort: 2},
+	}
 }
 
 func buildManifestPermissions(resource schema.Resource) []legacygenerate.ManifestPermission {

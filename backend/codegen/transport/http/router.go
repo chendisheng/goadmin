@@ -16,5 +16,6 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 	db.POST("/preview", h.PreviewDatabase)
 	db.POST("/generate", h.GenerateDatabase)
 	db.POST("/generate-download", h.GenerateDatabaseDownload)
+	root.POST("/install/manifest", h.InstallManifest)
 	root.GET("/artifacts/:taskID", h.DownloadArtifact)
 }

@@ -18,6 +18,150 @@ type Field struct {
 	Unique   bool
 }
 
+func (f Field) DisplayLabel() string {
+	name := strings.TrimSpace(f.JSONName)
+	if name == "" {
+		name = strings.TrimSpace(f.GoName)
+	}
+	if name == "" {
+		return "Field"
+	}
+	parts := strings.Split(name, "_")
+	for i, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, " ")
+}
+
+func (f Field) TSValueType() string {
+	switch f.GoType {
+	case "bool":
+		return "boolean"
+	case "int", "int64", "int32", "float64":
+		return "number"
+	case "time.Time":
+		return "string"
+	case "[]string":
+		return "string[]"
+	case "[]int":
+		return "number[]"
+	case "[]int64":
+		return "number[]"
+	case "map[string]any":
+		return "Record<string, any>"
+	default:
+		return "string"
+	}
+}
+
+func (f Field) TSFormValueType() string {
+	switch {
+	case f.IsTime():
+		return "string"
+	case f.GoType == "bool":
+		return "boolean"
+	case f.GoType == "int" || f.GoType == "int64" || f.GoType == "int32" || f.GoType == "float64":
+		return "number"
+	default:
+		return "string"
+	}
+}
+
+func (f Field) FormDefaultValue() string {
+	switch {
+	case f.IsTime():
+		return "''"
+	case f.GoType == "bool":
+		return "false"
+	case f.GoType == "int" || f.GoType == "int64" || f.GoType == "int32" || f.GoType == "float64":
+		return "0"
+	default:
+		return "''"
+	}
+}
+
+func (f Field) TSDefaultValue() string {
+	switch f.GoType {
+	case "bool":
+		return "false"
+	case "int", "int64", "int32", "float64":
+		return "0"
+	case "time.Time":
+		return "''"
+	case "[]string", "[]int", "[]int64":
+		return "[]"
+	case "map[string]any":
+		return "{}"
+	default:
+		return "''"
+	}
+}
+
+func (f Field) FrontendControl() string {
+	switch {
+	case f.IsTime():
+		return "datetime"
+	case f.GoType == "bool":
+		return "switch"
+	case f.GoType == "int" || f.GoType == "int64" || f.GoType == "int32" || f.GoType == "float64":
+		return "number"
+	case strings.Contains(strings.ToLower(f.JSONName), "description") || strings.Contains(strings.ToLower(f.JSONName), "remark") || strings.Contains(strings.ToLower(f.JSONName), "content") || strings.Contains(strings.ToLower(f.JSONName), "detail") || strings.Contains(strings.ToLower(f.JSONName), "summary"):
+		return "textarea"
+	default:
+		return "input"
+	}
+}
+
+func (f Field) FrontendDisplayExpression() string {
+	prop := "row." + f.JSONName
+	switch {
+	case f.IsTime():
+		return "{{ formatDateTime(" + prop + ") }}"
+	case f.GoType == "bool":
+		return "{{ " + prop + " ? 'Yes' : 'No' }}"
+	case f.GoType == "[]string":
+		return "{{ Array.isArray(" + prop + ") ? " + prop + ".join(', ') : ('" + "-" + "') }}"
+	case f.GoType == "[]int" || f.GoType == "[]int64":
+		return "{{ Array.isArray(" + prop + ") ? " + prop + ".join(', ') : ('" + "-" + "') }}"
+	case f.GoType == "map[string]any":
+		return "{{ JSON.stringify(" + prop + ") }}"
+	default:
+		return "{{ " + prop + " || '-' }}"
+	}
+}
+
+func (f Field) FrontendEditExpression() string {
+	prop := "row." + f.JSONName
+	switch {
+	case f.IsTime():
+		return prop + " ?? ''"
+	case f.GoType == "bool":
+		return "Boolean(" + prop + ")"
+	case f.GoType == "int" || f.GoType == "int64" || f.GoType == "int32" || f.GoType == "float64":
+		return "Number(" + prop + " ?? 0)"
+	default:
+		return prop + " ?? ''"
+	}
+}
+
+func (f Field) FrontendSubmitExpression() string {
+	prop := "form." + f.JSONName
+	switch {
+	case f.IsTime():
+		return prop
+	case f.GoType == "bool":
+		return "Boolean(" + prop + ")"
+	case f.GoType == "int" || f.GoType == "int64" || f.GoType == "int32" || f.GoType == "float64":
+		return "Number(" + prop + " ?? 0)"
+	default:
+		return prop + ".trim()"
+	}
+}
+
 type Route struct {
 	Method string
 	Path   string
@@ -115,6 +259,14 @@ type CRUDData struct {
 	GeneratePolicy   bool
 	HasInputTime     bool
 	HasModelTime     bool
+}
+
+func (d CRUDData) DisplayFields() []Field {
+	return nonPrimaryFields(d.Fields)
+}
+
+func (d CRUDData) FormFields() []Field {
+	return nonPrimaryFields(d.Fields)
 }
 
 type PluginData struct {

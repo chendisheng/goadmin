@@ -176,6 +176,33 @@ func TestGenerateCRUDFrontendPathsUseRepoWebRoot(t *testing.T) {
 	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "views", "article", "index.vue"))
 }
 
+func TestGenerateCRUDFrontendRendersUsablePage(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+	fields, err := ParseFields("tenant_id:string,title:string,author:string,isbn:string,publisher:string,publish_date:time,category:string,description:string,status:string,price:int64,stock_quantity:int64,cover_image_url:string,tags:string", "", "", "")
+	if err != nil {
+		t.Fatalf("ParseFields returned error: %v", err)
+	}
+
+	if err := gen.GenerateCRUD(CRUDOptions{Name: "Book", Fields: fields, GenerateFrontend: true, GeneratePolicy: false}); err != nil {
+		t.Fatalf("GenerateCRUD returned error: %v", err)
+	}
+
+	viewPath := filepath.Join(root, "web", "src", "views", "book", "index.vue")
+	assertFileContains(t, viewPath, "AdminTable")
+	assertFileContains(t, viewPath, "AdminFormDialog")
+	assertFileContains(t, viewPath, "listbooks")
+	assertFileContains(t, viewPath, "createBook")
+	assertFileContains(t, viewPath, "updateBook")
+	assertFileContains(t, viewPath, "deleteBook")
+	assertFileContains(t, viewPath, "el-date-picker")
+	assertFileContains(t, viewPath, "el-input-number")
+	assertFileContains(t, viewPath, "el-table-column prop=\"title\"")
+	assertFileContains(t, viewPath, "Book管理")
+}
+
 func TestGeneratePageUsesRepoWebRoot(t *testing.T) {
 	t.Parallel()
 

@@ -433,46 +433,28 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 }
 `
 
-const frontendApiTemplate = `import request from '@/utils/request'
+const frontendApiTemplate = `import http from './http';
 
 const basePath = '/api/v1/{{.EntityPlural}}'
 
 export function list{{.EntityPlural}}(params = {}) {
-  return request({
-    url: basePath,
-    method: 'get',
-    params,
-  })
+  return http.get(basePath, { params });
 }
 
 export function get{{.Entity}}(id) {
-  return request({
-    url: basePath + '/' + id,
-    method: 'get',
-  })
+  return http.get(basePath + '/' + id);
 }
 
 export function create{{.Entity}}(data) {
-  return request({
-    url: basePath,
-    method: 'post',
-    data,
-  })
+  return http.post(basePath, data);
 }
 
 export function update{{.Entity}}(id, data) {
-  return request({
-    url: basePath + '/' + id,
-    method: 'put',
-    data,
-  })
+  return http.put(basePath + '/' + id, data);
 }
 
 export function delete{{.Entity}}(id) {
-  return request({
-    url: basePath + '/' + id,
-    method: 'delete',
-  })
+  return http.delete(basePath + '/' + id);
 }
 `
 

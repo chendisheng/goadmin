@@ -1,41 +1,23 @@
-import request from '@/utils/request'
+import http from './http';
 
-const basePath = '/api/v1/codegen_consoles'
+const basePath = '/api/v1/codegen_consoles';
 
-export function listcodegen_consoles(params = {}) {
-  return request({
-    url: basePath,
-    method: 'get',
-    params,
-  })
+export function listcodegen_consoles(params: Record<string, any> = {}) {
+  return http.get(basePath, { params });
 }
 
-export function getCodegenConsole(id) {
-  return request({
-    url: basePath + '/' + id,
-    method: 'get',
-  })
+export function getCodegenConsole(id: string) {
+  return http.get(basePath + '/' + id);
 }
 
-export function createCodegenConsole(data) {
-  return request({
-    url: basePath,
-    method: 'post',
-    data,
-  })
+export function createCodegenConsole(data: Record<string, any>) {
+  return http.post(basePath, data);
 }
 
-export function updateCodegenConsole(id, data) {
-  return request({
-    url: basePath + '/' + id,
-    method: 'put',
-    data,
-  })
+export function updateCodegenConsole(id: string, data: Record<string, any>) {
+  return http.put(basePath + '/' + id, data);
 }
 
-export function deleteCodegenConsole(id) {
-  return request({
-    url: basePath + '/' + id,
-    method: 'delete',
-  })
+export function deleteCodegenConsole(id: string) {
+  return http.delete(basePath + '/' + id);
 }

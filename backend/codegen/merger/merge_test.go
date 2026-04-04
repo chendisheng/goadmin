@@ -80,6 +80,40 @@ func TestMergePolicyLinesDeduplicatesEntries(t *testing.T) {
 	}
 }
 
+func TestMergeYAMLContentReplacesWithIndentedGeneratedContent(t *testing.T) {
+	t.Parallel()
+
+	current := []byte(strings.TrimSpace(`
+name: order
+routes:
+- method: GET
+path: /api/v1/orders
+`))
+	generated := []byte(strings.TrimSpace(`
+name: order
+routes:
+  - method: GET
+    path: /api/v1/orders
+  - method: POST
+    path: /api/v1/orders
+`))
+
+	result, err := MergeContent("backend/modules/order/manifest.yaml", current, generated, false)
+	if err != nil {
+		t.Fatalf("MergeContent returned error: %v", err)
+	}
+	if result.Conflict {
+		t.Fatal("expected YAML merge to replace content without conflict")
+	}
+	content := string(result.Content)
+	if !strings.Contains(content, "  - method: GET") || !strings.Contains(content, "    path: /api/v1/orders") {
+		t.Fatalf("expected indented YAML content, got:\n%s", content)
+	}
+	if strings.Contains(content, "- method: GET\npath: /api/v1/orders") {
+		t.Fatalf("expected malformed YAML to be replaced, got:\n%s", content)
+	}
+}
+
 func TestMergeUnsupportedTextKeepsExistingContent(t *testing.T) {
 	t.Parallel()
 

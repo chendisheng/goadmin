@@ -284,6 +284,7 @@ func (h *Handler) ensureProjectRoot() error {
 
 func (h *Handler) writeError(c coretransport.Context, err error) {
 	status, body := response.Failure(err, requestID(c))
+
 	c.JSON(status, body)
 }
 

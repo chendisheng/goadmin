@@ -213,6 +213,14 @@ type scaffoldData struct {
 	Force               bool
 }
 
+func (d scaffoldData) DisplayFields() []Field {
+	return nonPrimaryFields(d.Fields)
+}
+
+func (d scaffoldData) FormFields() []Field {
+	return nonPrimaryFields(d.Fields)
+}
+
 type manifestRenderData struct {
 	Name                string
 	Module              string

@@ -66,8 +66,17 @@ func AccessLog(log *zap.Logger) gin.HandlerFunc {
 			zap.String("user_agent", c.Request.UserAgent()),
 		}
 		if len(c.Errors) > 0 {
-			fields = append(fields, zap.String("errors", c.Errors.String()))
-			log.Error("http request", fields...)
+			// Log each error with detailed information
+			for _, err := range c.Errors {
+				fields = append(fields, zap.String("error", err.Error()))
+				if err.Meta != nil {
+					fields = append(fields, zap.Any("error_meta", err.Meta))
+				}
+				if err.Type != 0 {
+					fields = append(fields, zap.Uint64("error_type", uint64(err.Type)))
+				}
+			}
+			log.Error("http request failed", fields...)
 			return
 		}
 		log.Info("http request", fields...)

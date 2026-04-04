@@ -53,7 +53,7 @@ func MergeContent(path string, current, generated []byte, force bool) (Result, e
 	case ".csv":
 		return mergeDelimitedContent(cleanPath, current, generated, true), nil
 	case ".yaml", ".yml":
-		return mergeDelimitedContent(cleanPath, current, generated, false), nil
+		return mergeYAMLContent(cleanPath, current, generated), nil
 	default:
 		return Result{
 			Content: current,
@@ -67,6 +67,20 @@ func MergeContent(path string, current, generated []byte, force bool) (Result, e
 			Changed:  false,
 			Conflict: true,
 		}, nil
+	}
+}
+
+func mergeYAMLContent(path string, current, generated []byte) Result {
+	content := postprocess.EnsureTrailingNewline(generated)
+	return Result{
+		Content: content,
+		Diff: diffmodel.Document{Items: []diffmodel.Item{{
+			Type:     diffmodel.TypeModifyFile,
+			Target:   path,
+			Severity: diffmodel.SeverityLow,
+			Metadata: map[string]any{"strategy": "replace"},
+		}}},
+		Changed: !bytes.Equal(bytes.TrimSpace(current), bytes.TrimSpace(content)),
 	}
 }
 

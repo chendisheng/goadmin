@@ -1,23 +1,23 @@
 import http from './http';
 
-const basePath = '/api/v1/books'
+const basePath = '/api/v1/orders'
 
-export function listbooks(params = {}) {
+export function listorders(params = {}) {
   return http.get(basePath, { params });
 }
 
-export function getBook(id) {
+export function getOrder(id) {
   return http.get(basePath + '/' + id);
 }
 
-export function createBook(data) {
+export function createOrder(data) {
   return http.post(basePath, data);
 }
 
-export function updateBook(id, data) {
+export function updateOrder(id, data) {
   return http.put(basePath + '/' + id, data);
 }
 
-export function deleteBook(id) {
+export function deleteOrder(id) {
   return http.delete(basePath + '/' + id);
 }

@@ -27,8 +27,14 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: true,
+      sourcemap: false, // Disable sourcemaps for faster builds
       target: 'es2022',
+      minify: 'esbuild',
+      rollupOptions: {
+        output: {
+          manualChunks: undefined, // Disable manual chunking for faster builds
+        },
+      },
     },
   };
 });

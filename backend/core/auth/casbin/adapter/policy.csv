@@ -38,3 +38,8 @@ p, admin, /api/v1/books, POST
 p, admin, /api/v1/books/:id, PUT
 p, admin, /api/v1/books/:id, DELETE
 p, admin, /system/codegen, GET
+p, admin, /api/v1/orders, GET
+p, admin, /api/v1/orders/:id, GET
+p, admin, /api/v1/orders, POST
+p, admin, /api/v1/orders/:id, PUT
+p, admin, /api/v1/orders/:id, DELETE

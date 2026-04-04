@@ -50,10 +50,12 @@ func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req Dat
 	if err := req.Validate(); err != nil {
 		return DatabasePreviewReport{}, err
 	}
+
 	conn, err := infradb.Open(config.DatabaseConfig{Driver: req.Driver, DSN: req.DSN})
 	if err != nil {
-		return DatabasePreviewReport{}, apperrors.New(apperrors.CodeInternal, "open database connection failed")
+		return DatabasePreviewReport{}, apperrors.Wrap(err, apperrors.CodeInternal, "open database connection failed")
 	}
+
 	opts := irbuilderapp.DatabaseBuildOptions{
 		Tables:           append([]string(nil), req.Tables...),
 		Force:            req.Force,
@@ -61,33 +63,50 @@ func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req Dat
 		GeneratePolicy:   req.GeneratePolicy,
 		MountParentPath:  req.MountParentPath,
 	}
+
 	irDoc, err := builder.BuildFromDatabaseWithOptions(conn, req.Database, req.Schema, opts)
 	if err != nil {
-		return DatabasePreviewReport{}, err
+		return DatabasePreviewReport{}, apperrors.Wrap(err, apperrors.CodeInternal, "failed to build IR from database")
 	}
+
 	schemaDoc := irbuilderapp.ConvertIRDocumentToSchemaDocumentWithOptions(irDoc, opts)
+
 	plan, err := builder.PlanSchemaDocumentWithOptions(schemaDoc, opts)
 	if err != nil {
-		return DatabasePreviewReport{}, err
+		return DatabasePreviewReport{}, apperrors.Wrap(err, apperrors.CodeInternal, "failed to plan schema document")
 	}
+
 	report, err := BuildDatabasePreviewReport(root, req, irDoc, schemaDoc, plan, dryRun)
 	if err != nil {
-		return DatabasePreviewReport{}, err
+		return DatabasePreviewReport{}, apperrors.Wrap(err, apperrors.CodeInternal, "failed to build preview report")
 	}
+
 	if dryRun {
 		report.Messages = append([]string{"database preview: dry-run; no files will be written"}, report.Messages...)
 		return report, nil
 	}
+
 	resources, err := schemaDoc.ResolveResources()
 	if err != nil {
-		return DatabasePreviewReport{}, err
+		return DatabasePreviewReport{}, apperrors.Wrap(err, apperrors.CodeInternal, "failed to resolve resources")
 	}
+
 	if err := ExecuteDSLResources(root, resources, req.Force); err != nil {
-		return DatabasePreviewReport{}, err
+		return DatabasePreviewReport{}, apperrors.Wrap(err, apperrors.CodeInternal, "failed to execute DSL resources")
 	}
+
 	report.DryRun = false
 	report.Messages = append(report.Messages, fmt.Sprintf("generated %d resource(s)", len(report.Resources)))
 	return report, nil
+}
+
+// maskDSN masks sensitive information in DSN for logging
+func maskDSN(dsn string) string {
+	if len(dsn) <= 8 {
+		return "***"
+	}
+	// Simple masking - show first 4 and last 4 chars
+	return dsn[:4] + "***" + dsn[len(dsn)-4:]
 }
 
 func runGenerateDB(root string, args []string) error {

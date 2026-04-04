@@ -4,7 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
-import { createBook, deleteBook, getBook, listbooks, updateBook } from '@/api/book';
+import { createBook, deleteBook, listbooks, updateBook } from '@/api/book';
 import { formatDateTime } from '@/utils/admin';
 
 type BookItem = {
@@ -77,7 +77,7 @@ function resetForm() {
   Object.assign(form, defaultForm());
 }
 
-async function loadBooks() {
+async function loadItems() {
   tableLoading.value = true;
   try {
     const response = await listbooks({ ...query });
@@ -94,36 +94,30 @@ function openCreate() {
   dialogVisible.value = true;
 }
 
-async function openEdit(row: BookItem) {
+function openEdit(row: BookItem) {
   editingId.value = row.id;
-  const detail = await getBook(row.id).catch(() => row);
   Object.assign(form, {
-    ...defaultForm(),
-    tenant_id: detail.tenant_id ?? '',
-    title: detail.title ?? '',
-    author: detail.author ?? '',
-    isbn: detail.isbn ?? '',
-    publisher: detail.publisher ?? '',
-    publish_date: detail.publish_date ?? '',
-    category: detail.category ?? '',
-    description: detail.description ?? '',
-    status: detail.status ?? '',
-    price: Number(detail.price ?? 0),
-    stock_quantity: Number(detail.stock_quantity ?? 0),
-    cover_image_url: detail.cover_image_url ?? '',
-    tags: detail.tags ?? '',
+    tenant_id: row.tenant_id ?? '',
+    title: row.title ?? '',
+    author: row.author ?? '',
+    isbn: row.isbn ?? '',
+    publisher: row.publisher ?? '',
+    publish_date: row.publish_date ?? '',
+    category: row.category ?? '',
+    description: row.description ?? '',
+    status: row.status ?? '',
+    price: Number(row.price ?? 0),
+    stock_quantity: Number(row.stock_quantity ?? 0),
+    cover_image_url: row.cover_image_url ?? '',
+    tags: row.tags ?? '',
   });
   dialogVisible.value = true;
 }
 
 async function submitForm() {
-  if (form.title.trim() === '') {
-    ElMessage.warning('请输入书名');
-    return;
-  }
   dialogLoading.value = true;
   try {
-    const payload = {
+    const payload: BookFormState = {
       tenant_id: form.tenant_id.trim(),
       title: form.title.trim(),
       author: form.author.trim(),
@@ -141,14 +135,14 @@ async function submitForm() {
 
     if (editingId.value) {
       await updateBook(editingId.value, payload);
-      ElMessage.success('图书已更新');
+      ElMessage.success('Book 已更新');
     } else {
       await createBook(payload);
-      ElMessage.success('图书已创建');
+      ElMessage.success('Book 已创建');
     }
 
     dialogVisible.value = false;
-    await loadBooks();
+    await loadItems();
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '保存失败');
   } finally {
@@ -157,55 +151,59 @@ async function submitForm() {
 }
 
 async function removeRow(row: BookItem) {
-  await ElMessageBox.confirm(`确认删除图书 ${row.title || row.id} 吗？`, '删除图书', {
+  await ElMessageBox.confirm('确认删除 Book ' + row.id + ' 吗？', '删除Book', {
     type: 'warning',
     confirmButtonText: '删除',
     cancelButtonText: '取消',
   });
   await deleteBook(row.id);
-  ElMessage.success('图书已删除');
-  await loadBooks();
+  ElMessage.success('Book 已删除');
+  await loadItems();
 }
 
 function handleSearch() {
   query.page = 1;
-  void loadBooks();
+  void loadItems();
 }
 
 function handleReset() {
   query.keyword = '';
   query.page = 1;
-  void loadBooks();
+  void loadItems();
 }
 
 function handlePageChange(page: number) {
   query.page = page;
-  void loadBooks();
+  void loadItems();
 }
 
 function handleSizeChange(pageSize: number) {
   query.page_size = pageSize;
   query.page = 1;
-  void loadBooks();
+  void loadItems();
 }
 
 onMounted(() => {
-  void loadBooks();
+  void loadItems();
 });
 </script>
 
 <template>
   <div class="admin-page">
-    <AdminTable title="Book Management" description="由 goadmin-cli 生成的图书 CRUD 页面，可直接用于列表、编辑和删除。" :loading="tableLoading">
+    <AdminTable
+      title="Book管理"
+      description="由 goadmin-cli 生成的 CRUD 页面，可直接用于列表、编辑和删除。"
+      :loading="tableLoading"
+    >
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadBooks">刷新</el-button>
-        <el-button v-permission="'book:create'" type="primary" @click="openCreate">新增图书</el-button>
+        <el-button :loading="tableLoading" @click="loadItems">刷新</el-button>
+        <el-button v-permission="'book:create'" type="primary" @click="openCreate">新增Book</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
           <el-form-item label="关键字">
-            <el-input v-model="query.keyword" clearable placeholder="书名 / 作者 / ISBN" />
+            <el-input v-model="query.keyword" clearable placeholder="搜索Book数据" />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -215,31 +213,142 @@ onMounted(() => {
       </template>
 
       <el-table :data="rows" border row-key="id" v-loading="tableLoading">
-        <el-table-column prop="title" label="书名" min-width="160" />
-        <el-table-column prop="author" label="作者" min-width="140" />
-        <el-table-column prop="isbn" label="ISBN" min-width="160" />
-        <el-table-column prop="publisher" label="出版社" min-width="140" />
-        <el-table-column label="出版日期" min-width="180">
+        <el-table-column prop="id" label="ID" min-width="160" />
+        <el-table-column
+          prop="tenant_id"
+          label="Tenant Id"
+          min-width="140"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.tenant_id || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="title"
+          label="Title"
+          min-width="140"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.title || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="author"
+          label="Author"
+          min-width="140"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.author || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="isbn"
+          label="Isbn"
+          min-width="140"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.isbn || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="publisher"
+          label="Publisher"
+          min-width="140"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.publisher || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="publish_date"
+          label="Publish Date"
+          min-width="180"
+        >
           <template #default="{ row }">
             {{ formatDateTime(row.publish_date) }}
           </template>
         </el-table-column>
-        <el-table-column prop="category" label="分类" min-width="120" />
-        <el-table-column prop="status" label="状态" min-width="120" />
-        <el-table-column label="价格" min-width="100">
+        <el-table-column
+          prop="category"
+          label="Category"
+          min-width="140"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
-            {{ row.price ?? 0 }}
+            {{ row.category || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="库存" min-width="100">
+        <el-table-column
+          prop="description"
+          label="Description"
+          min-width="220"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
-            {{ row.stock_quantity ?? 0 }}
+            {{ row.description || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="tags" label="标签" min-width="180" show-overflow-tooltip />
+        <el-table-column
+          prop="status"
+          label="Status"
+          min-width="140"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.status || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="price"
+          label="Price"
+          min-width="120"
+        >
+          <template #default="{ row }">
+            {{ row.price || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="stock_quantity"
+          label="Stock Quantity"
+          min-width="120"
+        >
+          <template #default="{ row }">
+            {{ row.stock_quantity || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="cover_image_url"
+          label="Cover Image Url"
+          min-width="140"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.cover_image_url || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="tags"
+          label="Tags"
+          min-width="140"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.tags || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="创建时间" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.created_at) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="更新时间" min-width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.updated_at) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
@@ -268,56 +377,56 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑图书' : '新增图书'"
+      :title="editingId ? '编辑Book' : '新增Book'"
       :loading="dialogLoading"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form">
-        <el-form-item label="租户ID">
-          <el-input v-model="form.tenant_id" placeholder="请输入租户ID" />
+        <el-form-item label="Tenant Id">
+          <el-input v-model="form.tenant_id" :placeholder="'请输入Tenant Id'" />
         </el-form-item>
-        <el-form-item label="书名" required>
-          <el-input v-model="form.title" placeholder="请输入书名" />
+        <el-form-item label="Title">
+          <el-input v-model="form.title" :placeholder="'请输入Title'" />
         </el-form-item>
-        <el-form-item label="作者">
-          <el-input v-model="form.author" placeholder="请输入作者" />
+        <el-form-item label="Author">
+          <el-input v-model="form.author" :placeholder="'请输入Author'" />
         </el-form-item>
-        <el-form-item label="ISBN">
-          <el-input v-model="form.isbn" placeholder="请输入 ISBN" />
+        <el-form-item label="Isbn">
+          <el-input v-model="form.isbn" :placeholder="'请输入Isbn'" />
         </el-form-item>
-        <el-form-item label="出版社">
-          <el-input v-model="form.publisher" placeholder="请输入出版社" />
+        <el-form-item label="Publisher">
+          <el-input v-model="form.publisher" :placeholder="'请输入Publisher'" />
         </el-form-item>
-        <el-form-item label="出版日期">
+        <el-form-item label="Publish Date">
           <el-date-picker
             v-model="form.publish_date"
             type="datetime"
             format="YYYY-MM-DD HH:mm:ss"
             value-format="YYYY-MM-DDTHH:mm:ssZ"
-            placeholder="请选择出版日期"
+            placeholder="请选择Publish Date"
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="分类">
-          <el-input v-model="form.category" placeholder="请输入分类" />
+        <el-form-item label="Category">
+          <el-input v-model="form.category" :placeholder="'请输入Category'" />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" :rows="4" placeholder="请输入描述" />
+        <el-form-item label="Description">
+          <el-input v-model="form.description" type="textarea" :rows="4" :placeholder="'请输入Description'" />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-input v-model="form.status" placeholder="请输入状态" />
+        <el-form-item label="Status">
+          <el-input v-model="form.status" :placeholder="'请输入Status'" />
         </el-form-item>
-        <el-form-item label="价格">
+        <el-form-item label="Price">
           <el-input-number v-model="form.price" :controls="false" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="库存">
+        <el-form-item label="Stock Quantity">
           <el-input-number v-model="form.stock_quantity" :controls="false" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="封面地址">
-          <el-input v-model="form.cover_image_url" placeholder="请输入封面地址" />
+        <el-form-item label="Cover Image Url">
+          <el-input v-model="form.cover_image_url" :placeholder="'请输入Cover Image Url'" />
         </el-form-item>
-        <el-form-item label="标签">
-          <el-input v-model="form.tags" placeholder="请输入标签，多个值请用逗号分隔" />
+        <el-form-item label="Tags">
+          <el-input v-model="form.tags" :placeholder="'请输入Tags'" />
         </el-form-item>
       </el-form>
     </AdminFormDialog>

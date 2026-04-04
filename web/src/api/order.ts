@@ -1,6 +1,6 @@
 import http from './http';
 
-const basePath = '/api/v1/orders'
+const basePath = '/orders'
 
 export function listorders(params = {}) {
   return http.get(basePath, { params });

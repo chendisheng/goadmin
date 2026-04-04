@@ -20,6 +20,8 @@ import (
 	authservice "goadmin/modules/auth/application/service"
 	authsubscriber "goadmin/modules/auth/application/subscriber"
 	authrepo "goadmin/modules/auth/infrastructure/repo"
+	bookservice "goadmin/modules/book/application/service"
+	bookrepopkg "goadmin/modules/book/infrastructure/repo"
 	menuservice "goadmin/modules/menu/application/service"
 	menurepopkg "goadmin/modules/menu/infrastructure/repo"
 	roleservice "goadmin/modules/role/application/service"
@@ -94,6 +96,9 @@ func main() {
 	if err := menurepopkg.Migrate(dbConn); err != nil {
 		logger.Fatal("migrate menu repository", zap.Error(err))
 	}
+	if err := bookrepopkg.Migrate(dbConn); err != nil {
+		logger.Fatal("migrate book repository", zap.Error(err))
+	}
 	if err := pluginrepopkg.Migrate(dbConn); err != nil {
 		logger.Fatal("migrate plugin repository", zap.Error(err))
 	}
@@ -113,6 +118,10 @@ func main() {
 	if err != nil {
 		logger.Fatal("init menu repository", zap.Error(err))
 	}
+	bookRepo, err := bookrepopkg.NewGormRepository(dbConn)
+	if err != nil {
+		logger.Fatal("init book repository", zap.Error(err))
+	}
 	pluginRepo, err := pluginrepopkg.NewGormRepository(dbConn)
 	if err != nil {
 		logger.Fatal("init plugin repository", zap.Error(err))
@@ -129,6 +138,10 @@ func main() {
 	menuSvc, err := menuservice.New(menuRepo)
 	if err != nil {
 		logger.Fatal("init menu service", zap.Error(err))
+	}
+	bookSvc, err := bookservice.New(bookRepo)
+	if err != nil {
+		logger.Fatal("init book service", zap.Error(err))
 	}
 	pluginSvc, err := pluginservice.New(pluginRepo)
 	if err != nil {
@@ -161,6 +174,7 @@ func main() {
 		UserService:    userSvc,
 		RoleService:    roleSvc,
 		MenuService:    menuSvc,
+		BookService:    bookSvc,
 		PluginService:  pluginSvc,
 		PluginRegistry: pluginRegistry,
 		ProjectRoot:    projectRoot,

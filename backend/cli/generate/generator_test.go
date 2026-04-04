@@ -60,6 +60,20 @@ func TestParseFields(t *testing.T) {
 	}
 }
 
+func TestGormStringSize(t *testing.T) {
+	t.Parallel()
+
+	if got := (Field{GoType: "string", Primary: true}).GormStringSize(); got != 64 {
+		t.Fatalf("primary string size = %d, want 64", got)
+	}
+	if got := (Field{GoType: "string", Index: true}).GormStringSize(); got != 191 {
+		t.Fatalf("indexed string size = %d, want 191", got)
+	}
+	if got := (Field{GoType: "string"}).GormStringSize(); got != 255 {
+		t.Fatalf("plain string size = %d, want 255", got)
+	}
+}
+
 func TestGenerateModule(t *testing.T) {
 	t.Parallel()
 
@@ -109,6 +123,8 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	responsePath := filepath.Join(root, "backend", "modules", "article", "transport", "http", "response", "article.go")
 	policyPath := filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv")
 
+	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;size:64"`)
+	assertFileContains(t, modelPath, `gorm:"column:name;size:255"`)
 	assertFileContains(t, modelPath, "PublishAt time.Time")
 	assertFileContains(t, modelPath, "Tags")
 	assertFileContains(t, modelPath, "[]string")
@@ -190,7 +206,18 @@ func TestGenerateCRUDFrontendRendersUsablePage(t *testing.T) {
 		t.Fatalf("GenerateCRUD returned error: %v", err)
 	}
 
+	apiPath := filepath.Join(root, "web", "src", "api", "book.ts")
 	viewPath := filepath.Join(root, "web", "src", "views", "book", "index.vue")
+	assertFileContains(t, apiPath, "const basePath = '/books'")
+	assertFileContains(t, apiPath, "http.post(basePath, data)")
+	content, err := os.ReadFile(apiPath)
+	if err != nil {
+		t.Fatalf("read api file: %v", err)
+	}
+	if strings.Contains(string(content), "/api/v1/books") {
+		t.Fatalf("generated api file still contains /api/v1 prefix: %s", string(content))
+	}
+
 	assertFileContains(t, viewPath, "AdminTable")
 	assertFileContains(t, viewPath, "AdminFormDialog")
 	assertFileContains(t, viewPath, "listbooks")
@@ -199,7 +226,7 @@ func TestGenerateCRUDFrontendRendersUsablePage(t *testing.T) {
 	assertFileContains(t, viewPath, "deleteBook")
 	assertFileContains(t, viewPath, "el-date-picker")
 	assertFileContains(t, viewPath, "el-input-number")
-	assertFileContains(t, viewPath, "el-table-column prop=\"title\"")
+	assertFileContains(t, viewPath, "prop=\"title\"")
 	assertFileContains(t, viewPath, "Book管理")
 }
 

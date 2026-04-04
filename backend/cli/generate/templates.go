@@ -435,7 +435,7 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 
 const frontendApiTemplate = `import http from './http';
 
-const basePath = '/api/v1/{{.EntityPlural}}'
+const basePath = '/{{.EntityPlural}}'
 
 export function list{{.EntityPlural}}(params = {}) {
   return http.get(basePath, { params });

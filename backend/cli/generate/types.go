@@ -501,6 +501,9 @@ func (f Field) GormTag() string {
 	if f.Primary {
 		parts = append(parts, "primaryKey")
 	}
+	if f.GoType == "string" {
+		parts = append(parts, fmt.Sprintf("size:%d", f.GormStringSize()))
+	}
 	if f.Index {
 		parts = append(parts, "index")
 	}
@@ -508,6 +511,16 @@ func (f Field) GormTag() string {
 		parts = append(parts, "uniqueIndex")
 	}
 	return strings.Join(parts, ";")
+}
+
+func (f Field) GormStringSize() int {
+	if f.Primary {
+		return 64
+	}
+	if f.Index || f.Unique {
+		return 191
+	}
+	return 255
 }
 
 func (f Field) IsTime() bool {

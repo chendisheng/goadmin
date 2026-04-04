@@ -17,6 +17,8 @@ routes:
     path: /api/v1/codegen-consoles/:id
   - method: DELETE
     path: /api/v1/codegen-consoles/:id
+  - method: POST
+    path: /api/v1/codegen/install/manifest
 menus:
   - name: Codegen
     path: /codegen

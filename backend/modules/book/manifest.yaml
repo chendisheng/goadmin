@@ -17,22 +17,6 @@ routes:
     path: /api/v1/books/:id
   - method: DELETE
     path: /api/v1/books/:id
-permissions:
-  - object: book
-    action: list
-    description: List Book
-  - object: book
-    action: view
-    description: View Book
-  - object: book
-    action: create
-    description: Create Book
-  - object: book
-    action: update
-    description: Update Book
-  - object: book
-    action: delete
-    description: Delete Book
 menus:
   - name: Books
     path: /books
@@ -54,6 +38,22 @@ menus:
     visible: true
     enabled: true
     sort: 2
+permissions:
+  - object: book
+    action: list
+    description: List Book
+  - object: book
+    action: view
+    description: View Book
+  - object: book
+    action: create
+    description: Create Book
+  - object: book
+    action: update
+    description: Update Book
+  - object: book
+    action: delete
+    description: Delete Book
 capabilities:
   - basic-crud
   - policy-generated

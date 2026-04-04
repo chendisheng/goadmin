@@ -74,6 +74,32 @@ func TestGormStringSize(t *testing.T) {
 	}
 }
 
+func TestGormTagPrimaryKeyModes(t *testing.T) {
+	t.Parallel()
+
+	stringPK := Field{GoType: "string", Primary: true, Column: "id"}.GormTag()
+	if !strings.Contains(stringPK, "primaryKey") {
+		t.Fatalf("string primary key tag missing primaryKey: %q", stringPK)
+	}
+	if !strings.Contains(stringPK, "size:64") {
+		t.Fatalf("string primary key tag missing size:64: %q", stringPK)
+	}
+	if strings.Contains(stringPK, "autoIncrement") {
+		t.Fatalf("string primary key tag should not contain autoIncrement: %q", stringPK)
+	}
+
+	intPK := Field{GoType: "int64", Primary: true, Column: "id"}.GormTag()
+	if !strings.Contains(intPK, "primaryKey") {
+		t.Fatalf("int primary key tag missing primaryKey: %q", intPK)
+	}
+	if !strings.Contains(intPK, "autoIncrement") {
+		t.Fatalf("int primary key tag missing autoIncrement: %q", intPK)
+	}
+	if strings.Contains(intPK, "size:") {
+		t.Fatalf("int primary key tag should not contain string size: %q", intPK)
+	}
+}
+
 func TestGenerateModule(t *testing.T) {
 	t.Parallel()
 
@@ -145,6 +171,49 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	lines := nonEmptyLines(string(content))
 	if got, want := len(lines), 5; got != want {
 		t.Fatalf("policy line count = %d, want %d; content=%q", got, want, string(content))
+	}
+}
+
+func TestGenerateCRUDPrimaryKeyModes(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+
+	stringFields, err := ParseFields("name:string", "", "", "")
+	if err != nil {
+		t.Fatalf("ParseFields returned error: %v", err)
+	}
+	if err := gen.GenerateCRUD(CRUDOptions{Name: "Article", Fields: stringFields, GenerateFrontend: false, GeneratePolicy: false}); err != nil {
+		t.Fatalf("GenerateCRUD(string primary) returned error: %v", err)
+	}
+
+	stringModelPath := filepath.Join(root, "backend", "modules", "article", "domain", "model", "article.go")
+	stringRepoPath := filepath.Join(root, "backend", "modules", "article", "infrastructure", "repo", "gorm.go")
+	assertFileContains(t, stringModelPath, `gorm:"column:id;primaryKey;size:64"`)
+	assertFileContains(t, stringRepoPath, `item.Id = nextRecordID("article")`)
+
+	numericFields, err := ParseFields("id:int64,title:string", "id", "", "")
+	if err != nil {
+		t.Fatalf("ParseFields returned error: %v", err)
+	}
+	if err := gen.GenerateCRUD(CRUDOptions{Name: "Chapter", Fields: numericFields, GenerateFrontend: false, GeneratePolicy: false}); err != nil {
+		t.Fatalf("GenerateCRUD(auto increment primary) returned error: %v", err)
+	}
+
+	numericModelPath := filepath.Join(root, "backend", "modules", "chapter", "domain", "model", "chapter.go")
+	numericRepoPath := filepath.Join(root, "backend", "modules", "chapter", "infrastructure", "repo", "gorm.go")
+	assertFileContains(t, numericModelPath, `gorm:"column:id;primaryKey;autoIncrement"`)
+
+	numericRepoContent, err := os.ReadFile(numericRepoPath)
+	if err != nil {
+		t.Fatalf("read numeric repo file: %v", err)
+	}
+	if strings.Contains(string(numericRepoContent), "nextRecordID(") {
+		t.Fatalf("auto increment repo should not generate nextRecordID: %s", string(numericRepoContent))
+	}
+	if strings.Contains(string(numericRepoContent), "strings.TrimSpace(item.Id)") {
+		t.Fatalf("auto increment repo should not assign string IDs: %s", string(numericRepoContent))
 	}
 }
 

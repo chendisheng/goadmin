@@ -164,6 +164,10 @@ const gormRepositoryTemplate = `package repo
 import (
 	"context"
 	"fmt"
+{{if .NeedsPrimaryIDGeneration}}
+	"strings"
+	"time"
+{{end}}
 
 	"goadmin/modules/{{.EntityLower}}/domain/model"
 
@@ -222,6 +226,11 @@ func (r *GormRepository) Create(ctx context.Context, item *model.{{.Entity}}) (*
 	if item == nil {
 		return nil, fmt.Errorf("{{.EntityLower}} item is nil")
 	}
+{{if .NeedsPrimaryIDGeneration}}
+	if strings.TrimSpace(item.Id) == "" {
+		item.Id = nextRecordID("{{.EntityLower}}")
+	}
+{{end}}
 	if err := r.db.WithContext(ctx).Create(item).Error; err != nil {
 		return nil, err
 	}
@@ -250,6 +259,12 @@ func (r *GormRepository) Delete(ctx context.Context, id string) error {
 	}
 	return nil
 }
+{{if .NeedsPrimaryIDGeneration}}
+
+func nextRecordID(prefix string) string {
+	return fmt.Sprintf("%s-%d", prefix, time.Now().UTC().UnixNano())
+}
+{{end}}
 `
 
 const requestTemplate = `package request

@@ -213,6 +213,19 @@ type scaffoldData struct {
 	Force               bool
 }
 
+func (d scaffoldData) PrimaryField() Field {
+	for _, field := range d.Fields {
+		if field.Primary {
+			return field
+		}
+	}
+	return Field{}
+}
+
+func (d scaffoldData) NeedsPrimaryIDGeneration() bool {
+	return d.PrimaryField().IsStringPrimaryKey()
+}
+
 func (d scaffoldData) DisplayFields() []Field {
 	return nonPrimaryFields(d.Fields)
 }

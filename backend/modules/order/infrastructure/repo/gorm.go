@@ -3,6 +3,8 @@ package repo
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"goadmin/modules/order/domain/model"
 
@@ -61,6 +63,9 @@ func (r *GormRepository) Create(ctx context.Context, item *model.Order) (*model.
 	if item == nil {
 		return nil, fmt.Errorf("order item is nil")
 	}
+	if strings.TrimSpace(item.Id) == "" {
+		item.Id = nextRecordID("order")
+	}
 	if err := r.db.WithContext(ctx).Create(item).Error; err != nil {
 		return nil, err
 	}
@@ -88,4 +93,8 @@ func (r *GormRepository) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	return nil
+}
+
+func nextRecordID(prefix string) string {
+	return fmt.Sprintf("%s-%d", prefix, time.Now().UTC().UnixNano())
 }

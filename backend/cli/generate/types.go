@@ -500,6 +500,9 @@ func (f Field) GormTag() string {
 	parts := []string{"column:" + f.Column}
 	if f.Primary {
 		parts = append(parts, "primaryKey")
+		if f.IsAutoIncrementPrimary() {
+			parts = append(parts, "autoIncrement")
+		}
 	}
 	if f.GoType == "string" {
 		parts = append(parts, fmt.Sprintf("size:%d", f.GormStringSize()))
@@ -521,6 +524,23 @@ func (f Field) GormStringSize() int {
 		return 191
 	}
 	return 255
+}
+
+func (f Field) IsStringPrimaryKey() bool {
+	return f.Primary && f.GoType == "string"
+}
+
+func (f Field) IsAutoIncrementPrimary() bool {
+	return f.Primary && f.IsIntegerType()
+}
+
+func (f Field) IsIntegerType() bool {
+	switch f.GoType {
+	case "int", "int32", "int64", "uint", "uint32", "uint64":
+		return true
+	default:
+		return false
+	}
 }
 
 func (f Field) IsTime() bool {

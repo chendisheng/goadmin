@@ -25,25 +25,25 @@ type DatabaseExecutionRequest struct {
 
 // ExecuteDatabaseDocument inspects the configured database, converts it through
 // IR/DSL/planner, and optionally writes files via the existing generator flow.
-func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req DatabaseExecutionRequest, dryRun bool) (DSLExecutionReport, error) {
+func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req DatabaseExecutionRequest, dryRun bool) (DatabasePreviewReport, error) {
 	if builder == nil {
 		builder = irbuilderapp.NewService(irbuilderapp.Dependencies{})
 	}
 	if strings.TrimSpace(root) == "" {
-		return DSLExecutionReport{}, fmt.Errorf("project root is required")
+		return DatabasePreviewReport{}, fmt.Errorf("project root is required")
 	}
 	if strings.TrimSpace(req.Driver) == "" {
-		return DSLExecutionReport{}, fmt.Errorf("database driver is required")
+		return DatabasePreviewReport{}, fmt.Errorf("database driver is required")
 	}
 	if strings.TrimSpace(req.DSN) == "" {
-		return DSLExecutionReport{}, fmt.Errorf("database dsn is required")
+		return DatabasePreviewReport{}, fmt.Errorf("database dsn is required")
 	}
 	if strings.TrimSpace(req.Database) == "" {
-		return DSLExecutionReport{}, fmt.Errorf("database name is required")
+		return DatabasePreviewReport{}, fmt.Errorf("database name is required")
 	}
 	conn, err := infradb.Open(config.DatabaseConfig{Driver: req.Driver, DSN: req.DSN})
 	if err != nil {
-		return DSLExecutionReport{}, err
+		return DatabasePreviewReport{}, err
 	}
 	opts := irbuilderapp.DatabaseBuildOptions{
 		Tables:           append([]string(nil), req.Tables...),
@@ -51,26 +51,32 @@ func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req Dat
 		GenerateFrontend: req.GenerateFrontend,
 		GeneratePolicy:   req.GeneratePolicy,
 	}
-	doc, err := builder.BuildSchemaDocumentWithOptions(conn, req.Database, req.Schema, opts)
+	irDoc, err := builder.BuildFromDatabaseWithOptions(conn, req.Database, req.Schema, opts)
 	if err != nil {
-		return DSLExecutionReport{}, err
+		return DatabasePreviewReport{}, err
 	}
-	if _, err := builder.PlanSchemaDocumentWithOptions(doc, opts); err != nil {
-		return DSLExecutionReport{}, err
-	}
-	resources, err := doc.ResolveResources()
+	schemaDoc := irbuilderapp.ConvertIRDocumentToSchemaDocumentWithOptions(irDoc, opts)
+	plan, err := builder.PlanSchemaDocumentWithOptions(schemaDoc, opts)
 	if err != nil {
-		return DSLExecutionReport{}, err
+		return DatabasePreviewReport{}, err
 	}
-	report := BuildDSLExecutionReport(resources, req.Force, dryRun)
+	report, err := BuildDatabasePreviewReport(root, req, irDoc, schemaDoc, plan, dryRun)
+	if err != nil {
+		return DatabasePreviewReport{}, err
+	}
 	if dryRun {
+		report.Messages = append([]string{"database preview: dry-run; no files will be written"}, report.Messages...)
 		return report, nil
 	}
+	resources, err := schemaDoc.ResolveResources()
+	if err != nil {
+		return DatabasePreviewReport{}, err
+	}
 	if err := ExecuteDSLResources(root, resources, req.Force); err != nil {
-		return DSLExecutionReport{}, err
+		return DatabasePreviewReport{}, err
 	}
 	report.DryRun = false
-	report.Messages = append(report.Messages, fmt.Sprintf("generated %d resource(s)", len(report.Items)))
+	report.Messages = append(report.Messages, fmt.Sprintf("generated %d resource(s)", len(report.Resources)))
 	return report, nil
 }
 
@@ -125,7 +131,7 @@ func runGenerateDBCommand(root string, args []string) error {
 		if err != nil {
 			return err
 		}
-		return previewExecutionReport(report)
+		return previewDatabaseReport(report)
 	case "generate":
 		_, err := ExecuteDatabaseDocument(root, nil, request, false)
 		return err
@@ -134,23 +140,9 @@ func runGenerateDBCommand(root string, args []string) error {
 	}
 }
 
-func previewExecutionReport(report DSLExecutionReport) error {
-	for _, message := range report.Messages {
-		if _, err := fmt.Fprintln(os.Stdout, message); err != nil {
-			return err
-		}
-	}
-	for _, item := range report.Items {
-		if _, err := fmt.Fprintf(os.Stdout, "resource[%d] kind=%s name=%s\n", item.Index, item.Kind, item.Name); err != nil {
-			return err
-		}
-		for _, action := range item.Actions {
-			if _, err := fmt.Fprintf(os.Stdout, "  - %s\n", action); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+func previewDatabaseReport(report DatabasePreviewReport) error {
+	_, err := fmt.Fprint(os.Stdout, previewDatabaseReportText(report))
+	return err
 }
 
 type stringListFlag []string

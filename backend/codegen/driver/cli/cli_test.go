@@ -130,17 +130,79 @@ func TestRunGenerateDBPreview(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run(generate db preview) returned error: %v", err)
 	}
-	if !strings.Contains(output, "dsl dry-run: no files will be written") {
+	if !strings.Contains(output, "database preview: dry-run; no files will be written") {
 		t.Fatalf("preview output missing dry-run message:\n%s", output)
 	}
-	if !strings.Contains(output, "resource[0]") {
-		t.Fatalf("preview output missing resource index:\n%s", output)
+	if !strings.Contains(output, "planner:") {
+		t.Fatalf("preview output missing planner section:\n%s", output)
 	}
-	if !strings.Contains(output, "kind=crud") {
-		t.Fatalf("preview output missing kind=crud:\n%s", output)
+	if !strings.Contains(output, "resource book [crud] (books)") {
+		t.Fatalf("preview output missing resource summary:\n%s", output)
 	}
-	if !strings.Contains(output, "name=book") {
-		t.Fatalf("preview output missing name=book:\n%s", output)
+	if !strings.Contains(output, "field mapping") {
+		t.Fatalf("preview output missing field mapping section:\n%s", output)
+	}
+	if !strings.Contains(output, "permission item") {
+		t.Fatalf("preview output missing permission item section:\n%s", output)
+	}
+	if !strings.Contains(output, "file plan:") {
+		t.Fatalf("preview output missing file plan section:\n%s", output)
+	}
+}
+
+func TestExecuteDatabaseDocumentDryRunReport(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "codegen.db")
+	db := openCLIIntegrationSQLiteDB(t, dbPath)
+	if err := db.Exec(`CREATE TABLE books (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL
+	);`).Error; err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	frontend := true
+	policy := true
+	report, err := ExecuteDatabaseDocument(root, nil, DatabaseExecutionRequest{
+		Driver:           "sqlite",
+		DSN:              dbPath,
+		Database:         "codegen",
+		Tables:           []string{"books"},
+		GenerateFrontend: &frontend,
+		GeneratePolicy:   &policy,
+	}, true)
+	if err != nil {
+		t.Fatalf("ExecuteDatabaseDocument(dry-run) returned error: %v", err)
+	}
+	if !report.DryRun {
+		t.Fatal("expected dry-run report")
+	}
+	if len(report.Planner.Resources) != 1 {
+		t.Fatalf("expected 1 planner resource, got %d", len(report.Planner.Resources))
+	}
+	if got, want := report.Planner.Resources[0].Name, "book"; got != want {
+		t.Fatalf("planner resource name = %q, want %q", got, want)
+	}
+	if len(report.Resources) != 1 {
+		t.Fatalf("expected 1 preview resource, got %d", len(report.Resources))
+	}
+	resource := report.Resources[0]
+	if len(resource.Fields) == 0 {
+		t.Fatal("expected field mappings in preview report")
+	}
+	if len(resource.Pages) == 0 {
+		t.Fatal("expected page items in preview report")
+	}
+	if len(resource.Permissions) == 0 {
+		t.Fatal("expected permission items in preview report")
+	}
+	if len(resource.Files) == 0 {
+		t.Fatal("expected file plan entries in preview report")
+	}
+	if _, err := os.Stat(filepath.Join(root, "backend", "modules", "book", "module.go")); !os.IsNotExist(err) {
+		t.Fatalf("dry-run should not create output files, got err=%v", err)
 	}
 }
 

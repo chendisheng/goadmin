@@ -21,6 +21,18 @@ func (s *Service) BuildSchemaDocument(db *gorm.DB, database string, schemaName s
 	return s.BuildSchemaDocumentWithOptions(db, database, schemaName, DatabaseBuildOptions{})
 }
 
+// ConvertIRDocumentToSchemaDocument converts an IR document into the schema
+// document form consumed by the existing DSL and planner pipeline.
+func ConvertIRDocumentToSchemaDocument(doc irmodel.Document) schema.Document {
+	return convertIRDocumentWithOptions(doc, DatabaseBuildOptions{})
+}
+
+// ConvertIRDocumentToSchemaDocumentWithOptions converts an IR document into
+// the schema document form while applying optional table filtering.
+func ConvertIRDocumentToSchemaDocumentWithOptions(doc irmodel.Document, opts DatabaseBuildOptions) schema.Document {
+	return convertIRDocumentWithOptions(doc, opts)
+}
+
 // BuildSchemaDocumentWithOptions inspects a database and converts the result
 // into the schema.Document form consumed by the existing DSL and planner
 // pipeline.

@@ -184,18 +184,21 @@ func TestHandlerPreviewDatabase(t *testing.T) {
 	if !ok {
 		t.Fatalf("PreviewDatabase body type = %T, want response.Envelope", ctx.jsonBody)
 	}
-	report, ok := envelope.Data.(cli.DSLExecutionReport)
+	report, ok := envelope.Data.(cli.DatabasePreviewReport)
 	if !ok {
-		t.Fatalf("PreviewDatabase data type = %T, want cli.DSLExecutionReport", envelope.Data)
+		t.Fatalf("PreviewDatabase data type = %T, want cli.DatabasePreviewReport", envelope.Data)
 	}
 	if !report.DryRun {
 		t.Fatal("expected dry-run report")
 	}
-	if len(report.Items) != 1 {
-		t.Fatalf("expected 1 preview item, got %d", len(report.Items))
+	if len(report.Resources) != 1 {
+		t.Fatalf("expected 1 preview resource, got %d", len(report.Resources))
 	}
-	if report.Items[0].Name != "book" {
-		t.Fatalf("expected preview item name book, got %q", report.Items[0].Name)
+	if report.Resources[0].Name != "book" {
+		t.Fatalf("expected preview resource name book, got %q", report.Resources[0].Name)
+	}
+	if len(report.Files) == 0 {
+		t.Fatal("expected file plan entries")
 	}
 }
 

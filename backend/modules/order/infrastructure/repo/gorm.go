@@ -36,6 +36,33 @@ func Migrate(db *gorm.DB) error {
 		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN user_id VARCHAR(64)").Error; err != nil {
 			return fmt.Errorf("ensure orders.user_id column: %w", err)
 		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN customer_name VARCHAR(255)").Error; err != nil {
+			return fmt.Errorf("ensure orders.customer_name column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN customer_email VARCHAR(255)").Error; err != nil {
+			return fmt.Errorf("ensure orders.customer_email column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN customer_phone VARCHAR(32)").Error; err != nil {
+			return fmt.Errorf("ensure orders.customer_phone column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN shipping_address VARCHAR(512)").Error; err != nil {
+			return fmt.Errorf("ensure orders.shipping_address column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN billing_address VARCHAR(512)").Error; err != nil {
+			return fmt.Errorf("ensure orders.billing_address column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN order_status VARCHAR(32)").Error; err != nil {
+			return fmt.Errorf("ensure orders.order_status column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN payment_status VARCHAR(32)").Error; err != nil {
+			return fmt.Errorf("ensure orders.payment_status column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN payment_method VARCHAR(64)").Error; err != nil {
+			return fmt.Errorf("ensure orders.payment_method column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN currency VARCHAR(16)").Error; err != nil {
+			return fmt.Errorf("ensure orders.currency column: %w", err)
+		}
 	}
 	return db.AutoMigrate(&model.Order{})
 }

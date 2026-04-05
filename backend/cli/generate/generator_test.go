@@ -158,8 +158,8 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	assertFileContains(t, modelPath, "[]string")
 	assertFileContains(t, modelPath, "append([]string(nil), m.Tags...)")
 	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;size:64"`)
-	assertFileContains(t, bootstrapPath, "func NewBootstrap() corebootstrap.Module")
-	assertFileContains(t, bootstrapPath, "func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap.Dependencies) error")
+	assertFileContains(t, bootstrapPath, "func NewBootstrap() corebootstrapcontract.Module")
+	assertFileContains(t, bootstrapPath, "func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error")
 
 	repoPath := filepath.Join(root, "backend", "modules", "article", "infrastructure", "repo", "gorm.go")
 	assertFileContains(t, repoPath, "LOWER(name) LIKE ?")

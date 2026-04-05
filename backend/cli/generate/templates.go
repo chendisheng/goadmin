@@ -465,7 +465,7 @@ const bootstrapTemplate = `package {{.PackageName}}
 import (
 	"fmt"
 
-	corebootstrap "goadmin/core/bootstrap"
+	corebootstrapcontract "goadmin/core/bootstrap/contract"
 	coretransport "goadmin/core/transport"
 	{{.EntityLower}}service "goadmin/modules/{{.EntityLower}}/application/service"
 	{{.EntityLower}}repo "goadmin/modules/{{.EntityLower}}/infrastructure/repo"
@@ -475,7 +475,7 @@ import (
 
 type Bootstrap struct{}
 
-func NewBootstrap() corebootstrap.Module {
+func NewBootstrap() corebootstrapcontract.Module {
 	return Bootstrap{}
 }
 
@@ -491,7 +491,7 @@ func (Bootstrap) Migrate(db *gorm.DB) error {
 	return {{.EntityLower}}repo.Migrate(db)
 }
 
-func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap.Dependencies) error {
+func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error {
 	if group == nil {
 		return fmt.Errorf("{{.EntityLower}} bootstrap requires route registrar")
 	}

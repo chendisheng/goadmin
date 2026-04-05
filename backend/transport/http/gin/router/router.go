@@ -16,14 +16,7 @@ import (
 	coretransport "goadmin/core/transport"
 	authservice "goadmin/modules/auth/application/service"
 	authhttp "goadmin/modules/auth/transport/http"
-	bookservice "goadmin/modules/book/application/service"
-	bookhttp "goadmin/modules/book/transport/http"
 	menuservice "goadmin/modules/menu/application/service"
-	menuhttp "goadmin/modules/menu/transport/http"
-	roleservice "goadmin/modules/role/application/service"
-	rolehttp "goadmin/modules/role/transport/http"
-	userservice "goadmin/modules/user/application/service"
-	userhttp "goadmin/modules/user/transport/http"
 	pluginservice "goadmin/plugin/application/service"
 	pluginiface "goadmin/plugin/interface"
 	pluginregistry "goadmin/plugin/registry"
@@ -40,9 +33,6 @@ type Dependencies struct {
 	Logger         *zap.Logger
 	Started        time.Time
 	AuthService    *authservice.Service
-	BookService    *bookservice.Service
-	UserService    *userservice.Service
-	RoleService    *roleservice.Service
 	MenuService    *menuservice.Service
 	PluginService  *pluginservice.Service
 	PluginRegistry *pluginregistry.Registry
@@ -76,11 +66,6 @@ func Register(engine *gin.Engine, deps Dependencies) {
 		})
 
 		protected := api.Group("", ginmiddleware.JWTAuth(deps.JWT, deps.Revocations), ginmiddleware.RequirePermission(deps.Authorizer))
-
-		bookhttp.Register(protected, bookhttp.Dependencies{Service: deps.BookService, Logger: deps.Logger})
-		userhttp.Register(protected, userhttp.Dependencies{Service: deps.UserService, Logger: deps.Logger})
-		rolehttp.Register(protected, rolehttp.Dependencies{Service: deps.RoleService, Logger: deps.Logger})
-		menuhttp.Register(protected, menuhttp.Dependencies{Service: deps.MenuService, Logger: deps.Logger})
 		artifactTTL := time.Duration(0)
 		artifactEnabled := false
 		artifactBaseDir := ""

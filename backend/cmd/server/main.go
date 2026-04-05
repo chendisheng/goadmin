@@ -21,15 +21,9 @@ import (
 	authservice "goadmin/modules/auth/application/service"
 	authsubscriber "goadmin/modules/auth/application/subscriber"
 	authrepo "goadmin/modules/auth/infrastructure/repo"
-	bookservice "goadmin/modules/book/application/service"
-	bookrepopkg "goadmin/modules/book/infrastructure/repo"
 	menuservice "goadmin/modules/menu/application/service"
 	menurepopkg "goadmin/modules/menu/infrastructure/repo"
-	roleservice "goadmin/modules/role/application/service"
-	rolerepopkg "goadmin/modules/role/infrastructure/repo"
 	userevent "goadmin/modules/user/application/event"
-	userservice "goadmin/modules/user/application/service"
-	userrepopkg "goadmin/modules/user/infrastructure/repo"
 	pluginservice "goadmin/plugin/application/service"
 	exampleplugin "goadmin/plugin/builtin/example"
 	pluginrepopkg "goadmin/plugin/infrastructure/repo"
@@ -88,64 +82,28 @@ func main() {
 		logger.Fatal("register event subscriber", zap.Error(err))
 	}
 
-	if err := userrepopkg.Migrate(dbConn); err != nil {
-		logger.Fatal("migrate user repository", zap.Error(err))
-	}
-	if err := rolerepopkg.Migrate(dbConn); err != nil {
-		logger.Fatal("migrate role repository", zap.Error(err))
-	}
-	if err := menurepopkg.Migrate(dbConn); err != nil {
-		logger.Fatal("migrate menu repository", zap.Error(err))
-	}
-	if err := bookrepopkg.Migrate(dbConn); err != nil {
-		logger.Fatal("migrate book repository", zap.Error(err))
-	}
 	if err := pluginrepopkg.Migrate(dbConn); err != nil {
 		logger.Fatal("migrate plugin repository", zap.Error(err))
-	}
-	if err := menurepopkg.SeedDefaults(dbConn); err != nil {
-		logger.Fatal("seed default menus", zap.Error(err))
 	}
 	if err := corebootstrap.MigrateAll(dbConn, corebootstrap.Modules()); err != nil {
 		logger.Fatal("migrate generated modules", zap.Error(err))
 	}
+	if err := menurepopkg.SeedDefaults(dbConn); err != nil {
+		logger.Fatal("seed default menus", zap.Error(err))
+	}
 
-	userRepo, err := userrepopkg.NewGormRepository(dbConn)
-	if err != nil {
-		logger.Fatal("init user repository", zap.Error(err))
-	}
-	roleRepo, err := rolerepopkg.NewGormRepository(dbConn)
-	if err != nil {
-		logger.Fatal("init role repository", zap.Error(err))
-	}
 	menuRepo, err := menurepopkg.NewGormRepository(dbConn)
 	if err != nil {
 		logger.Fatal("init menu repository", zap.Error(err))
-	}
-	bookRepo, err := bookrepopkg.NewGormRepository(dbConn)
-	if err != nil {
-		logger.Fatal("init book repository", zap.Error(err))
 	}
 	pluginRepo, err := pluginrepopkg.NewGormRepository(dbConn)
 	if err != nil {
 		logger.Fatal("init plugin repository", zap.Error(err))
 	}
 
-	userSvc, err := userservice.New(userRepo, eventBus)
-	if err != nil {
-		logger.Fatal("init user service", zap.Error(err))
-	}
-	roleSvc, err := roleservice.New(roleRepo)
-	if err != nil {
-		logger.Fatal("init role service", zap.Error(err))
-	}
 	menuSvc, err := menuservice.New(menuRepo)
 	if err != nil {
 		logger.Fatal("init menu service", zap.Error(err))
-	}
-	bookSvc, err := bookservice.New(bookRepo)
-	if err != nil {
-		logger.Fatal("init book service", zap.Error(err))
 	}
 	pluginSvc, err := pluginservice.New(pluginRepo)
 	if err != nil {
@@ -155,10 +113,6 @@ func main() {
 	pluginContainer := coreregistry.New()
 	pluginContainer.Register("config", cfg)
 	pluginContainer.Register("logger", logger)
-	pluginContainer.Register("auth_service", authSvc)
-	pluginContainer.Register("user_service", userSvc)
-	pluginContainer.Register("role_service", roleSvc)
-	pluginContainer.Register("menu_service", menuSvc)
 	pluginContainer.Register("event_bus", eventBus)
 
 	pluginRegistry, err := pluginloader.Load(&pluginiface.Context{
@@ -175,10 +129,7 @@ func main() {
 
 	server, err := ginserver.New(cfg, logger, router.Dependencies{
 		AuthService:    authSvc,
-		UserService:    userSvc,
-		RoleService:    roleSvc,
 		MenuService:    menuSvc,
-		BookService:    bookSvc,
 		PluginService:  pluginSvc,
 		PluginRegistry: pluginRegistry,
 		ProjectRoot:    projectRoot,

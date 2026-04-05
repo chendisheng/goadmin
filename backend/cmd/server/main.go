@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	coreauthbootstrap "goadmin/core/auth/bootstrap"
+	corebootstrap "goadmin/core/bootstrap"
 	"goadmin/core/config"
 	coreevent "goadmin/core/event"
 	corelogger "goadmin/core/logger"
@@ -105,6 +106,9 @@ func main() {
 	if err := menurepopkg.SeedDefaults(dbConn); err != nil {
 		logger.Fatal("seed default menus", zap.Error(err))
 	}
+	if err := corebootstrap.MigrateAll(dbConn, corebootstrap.Modules()); err != nil {
+		logger.Fatal("migrate generated modules", zap.Error(err))
+	}
 
 	userRepo, err := userrepopkg.NewGormRepository(dbConn)
 	if err != nil {
@@ -178,9 +182,15 @@ func main() {
 		PluginService:  pluginSvc,
 		PluginRegistry: pluginRegistry,
 		ProjectRoot:    projectRoot,
-		JWT:            authBundle.JWT,
-		Authorizer:     authBundle.Authorizer,
-		Revocations:    revocations,
+		// Generated modules use the shared bootstrap registry and only need DB/logger/event bus.
+		BootstrapDeps: corebootstrap.Dependencies{
+			DB:       dbConn,
+			Logger:   logger,
+			EventBus: eventBus,
+		},
+		JWT:         authBundle.JWT,
+		Authorizer:  authBundle.Authorizer,
+		Revocations: revocations,
 	})
 	if err != nil {
 		logger.Fatal("init server", zap.Error(err))

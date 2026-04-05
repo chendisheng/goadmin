@@ -145,9 +145,11 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	}
 
 	modelPath := filepath.Join(root, "backend", "modules", "article", "domain", "model", "article.go")
+	bootstrapPath := filepath.Join(root, "backend", "modules", "article", "bootstrap.go")
 	requestPath := filepath.Join(root, "backend", "modules", "article", "transport", "http", "request", "article.go")
 	responsePath := filepath.Join(root, "backend", "modules", "article", "transport", "http", "response", "article.go")
 	policyPath := filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv")
+	registryPath := filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go")
 
 	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;size:64"`)
 	assertFileContains(t, modelPath, `gorm:"column:name;size:255"`)
@@ -156,12 +158,15 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	assertFileContains(t, modelPath, "[]string")
 	assertFileContains(t, modelPath, "append([]string(nil), m.Tags...)")
 	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;size:64"`)
+	assertFileContains(t, bootstrapPath, "func NewBootstrap() corebootstrap.Module")
+	assertFileContains(t, bootstrapPath, "func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap.Dependencies) error")
 
 	repoPath := filepath.Join(root, "backend", "modules", "article", "infrastructure", "repo", "gorm.go")
 	assertFileContains(t, repoPath, "LOWER(name) LIKE ?")
 	assertFileContains(t, repoPath, "normalizePage(page, pageSize)")
 	assertFileContains(t, repoPath, "Order(\"updated_at DESC, created_at DESC, id ASC\")")
 	assertFileContains(t, repoPath, "strings.TrimSpace(strings.ToLower(keyword))")
+	assertFileContains(t, registryPath, "article.NewBootstrap()")
 	assertFileContains(t, requestPath, "Name")
 	assertFileContains(t, requestPath, `json:"name,omitempty"`)
 	assertFileContains(t, requestPath, `form:"name"`)

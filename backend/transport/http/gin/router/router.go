@@ -8,6 +8,7 @@ import (
 	codegenhttp "goadmin/codegen/transport/http"
 	coreauthbootstrap "goadmin/core/auth/bootstrap"
 	coreauthjwt "goadmin/core/auth/jwt"
+	corebootstrap "goadmin/core/bootstrap"
 	"goadmin/core/config"
 	apperrors "goadmin/core/errors"
 	coremiddleware "goadmin/core/middleware"
@@ -46,6 +47,7 @@ type Dependencies struct {
 	PluginService  *pluginservice.Service
 	PluginRegistry *pluginregistry.Registry
 	ProjectRoot    string
+	BootstrapDeps  corebootstrap.Dependencies
 	JWT            *coreauthjwt.Manager
 	Authorizer     coreauthbootstrap.Authorizer
 	Revocations    coreauthbootstrap.RevocationStore
@@ -94,6 +96,9 @@ func Register(engine *gin.Engine, deps Dependencies) {
 			ArtifactTTL:     artifactTTL,
 			MenuService:     deps.MenuService,
 		})
+		if err := corebootstrap.RegisterAll(protected, deps.BootstrapDeps, corebootstrap.Modules()); err != nil {
+			panic(err)
+		}
 		pluginhttp.Register(protected, pluginhttp.Dependencies{Service: deps.PluginService, Logger: deps.Logger})
 		registerPluginRoutes(api, protected, deps.PluginRegistry)
 	}

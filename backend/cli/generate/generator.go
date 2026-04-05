@@ -365,6 +365,9 @@ func (g *Generator) GenerateCRUD(opts CRUDOptions) error {
 	if err := g.writeScaffold(data); err != nil {
 		return err
 	}
+	if err := g.refreshBootstrapRegistry(); err != nil {
+		return err
+	}
 	if opts.GeneratePolicy {
 		if err := g.appendPolicyLines(data.PolicyLines()); err != nil {
 			return err
@@ -796,6 +799,7 @@ func normalizePath(path string) string {
 func (g *Generator) writeScaffold(data scaffoldData) error {
 	base := filepath.Join(g.Root, "backend", "modules", data.EntityLower)
 	files := map[string]string{
+		filepath.Join(base, "bootstrap.go"):                                          bootstrapTemplate,
 		filepath.Join(base, "module.go"):                                             moduleTemplate,
 		filepath.Join(base, "manifest.yaml"):                                         manifestTemplate,
 		filepath.Join(base, "domain", "model", data.EntityLower+".go"):               modelTemplate,
@@ -829,8 +833,61 @@ func (g *Generator) writeScaffold(data scaffoldData) error {
 	return nil
 }
 
+func (g *Generator) refreshBootstrapRegistry() error {
+	if g == nil {
+		return errors.New("generator is nil")
+	}
+	modulesDir := filepath.Join(g.Root, "backend", "modules")
+	entries, err := os.ReadDir(modulesDir)
+	if err != nil {
+		return fmt.Errorf("scan modules dir: %w", err)
+	}
+	moduleNames := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if _, err := os.Stat(filepath.Join(modulesDir, name, "bootstrap.go")); err == nil {
+			moduleNames = append(moduleNames, name)
+		}
+	}
+	sort.Strings(moduleNames)
+	var builder strings.Builder
+	builder.WriteString("package bootstrap\n\n")
+	if len(moduleNames) > 0 {
+		builder.WriteString("import (\n")
+		for _, name := range moduleNames {
+			builder.WriteString("\t")
+			builder.WriteString(name)
+			builder.WriteString(" \"goadmin/modules/")
+			builder.WriteString(name)
+			builder.WriteString("\"\n")
+		}
+		builder.WriteString(")\n\n")
+	}
+	builder.WriteString("func generatedModules() []Module {\n")
+	if len(moduleNames) == 0 {
+		builder.WriteString("\treturn nil\n")
+	} else {
+		builder.WriteString("\treturn []Module{\n")
+		for _, name := range moduleNames {
+			builder.WriteString("\t\t")
+			builder.WriteString(name)
+			builder.WriteString(".NewBootstrap(),\n")
+		}
+		builder.WriteString("\t}\n")
+	}
+	builder.WriteString("}\n")
+	formatted, err := format.Source([]byte(builder.String()))
+	if err != nil {
+		return fmt.Errorf("format generated bootstrap registry: %w\nsource:\n%s", err, builder.String())
+	}
+	return g.writeFile(filepath.Join(g.Root, "backend", "core", "bootstrap", "modules_gen.go"), formatted, true)
+}
+
 func (g *Generator) writeModuleScaffold(data moduleRenderData) error {
-	base := filepath.Join(g.Root, "backend", "modules", data.EntityLower)
+	base := filepath.Join(g.Root, "backend", "modules", data.Name)
 	files := map[string]string{
 		filepath.Join(base, "module.go"):     moduleTemplate,
 		filepath.Join(base, "manifest.yaml"): manifestTemplate,

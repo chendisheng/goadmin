@@ -460,6 +460,60 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 }
 `
 
+const bootstrapTemplate = `package {{.PackageName}}
+
+import (
+	"fmt"
+
+	corebootstrap "goadmin/core/bootstrap"
+	coretransport "goadmin/core/transport"
+	{{.EntityLower}}service "goadmin/modules/{{.EntityLower}}/application/service"
+	{{.EntityLower}}repo "goadmin/modules/{{.EntityLower}}/infrastructure/repo"
+	{{.EntityLower}}http "goadmin/modules/{{.EntityLower}}/transport/http"
+	"gorm.io/gorm"
+)
+
+type Bootstrap struct{}
+
+func NewBootstrap() corebootstrap.Module {
+	return Bootstrap{}
+}
+
+func (Bootstrap) Name() string {
+	return Name
+}
+
+func (Bootstrap) ManifestPath() string {
+	return ManifestPath
+}
+
+func (Bootstrap) Migrate(db *gorm.DB) error {
+	return {{.EntityLower}}repo.Migrate(db)
+}
+
+func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap.Dependencies) error {
+	if group == nil {
+		return fmt.Errorf("{{.EntityLower}} bootstrap requires route registrar")
+	}
+	if deps.DB == nil {
+		return fmt.Errorf("{{.EntityLower}} bootstrap requires db")
+	}
+	repo, err := {{.EntityLower}}repo.NewGormRepository(deps.DB)
+	if err != nil {
+		return err
+	}
+	service, err := {{.EntityLower}}service.New(repo)
+	if err != nil {
+		return err
+	}
+	{{.EntityLower}}http.Register(group, {{.EntityLower}}http.Dependencies{
+		Service: service,
+		Logger:  deps.Logger,
+	})
+	return nil
+}
+`
+
 const frontendApiTemplate = `import http from './http';
 
 const basePath = '/{{.EntityPlural}}'

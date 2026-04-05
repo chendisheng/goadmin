@@ -81,6 +81,9 @@ func TestGormTagPrimaryKeyModes(t *testing.T) {
 	if !strings.Contains(stringPK, "primaryKey") {
 		t.Fatalf("string primary key tag missing primaryKey: %q", stringPK)
 	}
+	if !strings.Contains(stringPK, "type:varchar(64)") {
+		t.Fatalf("string primary key tag missing type:varchar(64): %q", stringPK)
+	}
 	if !strings.Contains(stringPK, "size:64") {
 		t.Fatalf("string primary key tag missing size:64: %q", stringPK)
 	}
@@ -151,13 +154,13 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	policyPath := filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv")
 	registryPath := filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go")
 
-	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;size:64"`)
-	assertFileContains(t, modelPath, `gorm:"column:name;size:255"`)
+	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;type:varchar(64);size:64"`)
+	assertFileContains(t, modelPath, `gorm:"column:name;type:varchar(255);size:255"`)
 	assertFileContains(t, modelPath, "PublishAt time.Time")
 	assertFileContains(t, modelPath, "Tags")
 	assertFileContains(t, modelPath, "[]string")
 	assertFileContains(t, modelPath, "append([]string(nil), m.Tags...)")
-	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;size:64"`)
+	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;type:varchar(64);size:64"`)
 	assertFileContains(t, bootstrapPath, "func NewBootstrap() corebootstrapcontract.Module")
 	assertFileContains(t, bootstrapPath, "func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error")
 
@@ -202,7 +205,7 @@ func TestGenerateCRUDPrimaryKeyModes(t *testing.T) {
 
 	stringModelPath := filepath.Join(root, "backend", "modules", "article", "domain", "model", "article.go")
 	stringRepoPath := filepath.Join(root, "backend", "modules", "article", "infrastructure", "repo", "gorm.go")
-	assertFileContains(t, stringModelPath, `gorm:"column:id;primaryKey;size:64"`)
+	assertFileContains(t, stringModelPath, `gorm:"column:id;primaryKey;type:varchar(64);size:64"`)
 	assertFileContains(t, stringRepoPath, `item.Id = nextRecordID("article")`)
 
 	numericFields, err := ParseFields("id:int64,title:string", "id", "", "")

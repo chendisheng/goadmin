@@ -26,6 +26,17 @@ func Migrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("order migrate requires db")
 	}
+	if db.Dialector.Name() == "mysql" && db.Migrator().HasTable(&model.Order{}) {
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN order_no VARCHAR(64)").Error; err != nil {
+			return fmt.Errorf("ensure orders.order_no column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
+			return fmt.Errorf("ensure orders.tenant_id column: %w", err)
+		}
+		if err := db.Exec("ALTER TABLE orders MODIFY COLUMN user_id VARCHAR(64)").Error; err != nil {
+			return fmt.Errorf("ensure orders.user_id column: %w", err)
+		}
+	}
 	return db.AutoMigrate(&model.Order{})
 }
 

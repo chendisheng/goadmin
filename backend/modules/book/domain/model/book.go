@@ -3,8 +3,8 @@ package model
 import "time"
 
 type Book struct {
-	Id            string    `json:"id,omitempty" gorm:"column:id;primaryKey;size:64"`
-	TenantId      string    `json:"tenant_id,omitempty" gorm:"column:tenant_id;size:64"`
+	Id            string    `json:"id,omitempty" gorm:"column:id;primaryKey;type:varchar(64);size:64"`
+	TenantId      string    `json:"tenant_id,omitempty" gorm:"column:tenant_id;type:varchar(64);size:64"`
 	Title         string    `json:"title,omitempty" gorm:"column:title;size:255"`
 	Author        string    `json:"author,omitempty" gorm:"column:author;size:255"`
 	Isbn          string    `json:"isbn,omitempty" gorm:"column:isbn;size:64"`

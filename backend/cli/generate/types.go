@@ -505,7 +505,9 @@ func (f Field) GormTag() string {
 		}
 	}
 	if f.GoType == "string" {
-		parts = append(parts, fmt.Sprintf("size:%d", f.GormStringSize()))
+		size := f.GormStringSize()
+		parts = append(parts, fmt.Sprintf("type:varchar(%d)", size))
+		parts = append(parts, fmt.Sprintf("size:%d", size))
 	}
 	if f.Index {
 		parts = append(parts, "index")

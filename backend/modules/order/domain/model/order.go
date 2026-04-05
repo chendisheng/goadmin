@@ -3,10 +3,10 @@ package model
 import "time"
 
 type Order struct {
-	Id              string    `json:"id,omitempty" gorm:"column:id;primaryKey"`
-	TenantId        string    `json:"tenant_id,omitempty" gorm:"column:tenant_id"`
-	OrderNo         string    `json:"order_no,omitempty" gorm:"column:order_no"`
-	UserId          string    `json:"user_id,omitempty" gorm:"column:user_id"`
+	Id              string    `json:"id,omitempty" gorm:"column:id;primaryKey;type:varchar(64);size:64"`
+	TenantId        string    `json:"tenant_id,omitempty" gorm:"column:tenant_id;type:varchar(64);size:64"`
+	OrderNo         string    `json:"order_no,omitempty" gorm:"column:order_no;type:varchar(64);size:64"`
+	UserId          string    `json:"user_id,omitempty" gorm:"column:user_id;type:varchar(64);size:64"`
 	CustomerName    string    `json:"customer_name,omitempty" gorm:"column:customer_name"`
 	CustomerEmail   string    `json:"customer_email,omitempty" gorm:"column:customer_email"`
 	CustomerPhone   string    `json:"customer_phone,omitempty" gorm:"column:customer_phone"`

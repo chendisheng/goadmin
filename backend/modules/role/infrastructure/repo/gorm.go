@@ -42,6 +42,11 @@ func Migrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("role migrate requires db")
 	}
+	if db.Dialector.Name() == "mysql" && db.Migrator().HasTable(&roleRecord{}) {
+		if err := db.Exec("ALTER TABLE roles MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
+			return fmt.Errorf("ensure roles.tenant_id column: %w", err)
+		}
+	}
 	return db.AutoMigrate(&roleRecord{})
 }
 

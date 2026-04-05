@@ -26,6 +26,11 @@ func Migrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("book migrate requires db")
 	}
+	if db.Dialector.Name() == "mysql" && db.Migrator().HasTable(&model.Book{}) {
+		if err := db.Exec("ALTER TABLE books MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
+			return fmt.Errorf("ensure books.tenant_id column: %w", err)
+		}
+	}
 	return db.AutoMigrate(&model.Book{})
 }
 

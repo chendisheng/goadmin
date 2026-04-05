@@ -20,8 +20,8 @@ type GormRepository struct {
 }
 
 type userRecord struct {
-	ID           string    `gorm:"column:id;primaryKey;size:64"`
-	TenantID     string    `gorm:"column:tenant_id;size:64;index:idx_users_tenant_username,priority:1"`
+	ID           string    `gorm:"column:id;primaryKey;type:varchar(64);size:64"`
+	TenantID     string    `gorm:"column:tenant_id;type:varchar(64);size:64;index:idx_users_tenant_username,priority:1"`
 	Username     string    `gorm:"column:username;size:128;not null;index:idx_users_tenant_username,priority:2"`
 	DisplayName  string    `gorm:"column:display_name;size:128"`
 	Mobile       string    `gorm:"column:mobile;size:32"`
@@ -45,6 +45,11 @@ func NewGormRepository(db *gorm.DB) (*GormRepository, error) {
 func Migrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("user migrate requires db")
+	}
+	if db.Dialector.Name() == "mysql" && db.Migrator().HasTable(&userRecord{}) {
+		if err := db.Exec("ALTER TABLE users MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
+			return fmt.Errorf("ensure users.tenant_id column: %w", err)
+		}
 	}
 	return db.AutoMigrate(&userRecord{})
 }

@@ -232,6 +232,64 @@ func TestGenerateCRUDPrimaryKeyModes(t *testing.T) {
 	}
 }
 
+func TestRefreshBootstrapRegistryFiltersGeneratedModules(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+
+	writeBootstrap := func(name, content string) {
+		path := filepath.Join(root, "backend", "modules", name, "bootstrap.go")
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir for %s: %v", path, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+
+	writeBootstrap("codegen_console", strings.TrimSpace(`
+package codegen_console
+
+func NewBootstrap() any {
+	return nil
+}
+`))
+	writeBootstrap("book", strings.TrimSpace(`
+// codegen:begin
+package book
+
+func NewBootstrap() any {
+	return nil
+}
+// codegen:end
+`))
+	writeBootstrap("order", strings.TrimSpace(`
+// codegen:begin
+package order
+
+func NewBootstrap() any {
+	return nil
+}
+// codegen:end
+`))
+
+	if err := gen.refreshBootstrapRegistry(); err != nil {
+		t.Fatalf("refreshBootstrapRegistry returned error: %v", err)
+	}
+
+	registryPath := filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go")
+	assertFileContains(t, registryPath, `"goadmin/modules/book"`)
+	assertFileContains(t, registryPath, `"goadmin/modules/order"`)
+	content, err := os.ReadFile(registryPath)
+	if err != nil {
+		t.Fatalf("read registry file: %v", err)
+	}
+	if strings.Contains(string(content), "codegen_console") {
+		t.Fatalf("registry should exclude builtin module codegen_console:\n%s", string(content))
+	}
+}
+
 func TestGenerateManifestRendersMenuParentPath(t *testing.T) {
 	t.Parallel()
 

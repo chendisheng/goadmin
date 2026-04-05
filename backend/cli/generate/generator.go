@@ -848,7 +848,15 @@ func (g *Generator) refreshBootstrapRegistry() error {
 			continue
 		}
 		name := entry.Name()
-		if _, err := os.Stat(filepath.Join(modulesDir, name, "bootstrap.go")); err == nil {
+		bootstrapPath := filepath.Join(modulesDir, name, "bootstrap.go")
+		content, err := os.ReadFile(bootstrapPath)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return fmt.Errorf("read %s: %w", bootstrapPath, err)
+		}
+		if codegenpostprocess.HasGeneratedMarkers(bootstrapPath, content) {
 			moduleNames = append(moduleNames, name)
 		}
 	}
@@ -858,9 +866,8 @@ func (g *Generator) refreshBootstrapRegistry() error {
 	if len(moduleNames) > 0 {
 		builder.WriteString("import (\n")
 		for _, name := range moduleNames {
-			builder.WriteString("\t")
-			builder.WriteString(name)
-			builder.WriteString(" \"goadmin/modules/")
+			builder.WriteString("\t\"")
+			builder.WriteString("goadmin/modules/")
 			builder.WriteString(name)
 			builder.WriteString("\"\n")
 		}

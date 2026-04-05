@@ -374,7 +374,7 @@ func collectImportSpecs(decls []ast.Decl) []*ast.ImportSpec {
 func buildImportDecl(currentImports, generatedImports []*ast.ImportSpec) ast.Decl {
 	unique := make(map[string]*ast.ImportSpec, len(currentImports)+len(generatedImports))
 	ordered := make([]*ast.ImportSpec, 0, len(currentImports)+len(generatedImports))
-	for _, spec := range currentImports {
+	for _, spec := range generatedImports {
 		key := importSpecKey(spec)
 		if _, ok := unique[key]; ok {
 			continue
@@ -382,7 +382,7 @@ func buildImportDecl(currentImports, generatedImports []*ast.ImportSpec) ast.Dec
 		unique[key] = spec
 		ordered = append(ordered, spec)
 	}
-	for _, spec := range generatedImports {
+	for _, spec := range currentImports {
 		key := importSpecKey(spec)
 		if _, ok := unique[key]; ok {
 			continue
@@ -408,11 +408,7 @@ func importSpecKey(spec *ast.ImportSpec) string {
 	if spec == nil || spec.Path == nil {
 		return ""
 	}
-	alias := ""
-	if spec.Name != nil {
-		alias = spec.Name.Name
-	}
-	return alias + "|" + strings.Trim(spec.Path.Value, `"`)
+	return strings.Trim(spec.Path.Value, `"`)
 }
 
 func importSet(file *ast.File) map[string]struct{} {

@@ -460,7 +460,8 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 }
 `
 
-const bootstrapTemplate = `package {{.PackageName}}
+const bootstrapTemplate = `// codegen:begin
+package {{.PackageName}}
 
 import (
 	"fmt"
@@ -512,6 +513,7 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 	})
 	return nil
 }
+// codegen:end
 `
 
 const frontendApiTemplate = `import http from './http';

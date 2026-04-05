@@ -1,3 +1,4 @@
+// codegen:begin
 package book
 
 import (
@@ -48,3 +49,5 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 	bookhttp.Register(group, bookhttp.Dependencies{Service: service, Logger: deps.Logger})
 	return nil
 }
+
+// codegen:end

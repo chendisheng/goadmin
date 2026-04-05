@@ -1,3 +1,4 @@
+// codegen:begin
 package order
 
 import (
@@ -48,3 +49,5 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 	orderhttp.Register(group, orderhttp.Dependencies{Service: service, Logger: deps.Logger})
 	return nil
 }
+
+// codegen:end

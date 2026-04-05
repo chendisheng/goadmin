@@ -1,5 +1,6 @@
 package bootstrap
 
 func Modules() []Module {
-	return generatedModules()
+	modules := builtinModules()
+	return append(modules, generatedModules()...)
 }

@@ -33,5 +33,6 @@ tenant:
 auth:
   casbin:
     enabled: true
+    source: db # supported: file, db
     model_path: core/auth/casbin/model/rbac.conf
     policy_path: core/auth/casbin/adapter/policy.csv

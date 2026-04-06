@@ -41,6 +41,16 @@ The backend exposes a runtime tenant toggle in `backend/config/*.yaml`:
 
 When tenant is disabled, create/update operations ignore `tenant_id`, query paths stop injecting tenant filters, and Casbin authorization falls back to role-only evaluation.
 
+### Casbin configuration
+
+The authorization layer supports a configurable policy source in `backend/config/*.yaml` and `deploy/docker-compose/.env.example`:
+
+- `auth.casbin.source: file` loads Casbin model and policy from the local files under `core/auth/casbin/`
+- `auth.casbin.source: db` loads Casbin policy from the database, auto-migrates the Casbin tables, and seeds the initial model/policy from the configured file paths on first boot
+- Supported values for `auth.casbin.source` are `file` and `db`
+
+For DB mode, the server must be started with the shared database connection so auth bootstrap can initialize Casbin against the same store used by the rest of the backend.
+
 ### Available endpoints
 
 - `GET /api/v1/health`

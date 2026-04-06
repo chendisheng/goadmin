@@ -226,6 +226,21 @@ func (d scaffoldData) NeedsPrimaryIDGeneration() bool {
 	return d.PrimaryField().IsStringPrimaryKey()
 }
 
+func (d scaffoldData) NeedsStringsImport() bool {
+	if d.NeedsPrimaryIDGeneration() {
+		return true
+	}
+	for _, field := range d.Fields {
+		if field.Primary {
+			continue
+		}
+		if field.GoType == "string" {
+			return true
+		}
+	}
+	return false
+}
+
 func (d scaffoldData) DisplayFields() []Field {
 	return nonPrimaryFields(d.Fields)
 }
@@ -248,10 +263,6 @@ func (d scaffoldData) SearchFields() []Field {
 	return result
 }
 
-func (d scaffoldData) NeedsStringsImport() bool {
-	return d.NeedsPrimaryIDGeneration() || len(d.SearchFields()) > 0
-}
-
 func (d scaffoldData) SearchFilterBlock() string {
 	fields := d.SearchFields()
 	if len(fields) == 0 {
@@ -272,9 +283,7 @@ func (d scaffoldData) SearchFilterBlock() string {
 	}
 	builder.WriteString("\",\n")
 	for range fields {
-		builder.WriteString("\t\t\tlike")
-		builder.WriteString(",")
-		builder.WriteString("\n")
+		builder.WriteString("\t\t\tlike,\n")
 	}
 	builder.WriteString("\t\t)\n")
 	builder.WriteString("\t}\n")
@@ -532,6 +541,88 @@ func (d scaffoldData) PolicyLines() []string {
 		lines = append(lines, fmt.Sprintf("p, admin, %s, %s", route.Path, route.Method))
 	}
 	return lines
+}
+
+func (d scaffoldData) SQLTableName() string {
+	if strings.TrimSpace(d.EntityPlural) != "" {
+		return d.EntityPlural
+	}
+	if strings.TrimSpace(d.EntityLower) != "" {
+		return d.EntityLower + "s"
+	}
+	return "entities"
+}
+
+func (d scaffoldData) SQLSchema() string {
+	tableName := d.SQLTableName()
+	definitions := make([]string, 0, len(d.Fields)+4)
+	primaryColumns := make([]string, 0, 1)
+	for _, field := range d.Fields {
+		definitions = append(definitions, "  "+sqlColumnDefinition(field))
+		if field.Primary {
+			primaryColumns = append(primaryColumns, "`"+field.Column+"`")
+		}
+	}
+	if len(primaryColumns) > 0 {
+		definitions = append(definitions, "  PRIMARY KEY ("+strings.Join(primaryColumns, ", ")+")")
+	}
+	for _, field := range d.Fields {
+		if field.Primary {
+			continue
+		}
+		if field.Unique {
+			definitions = append(definitions, fmt.Sprintf("  UNIQUE KEY `idx_%s_%s` (`%s`)", tableName, field.Column, field.Column))
+			continue
+		}
+		if field.Index {
+			definitions = append(definitions, fmt.Sprintf("  KEY `idx_%s_%s` (`%s`)", tableName, field.Column, field.Column))
+		}
+	}
+	if len(definitions) == 0 {
+		definitions = append(definitions,
+			"  `id` bigint unsigned NOT NULL AUTO_INCREMENT",
+			"  PRIMARY KEY (`id`)",
+		)
+	}
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("-- Auto-generated schema for %s\n", tableName))
+	builder.WriteString(fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (\n", tableName))
+	builder.WriteString(strings.Join(definitions, ",\n"))
+	builder.WriteString("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n")
+	return builder.String()
+}
+
+func sqlColumnDefinition(field Field) string {
+	column := "`" + field.Column + "`"
+	switch field.GoType {
+	case "string":
+		return fmt.Sprintf("%s varchar(%d) NOT NULL", column, field.GormStringSize())
+	case "bool":
+		return fmt.Sprintf("%s tinyint(1) NOT NULL DEFAULT 0", column)
+	case "int":
+		if field.Primary {
+			return fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column)
+		}
+		return fmt.Sprintf("%s int NOT NULL DEFAULT 0", column)
+	case "int32":
+		if field.Primary {
+			return fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column)
+		}
+		return fmt.Sprintf("%s int NOT NULL DEFAULT 0", column)
+	case "int64":
+		if field.Primary {
+			return fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column)
+		}
+		return fmt.Sprintf("%s bigint NOT NULL DEFAULT 0", column)
+	case "float64":
+		return fmt.Sprintf("%s decimal(18,4) NOT NULL DEFAULT 0", column)
+	case "time.Time":
+		return fmt.Sprintf("%s datetime NULL", column)
+	case "[]string", "[]int", "[]int64", "map[string]any":
+		return fmt.Sprintf("%s json NULL", column)
+	default:
+		return fmt.Sprintf("%s text NULL", column)
+	}
 }
 
 type crudRouteSpec struct {
@@ -817,6 +908,10 @@ func (g *Generator) writeScaffold(data scaffoldData) error {
 		if err := g.writeGoOrText(path, tmpl, data, data.Force); err != nil {
 			return err
 		}
+	}
+	sqlPath := filepath.Join(base, "schema.sql")
+	if err := g.writeGoOrText(sqlPath, "{{.SQLSchema}}", data, data.Force); err != nil {
+		return err
 	}
 	if data.GenerateFrontend {
 		frontendFiles := map[string]string{

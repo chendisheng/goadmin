@@ -149,6 +149,7 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 
 	modelPath := filepath.Join(root, "backend", "modules", "article", "domain", "model", "article.go")
 	bootstrapPath := filepath.Join(root, "backend", "modules", "article", "bootstrap.go")
+	schemaPath := filepath.Join(root, "backend", "modules", "article", "schema.sql")
 	requestPath := filepath.Join(root, "backend", "modules", "article", "transport", "http", "request", "article.go")
 	responsePath := filepath.Join(root, "backend", "modules", "article", "transport", "http", "response", "article.go")
 	policyPath := filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv")
@@ -163,6 +164,12 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;type:varchar(64);size:64"`)
 	assertFileContains(t, bootstrapPath, "func NewBootstrap() corebootstrapcontract.Module")
 	assertFileContains(t, bootstrapPath, "func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error")
+	assertFileContains(t, schemaPath, "CREATE TABLE IF NOT EXISTS `articles`")
+	assertFileContains(t, schemaPath, "`id` varchar(64) NOT NULL")
+	assertFileContains(t, schemaPath, "PRIMARY KEY (`id`)")
+	assertFileContains(t, schemaPath, "`name` varchar(255) NOT NULL")
+	assertFileContains(t, schemaPath, "`tags` json NULL")
+	assertFileContains(t, schemaPath, "`publish_at` datetime NULL")
 
 	repoPath := filepath.Join(root, "backend", "modules", "article", "infrastructure", "repo", "gorm.go")
 	assertFileContains(t, repoPath, "LOWER(name) LIKE ?")

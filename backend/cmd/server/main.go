@@ -60,7 +60,12 @@ func main() {
 		_ = logger.Sync()
 	}()
 
-	authBundle, err := coreauthbootstrap.New(cfg)
+	dbConn, err := infraDB.Open(cfg.Database)
+	if err != nil {
+		logger.Fatal("open database", zap.Error(err))
+	}
+
+	authBundle, err := coreauthbootstrap.New(cfg, dbConn)
 	if err != nil {
 		logger.Fatal("init auth bundle", zap.Error(err))
 	}
@@ -70,11 +75,6 @@ func main() {
 	authSvc, err := authservice.New(authBundle.JWT, authBundle.Authorizer, credentials, revocations)
 	if err != nil {
 		logger.Fatal("init auth service", zap.Error(err))
-	}
-
-	dbConn, err := infraDB.Open(cfg.Database)
-	if err != nil {
-		logger.Fatal("open database", zap.Error(err))
 	}
 
 	eventBus := coreevent.NewLocalBus(logger)

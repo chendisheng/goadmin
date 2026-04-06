@@ -8,6 +8,8 @@ import (
 	coreauthcasbinservice "goadmin/core/auth/casbin/service"
 	coreauthjwt "goadmin/core/auth/jwt"
 	"goadmin/core/config"
+
+	"gorm.io/gorm"
 )
 
 type Authorizer interface {
@@ -24,7 +26,7 @@ type Bundle struct {
 	Authorizer Authorizer
 }
 
-func New(cfg *config.Config) (*Bundle, error) {
+func New(cfg *config.Config, db *gorm.DB) (*Bundle, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config is required")
 	}
@@ -47,6 +49,8 @@ func New(cfg *config.Config) (*Bundle, error) {
 
 	authorizer, err := coreauthcasbinservice.NewPermissionService(coreauthcasbinservice.Config{
 		Enabled:    cfg.Auth.Casbin.Enabled,
+		Source:     cfg.Auth.Casbin.Source,
+		DB:         db,
 		ModelPath:  cfg.Auth.Casbin.ModelPath,
 		PolicyPath: cfg.Auth.Casbin.PolicyPath,
 	})

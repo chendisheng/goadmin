@@ -91,6 +91,7 @@ type JWTConfig struct {
 
 type CasbinConfig struct {
 	Enabled    bool   `mapstructure:"enabled"`
+	Source     string `mapstructure:"source"`
 	ModelPath  string `mapstructure:"model_path"`
 	PolicyPath string `mapstructure:"policy_path"`
 }
@@ -157,6 +158,7 @@ func Default() Config {
 			},
 			Casbin: CasbinConfig{
 				Enabled:    true,
+				Source:     "file",
 				ModelPath:  "core/auth/casbin/model/rbac.conf",
 				PolicyPath: "core/auth/casbin/adapter/policy.csv",
 			},
@@ -235,8 +237,11 @@ func Load() (*Config, error) {
 	if cfg.Auth.JWT.AccessTokenTTL == "" {
 		cfg.Auth.JWT.AccessTokenTTL = "2h"
 	}
-	if cfg.Auth.JWT.RefreshTokenTTL == "" {
+	if strings.TrimSpace(cfg.Auth.JWT.RefreshTokenTTL) == "" {
 		cfg.Auth.JWT.RefreshTokenTTL = "168h"
+	}
+	if strings.TrimSpace(cfg.Auth.Casbin.Source) == "" {
+		cfg.Auth.Casbin.Source = "file"
 	}
 	if cfg.Auth.Casbin.ModelPath == "" {
 		cfg.Auth.Casbin.ModelPath = "core/auth/casbin/model/rbac.conf"
@@ -298,11 +303,22 @@ func (c Config) Validate() error {
 		return err
 	}
 	if c.Auth.Casbin.Enabled {
-		if strings.TrimSpace(c.Auth.Casbin.ModelPath) == "" {
-			return fmt.Errorf("auth.casbin.model_path is required")
+		source := strings.ToLower(strings.TrimSpace(c.Auth.Casbin.Source))
+		if source == "" {
+			source = "file"
 		}
-		if strings.TrimSpace(c.Auth.Casbin.PolicyPath) == "" {
-			return fmt.Errorf("auth.casbin.policy_path is required")
+		switch source {
+		case "file":
+			if strings.TrimSpace(c.Auth.Casbin.ModelPath) == "" {
+				return fmt.Errorf("auth.casbin.model_path is required when auth.casbin.source=file")
+			}
+			if strings.TrimSpace(c.Auth.Casbin.PolicyPath) == "" {
+				return fmt.Errorf("auth.casbin.policy_path is required when auth.casbin.source=file")
+			}
+		case "db":
+			// DB mode relies on the configured database connection and the built-in Casbin tables.
+		default:
+			return fmt.Errorf("auth.casbin.source must be file or db")
 		}
 	}
 	if c.CodeGen.Artifact.Enabled {
@@ -360,6 +376,7 @@ func (c Config) Public() map[string]any {
 			},
 			"casbin": map[string]any{
 				"enabled":     c.Auth.Casbin.Enabled,
+				"source":      c.Auth.Casbin.Source,
 				"model_path":  c.Auth.Casbin.ModelPath,
 				"policy_path": c.Auth.Casbin.PolicyPath,
 			},
@@ -451,6 +468,7 @@ func applyDefaults(v *viper.Viper, cfg Config) {
 	v.SetDefault("auth.jwt.access_token_ttl", cfg.Auth.JWT.AccessTokenTTL)
 	v.SetDefault("auth.jwt.refresh_token_ttl", cfg.Auth.JWT.RefreshTokenTTL)
 	v.SetDefault("auth.casbin.enabled", cfg.Auth.Casbin.Enabled)
+	v.SetDefault("auth.casbin.source", cfg.Auth.Casbin.Source)
 	v.SetDefault("auth.casbin.model_path", cfg.Auth.Casbin.ModelPath)
 	v.SetDefault("auth.casbin.policy_path", cfg.Auth.Casbin.PolicyPath)
 }

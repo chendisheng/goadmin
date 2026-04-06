@@ -1,0 +1,95 @@
+name: dictionary
+version: v1
+kind: business-module
+dependencies:
+  - core/auth/bootstrap
+  - core/auth/casbin
+routes:
+  - method: GET
+    path: /api/v1/dictionaries/categories
+  - method: GET
+    path: /api/v1/dictionaries/categories/:id
+  - method: POST
+    path: /api/v1/dictionaries/categories
+  - method: PUT
+    path: /api/v1/dictionaries/categories/:id
+  - method: DELETE
+    path: /api/v1/dictionaries/categories/:id
+  - method: GET
+    path: /api/v1/dictionaries/items
+  - method: GET
+    path: /api/v1/dictionaries/items/:id
+  - method: POST
+    path: /api/v1/dictionaries/items
+  - method: PUT
+    path: /api/v1/dictionaries/items/:id
+  - method: DELETE
+    path: /api/v1/dictionaries/items/:id
+  - method: GET
+    path: /api/v1/dictionaries/lookup/:code
+  - method: GET
+    path: /api/v1/dictionaries/lookup/:code/:value
+menus:
+  - name: Data Dictionary
+    path: /system/dictionary
+    component: Layout
+    icon: menu
+    permission: dictionary:view
+    type: directory
+    redirect: /system/dictionary/categories
+    visible: true
+    enabled: true
+    sort: 1
+  - name: Categories
+    path: /system/dictionary/categories
+    component: system/dictionary/category/index
+    icon: menu
+    permission: dictionary:category:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 2
+  - name: Items
+    path: /system/dictionary/items
+    component: system/dictionary/item/index
+    icon: menu
+    permission: dictionary:item:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 3
+permissions:
+  - object: dictionary-category
+    action: list
+    description: List Dictionary Categories
+  - object: dictionary-category
+    action: view
+    description: View Dictionary Category
+  - object: dictionary-category
+    action: create
+    description: Create Dictionary Category
+  - object: dictionary-category
+    action: update
+    description: Update Dictionary Category
+  - object: dictionary-category
+    action: delete
+    description: Delete Dictionary Category
+  - object: dictionary-item
+    action: list
+    description: List Dictionary Items
+  - object: dictionary-item
+    action: view
+    description: View Dictionary Item
+  - object: dictionary-item
+    action: create
+    description: Create Dictionary Item
+  - object: dictionary-item
+    action: update
+    description: Update Dictionary Item
+  - object: dictionary-item
+    action: delete
+    description: Delete Dictionary Item
+capabilities:
+  - basic-crud
+  - lookup-query
+  - frontend-mounted

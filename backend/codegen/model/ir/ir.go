@@ -2,6 +2,8 @@
 // CodeGen pipeline before template rendering and file generation.
 package ir
 
+import "strings"
+
 // SourceKind identifies the origin of an IR document or resource.
 type SourceKind string
 
@@ -14,24 +16,45 @@ const (
 
 // Field describes the unified field model used across database, DSL and API inputs.
 type Field struct {
-	Name         string         `json:"name"`
-	ColumnName   string         `json:"column_name,omitempty"`
-	GoType       string         `json:"go_type,omitempty"`
-	DBType       string         `json:"db_type,omitempty"`
-	Nullable     bool           `json:"nullable,omitempty"`
-	Primary      bool           `json:"primary,omitempty"`
-	Unique       bool           `json:"unique,omitempty"`
-	Index        bool           `json:"index,omitempty"`
-	Required     bool           `json:"required,omitempty"`
-	UIType       string         `json:"ui_type,omitempty"`
-	Label        string         `json:"label,omitempty"`
-	Searchable   bool           `json:"searchable,omitempty"`
-	Editable     bool           `json:"editable,omitempty"`
-	Sortable     bool           `json:"sortable,omitempty"`
-	SemanticType string         `json:"semantic_type,omitempty"`
-	DefaultValue string         `json:"default_value,omitempty"`
-	EnumValues   []string       `json:"enum_values,omitempty"`
-	Metadata     map[string]any `json:"metadata,omitempty"`
+	Name          string         `json:"name"`
+	ColumnName    string         `json:"column_name,omitempty"`
+	GoType        string         `json:"go_type,omitempty"`
+	DBType        string         `json:"db_type,omitempty"`
+	Nullable      bool           `json:"nullable,omitempty"`
+	Primary       bool           `json:"primary,omitempty"`
+	Unique        bool           `json:"unique,omitempty"`
+	Index         bool           `json:"index,omitempty"`
+	Required      bool           `json:"required,omitempty"`
+	UIType        string         `json:"ui_type,omitempty"`
+	Label         string         `json:"label,omitempty"`
+	Searchable    bool           `json:"searchable,omitempty"`
+	Editable      bool           `json:"editable,omitempty"`
+	Sortable      bool           `json:"sortable,omitempty"`
+	SemanticType  string         `json:"semantic_type,omitempty"`
+	DefaultValue  string         `json:"default_value,omitempty"`
+	EnumKind      string         `json:"enum_kind,omitempty"`
+	EnumMode      string         `json:"enum_mode,omitempty"`
+	EnumDisplay   string         `json:"enum_display,omitempty"`
+	EnumSource    string         `json:"enum_source,omitempty"`
+	EnumSourceRef string         `json:"enum_source_ref,omitempty"`
+	EnumValues    []string       `json:"enum_values,omitempty"`
+	EnumOptions   []EnumOption   `json:"enum_options,omitempty"`
+	Metadata      map[string]any `json:"metadata,omitempty"`
+}
+
+// HasEnum reports whether the field carries any structured enum metadata.
+func (f Field) HasEnum() bool {
+	return len(f.EnumValues) > 0 || len(f.EnumOptions) > 0 || strings.TrimSpace(f.EnumKind) != "" || strings.TrimSpace(f.EnumMode) != "" || strings.TrimSpace(f.EnumDisplay) != "" || strings.TrimSpace(f.EnumSource) != "" || strings.TrimSpace(f.EnumSourceRef) != ""
+}
+
+// EnumOption describes a single enum entry in a normalized IR field.
+type EnumOption struct {
+	Value    string         `json:"value,omitempty"`
+	Label    string         `json:"label,omitempty"`
+	Color    string         `json:"color,omitempty"`
+	Disabled bool           `json:"disabled,omitempty"`
+	Order    int            `json:"order,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // Semantic stores rule-driven semantic hints derived from raw structure.

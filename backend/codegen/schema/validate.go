@@ -9,6 +9,49 @@ func (f Field) Validate() error {
 	if strings.TrimSpace(f.Name) == "" {
 		return fmt.Errorf("field name is required")
 	}
+	if f.Enum != nil {
+		if err := f.Enum.Validate(); err != nil {
+			return fmt.Errorf("field %s enum: %w", strings.TrimSpace(f.Name), err)
+		}
+	}
+	return nil
+}
+
+func (e EnumField) Validate() error {
+	if len(e.Values) == 0 && len(e.Options) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(e.Options)+len(e.Values))
+	for i, option := range e.Options {
+		if err := option.Validate(); err != nil {
+			return fmt.Errorf("option[%d]: %w", i, err)
+		}
+		key := strings.ToLower(strings.TrimSpace(option.Value))
+		if key == "" {
+			return fmt.Errorf("option[%d] value is required", i)
+		}
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("duplicate enum value %q", option.Value)
+		}
+		seen[key] = struct{}{}
+	}
+	for i, value := range e.Values {
+		key := strings.ToLower(strings.TrimSpace(value))
+		if key == "" {
+			return fmt.Errorf("enum value[%d] is required", i)
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+	}
+	return nil
+}
+
+func (o EnumOption) Validate() error {
+	if strings.TrimSpace(o.Value) == "" && strings.TrimSpace(o.Label) == "" {
+		return fmt.Errorf("enum option requires value or label")
+	}
 	return nil
 }
 

@@ -222,31 +222,67 @@ func filterTables(tables []dbschema.Table, allowed []string) []dbschema.Table {
 func buildField(column dbschema.Column) irmodel.Field {
 	category := classifyColumn(column.Type)
 	name := toExportedName(column.Name)
+	enumValues := append([]string(nil), column.EnumValues...)
+	enumOptions := convertDBEnumOptions(column.EnumOptions)
 	field := irmodel.Field{
-		Name:         name,
-		ColumnName:   column.Name,
-		GoType:       inferGoType(column.Type),
-		DBType:       strings.TrimSpace(column.Type),
-		Nullable:     column.Nullable,
-		Primary:      column.Primary,
-		Unique:       column.Unique,
-		Index:        column.Index,
-		Required:     !column.Nullable && !column.Primary,
-		UIType:       uiTypeForCategory(category, column.EnumValues),
-		Label:        humanizeName(column.Name),
-		Searchable:   category != "binary",
-		Editable:     !column.Primary && !column.AutoIncrement,
-		Sortable:     category != "binary",
-		SemanticType: semanticTypeForColumn(column, category),
-		DefaultValue: column.Default,
-		EnumValues:   append([]string(nil), column.EnumValues...),
+		Name:          name,
+		ColumnName:    column.Name,
+		GoType:        inferGoType(column.Type),
+		DBType:        strings.TrimSpace(column.Type),
+		Nullable:      column.Nullable,
+		Primary:       column.Primary,
+		Unique:        column.Unique,
+		Index:         column.Index,
+		Required:      !column.Nullable && !column.Primary,
+		UIType:        uiTypeForColumn(column, category),
+		Label:         humanizeName(column.Name),
+		Searchable:    category != "binary",
+		Editable:      !column.Primary && !column.AutoIncrement,
+		Sortable:      category != "binary",
+		SemanticType:  semanticTypeForColumn(column, category),
+		DefaultValue:  column.Default,
+		EnumKind:      strings.TrimSpace(column.EnumKind),
+		EnumMode:      strings.TrimSpace(column.EnumMode),
+		EnumDisplay:   strings.TrimSpace(column.EnumDisplay),
+		EnumSource:    strings.TrimSpace(column.EnumSource),
+		EnumSourceRef: strings.TrimSpace(column.EnumSourceRef),
+		EnumValues:    enumValues,
+		EnumOptions:   enumOptions,
 		Metadata: map[string]any{
 			"column_name": column.Name,
 		},
 	}
 	if column.Comment != "" {
-		field.Label = column.Comment
 		field.Metadata["comment"] = column.Comment
+	}
+	if len(column.EnumValues) > 0 {
+		field.Metadata["enum_values"] = append([]string(nil), column.EnumValues...)
+	}
+	if len(column.EnumOptions) > 0 {
+		field.Metadata["enum_options"] = cloneIRDBEnumOptionMetadata(column.EnumOptions)
+	}
+	if field.EnumKind != "" {
+		field.Metadata["enum_kind"] = field.EnumKind
+	}
+	if field.EnumMode != "" {
+		field.Metadata["enum_mode"] = field.EnumMode
+	}
+	if field.EnumDisplay != "" {
+		field.Metadata["enum_display"] = field.EnumDisplay
+	}
+	if field.EnumSource != "" {
+		field.Metadata["enum_source"] = field.EnumSource
+	}
+	if field.EnumSourceRef != "" {
+		field.Metadata["enum_source_ref"] = field.EnumSourceRef
+	}
+	if field.HasEnum() {
+		field.Metadata["has_enum"] = true
+		if strings.TrimSpace(column.Comment) != "" && field.Label == "" {
+			field.Label = humanizeName(column.Name)
+		}
+	} else if column.Comment != "" {
+		field.Label = column.Comment
 	}
 	if column.AutoIncrement {
 		field.Metadata["auto_increment"] = true
@@ -366,6 +402,17 @@ func toExportedName(value string) string {
 	return result
 }
 
+func cloneAnyMap(src map[string]any) map[string]any {
+	if len(src) == 0 {
+		return nil
+	}
+	result := make(map[string]any, len(src))
+	for key, value := range src {
+		result[key] = value
+	}
+	return result
+}
+
 func humanizeName(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -416,8 +463,30 @@ func inferGoType(columnType string) string {
 	}
 }
 
-func uiTypeForCategory(category string, enumValues []string) string {
-	if len(enumValues) > 0 {
+func uiTypeForColumn(column dbschema.Column, category string) string {
+	if hasColumnEnum(column) {
+		switch strings.ToLower(strings.TrimSpace(column.EnumMode)) {
+		case "multiple":
+			return "checkbox-group"
+		}
+		switch strings.ToLower(strings.TrimSpace(column.EnumDisplay)) {
+		case "radio":
+			return "radio"
+		case "checkbox-group":
+			return "checkbox-group"
+		case "switch":
+			return "switch"
+		case "autocomplete":
+			return "autocomplete"
+		case "remote-select":
+			return "select"
+		}
+		if len(column.EnumOptions) > 0 && len(column.EnumOptions) <= 3 {
+			return "radio"
+		}
+		if strings.EqualFold(strings.TrimSpace(column.EnumKind), "dictionary") || strings.TrimSpace(column.EnumSourceRef) != "" {
+			return "select"
+		}
 		return "select"
 	}
 	switch category {
@@ -435,8 +504,61 @@ func uiTypeForCategory(category string, enumValues []string) string {
 }
 
 func semanticTypeForColumn(column dbschema.Column, category string) string {
-	if len(column.EnumValues) > 0 {
+	if hasColumnEnum(column) {
+		if isStatusFieldName(column.Name) || strings.EqualFold(strings.TrimSpace(column.EnumDisplay), "switch") {
+			return "status"
+		}
 		return "enum"
 	}
 	return category
+}
+
+func hasColumnEnum(column dbschema.Column) bool {
+	return len(column.EnumValues) > 0 || len(column.EnumOptions) > 0 || strings.TrimSpace(column.EnumKind) != "" || strings.TrimSpace(column.EnumDisplay) != "" || strings.TrimSpace(column.EnumSource) != "" || strings.TrimSpace(column.EnumSourceRef) != ""
+}
+
+func isStatusFieldName(name string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	return strings.Contains(normalized, "status") || strings.Contains(normalized, "state") || strings.Contains(normalized, "enabled") || strings.Contains(normalized, "disabled")
+}
+
+func convertDBEnumOptions(options []dbschema.EnumOption) []irmodel.EnumOption {
+	if len(options) == 0 {
+		return nil
+	}
+	result := make([]irmodel.EnumOption, 0, len(options))
+	for _, option := range options {
+		result = append(result, irmodel.EnumOption{
+			Value:    strings.TrimSpace(option.Value),
+			Label:    strings.TrimSpace(option.Label),
+			Color:    strings.TrimSpace(option.Color),
+			Disabled: option.Disabled,
+			Order:    option.Order,
+			Metadata: cloneAnyMap(option.Metadata),
+		})
+	}
+	return result
+}
+
+func cloneIRDBEnumOptionMetadata(options []dbschema.EnumOption) []map[string]any {
+	if len(options) == 0 {
+		return nil
+	}
+	result := make([]map[string]any, 0, len(options))
+	for _, option := range options {
+		metadata := map[string]any{
+			"value":    strings.TrimSpace(option.Value),
+			"label":    strings.TrimSpace(option.Label),
+			"color":    strings.TrimSpace(option.Color),
+			"disabled": option.Disabled,
+			"order":    option.Order,
+		}
+		if option.Metadata != nil {
+			for key, value := range option.Metadata {
+				metadata[key] = value
+			}
+		}
+		result = append(result, metadata)
+	}
+	return result
 }

@@ -13,6 +13,106 @@ type Parser struct {
 	Strict bool
 }
 
+func (e *EnumField) normalize() error {
+	if e == nil {
+		return nil
+	}
+	e.Kind = strings.TrimSpace(e.Kind)
+	e.Mode = strings.TrimSpace(e.Mode)
+	e.Display = strings.TrimSpace(e.Display)
+	e.SourceRef = strings.TrimSpace(e.SourceRef)
+	e.Confidence = strings.TrimSpace(e.Confidence)
+	e.Fallback = strings.TrimSpace(e.Fallback)
+	e.LabelField = strings.TrimSpace(e.LabelField)
+	e.ValueField = strings.TrimSpace(e.ValueField)
+	e.RemotePath = strings.TrimSpace(e.RemotePath)
+	if e.Kind == "" {
+		e.Kind = "static"
+	}
+	if e.Mode == "" {
+		e.Mode = "single"
+	}
+	if e.Display == "" {
+		e.Display = "select"
+	}
+	if len(e.Options) == 0 && len(e.Values) > 0 {
+		e.Options = enumOptionsFromValues(e.Values)
+	}
+	if len(e.Values) == 0 && len(e.Options) > 0 {
+		e.Values = enumValuesFromOptions(e.Options)
+	}
+	if e.Metadata == nil && (e.Kind != "" || e.Mode != "" || e.Display != "" || e.SourceRef != "" || e.Confidence != "" || e.Fallback != "") {
+		e.Metadata = map[string]any{}
+	}
+	return nil
+}
+
+func parseEnumOptionList(spec string) []EnumOption {
+	parts := ParseCSV(spec)
+	if len(parts) == 0 {
+		return nil
+	}
+	options := make([]EnumOption, 0, len(parts))
+	for i, part := range parts {
+		option := parseEnumOption(part)
+		if option.Order == 0 {
+			option.Order = i + 1
+		}
+		options = append(options, option)
+	}
+	return options
+}
+
+func parseEnumOption(spec string) EnumOption {
+	trimmed := strings.TrimSpace(spec)
+	if trimmed == "" {
+		return EnumOption{}
+	}
+	value := trimmed
+	label := trimmed
+	if left, right, ok := strings.Cut(trimmed, "="); ok {
+		value = strings.TrimSpace(left)
+		label = strings.TrimSpace(right)
+	}
+	if value == "" {
+		value = label
+	}
+	if label == "" {
+		label = value
+	}
+	return EnumOption{Value: value, Label: label}
+}
+
+func enumOptionsFromValues(values []string) []EnumOption {
+	if len(values) == 0 {
+		return nil
+	}
+	options := make([]EnumOption, 0, len(values))
+	for i, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		options = append(options, EnumOption{Value: trimmed, Label: trimmed, Order: i + 1})
+	}
+	return options
+}
+
+func enumValuesFromOptions(options []EnumOption) []string {
+	if len(options) == 0 {
+		return nil
+	}
+	values := make([]string, 0, len(options))
+	for _, option := range options {
+		value := strings.TrimSpace(option.Value)
+		if value == "" {
+			continue
+		}
+		values = append(values, value)
+	}
+	return values
+}
+
 func NewParser() Parser {
 	return Parser{Strict: true}
 }
@@ -85,12 +185,14 @@ type rawEntity struct {
 }
 
 type rawField struct {
-	Name     string `yaml:"name"`
-	Type     string `yaml:"type,omitempty"`
-	Primary  bool   `yaml:"primary,omitempty"`
-	Index    bool   `yaml:"index,omitempty"`
-	Unique   bool   `yaml:"unique,omitempty"`
-	Required bool   `yaml:"required,omitempty"`
+	Name       string     `yaml:"name"`
+	Type       string     `yaml:"type,omitempty"`
+	Enum       *EnumField `yaml:"enum,omitempty"`
+	EnumValues []string   `yaml:"enum_values,omitempty"`
+	Primary    bool       `yaml:"primary,omitempty"`
+	Index      bool       `yaml:"index,omitempty"`
+	Unique     bool       `yaml:"unique,omitempty"`
+	Required   bool       `yaml:"required,omitempty"`
 }
 
 type rawPage struct {
@@ -174,6 +276,41 @@ func (f *rawField) UnmarshalYAML(node *yaml.Node) error {
 		return node.Decode((*plain)(f))
 	default:
 		return fmt.Errorf("field must be a string or mapping")
+	}
+}
+
+func (e *EnumField) UnmarshalYAML(node *yaml.Node) error {
+	if node == nil {
+		return nil
+	}
+	switch node.Kind {
+	case yaml.ScalarNode:
+		options := parseEnumOptionList(node.Value)
+		e.Kind = "static"
+		e.Mode = "single"
+		e.Display = "select"
+		e.Options = options
+		e.Values = enumValuesFromOptions(options)
+		return e.normalize()
+	case yaml.SequenceNode:
+		var values []string
+		if err := node.Decode(&values); err != nil {
+			return fmt.Errorf("decode enum values: %w", err)
+		}
+		e.Kind = "static"
+		e.Mode = "single"
+		e.Display = "select"
+		e.Values = values
+		e.Options = enumOptionsFromValues(values)
+		return e.normalize()
+	case yaml.MappingNode:
+		type plain EnumField
+		if err := node.Decode((*plain)(e)); err != nil {
+			return err
+		}
+		return e.normalize()
+	default:
+		return fmt.Errorf("enum must be a string, sequence, or mapping")
 	}
 }
 
@@ -307,6 +444,16 @@ func toFields(items []rawField) []Field {
 		}
 		if field.Type == "" {
 			field.Type = "string"
+		}
+		if item.Enum != nil {
+			enum := *item.Enum
+			if err := enum.normalize(); err == nil {
+				field.Enum = &enum
+			}
+		}
+		if len(item.EnumValues) > 0 && (field.Enum == nil || len(field.Enum.Values) == 0) {
+			field.Enum = &EnumField{Kind: "static", Mode: "single", Display: "select", Values: append([]string(nil), item.EnumValues...)}
+			_ = field.Enum.normalize()
 		}
 		fields = append(fields, field)
 	}

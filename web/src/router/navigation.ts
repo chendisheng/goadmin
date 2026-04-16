@@ -26,6 +26,9 @@ function componentNameToModulePath(componentName: string): string | null {
   if (normalized.startsWith('view/')) {
     return `../views/${normalized.slice(5)}.vue`;
   }
+  if (normalized.startsWith('system/')) {
+    return `../views/system/${normalized.slice(7)}.vue`;
+  }
   return null;
 }
 

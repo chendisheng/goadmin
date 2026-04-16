@@ -599,6 +599,44 @@ const defaultForm = (): {{.Entity}}FormState => ({
 
 const form = reactive<{{.Entity}}FormState>(defaultForm());
 
+type EnumOption = {
+  value: string;
+  label: string;
+  color?: string;
+  disabled?: boolean;
+  order?: number;
+};
+
+{{- range .FormFields}}
+{{- if .HasEnum}}
+const {{.EnumValueMapName}}: Record<string, string> = {
+{{- range .EnumDisplayOptions}}
+  [{{ printf "%q" .Value }}]: {{ printf "%q" .Label }},
+{{- end}}
+};
+
+const {{.JSONName}}EnumOptions: EnumOption[] = [
+{{- range .EnumDisplayOptions}}
+  { value: {{ printf "%q" .Value }}, label: {{ printf "%q" .Label }}, color: {{ printf "%q" .Color }}, disabled: {{ .Disabled }}, order: {{ .Order }} },
+{{- end}}
+];
+
+{{- end}}
+{{- end}}
+
+function formatEnumLabel(value: unknown, labelMap: Record<string, string>) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return '-';
+    }
+    return value.map((item) => labelMap[String(item)] ?? String(item)).join(', ');
+  }
+  if (value === null || value === undefined || value === '') {
+    return '-';
+  }
+  return labelMap[String(value)] ?? String(value);
+}
+
 function resetForm() {
   Object.assign(form, defaultForm());
 }
@@ -777,7 +815,43 @@ onMounted(() => {
       <el-form label-width="110px" class="admin-form">
 {{- range .FormFields}}
         <el-form-item label="{{.DisplayLabel}}">
-{{- if eq .FrontendControl "datetime"}}
+{{- if .HasEnum}}
+{{- $enumOptions := .EnumDisplayOptions }}
+{{- if and (eq .FrontendControl "switch") (eq (len $enumOptions) 2) }}
+          <el-switch
+            v-model="form.{{.JSONName}}"
+            inline-prompt
+            active-text="{{ (index $enumOptions 1).Label }}"
+            inactive-text="{{ (index $enumOptions 0).Label }}"
+            :active-value="{{ printf "%q" (index $enumOptions 1).Value }}"
+            :inactive-value="{{ printf "%q" (index $enumOptions 0).Value }}"
+          />
+{{- else if eq .FrontendControl "switch"}}
+          <el-select v-model="form.{{.JSONName}}" filterable clearable placeholder="请选择{{.DisplayLabel}}" style="width: 100%">
+{{- range $enumOptions}}
+            <el-option :label="{{ printf "%q" .Label }}" :value="{{ printf "%q" .Value }}" :disabled="{{ .Disabled }}" />
+{{- end}}
+          </el-select>
+{{- else if eq .FrontendControl "radio"}}
+          <el-radio-group v-model="form.{{.JSONName}}">
+{{- range $enumOptions}}
+            <el-radio :label="{{ printf "%q" .Value }}" :disabled="{{ .Disabled }}">{{ .Label }}</el-radio>
+{{- end}}
+          </el-radio-group>
+{{- else if eq .FrontendControl "checkbox-group"}}
+          <el-checkbox-group v-model="form.{{.JSONName}}">
+{{- range $enumOptions}}
+            <el-checkbox :label="{{ printf "%q" .Value }}" :disabled="{{ .Disabled }}">{{ .Label }}</el-checkbox>
+{{- end}}
+          </el-checkbox-group>
+{{- else}}
+          <el-select v-model="form.{{.JSONName}}" filterable clearable :multiple="{{ if eq .EnumMode "multiple" }}true{{ else }}false{{ end }}" placeholder="请选择{{.DisplayLabel}}" style="width: 100%">
+{{- range $enumOptions}}
+            <el-option :label="{{ printf "%q" .Label }}" :value="{{ printf "%q" .Value }}" :disabled="{{ .Disabled }}" />
+{{- end}}
+          </el-select>
+{{- end}}
+{{- else if eq .FrontendControl "datetime"}}
           <el-date-picker
             v-model="form.{{.JSONName}}"
             type="datetime"

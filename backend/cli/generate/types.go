@@ -8,14 +8,30 @@ import (
 )
 
 type Field struct {
-	Name     string
-	GoName   string
-	JSONName string
-	GoType   string
-	Column   string
-	Primary  bool
-	Index    bool
-	Unique   bool
+	Name          string
+	GoName        string
+	JSONName      string
+	GoType        string
+	Column        string
+	Primary       bool
+	Index         bool
+	Unique        bool
+	EnumKind      string
+	EnumMode      string
+	EnumDisplay   string
+	EnumSource    string
+	EnumSourceRef string
+	EnumValues    []string
+	EnumOptions   []EnumOption
+}
+
+type EnumOption struct {
+	Value    string
+	Label    string
+	Color    string
+	Disabled bool
+	Order    int
+	Metadata map[string]any
 }
 
 func (f Field) DisplayLabel() string {
@@ -38,6 +54,12 @@ func (f Field) DisplayLabel() string {
 }
 
 func (f Field) TSValueType() string {
+	if f.HasEnum() {
+		if strings.EqualFold(strings.TrimSpace(f.EnumMode), "multiple") {
+			return "string[]"
+		}
+		return "string"
+	}
 	switch f.GoType {
 	case "bool":
 		return "boolean"
@@ -58,7 +80,17 @@ func (f Field) TSValueType() string {
 	}
 }
 
+func ParseGoType(input string) string {
+	return mapGoType(input)
+}
+
 func (f Field) TSFormValueType() string {
+	if f.HasEnum() {
+		if strings.EqualFold(strings.TrimSpace(f.EnumMode), "multiple") {
+			return "string[]"
+		}
+		return "string"
+	}
 	switch {
 	case f.IsTime():
 		return "string"
@@ -72,6 +104,12 @@ func (f Field) TSFormValueType() string {
 }
 
 func (f Field) FormDefaultValue() string {
+	if f.HasEnum() {
+		if strings.EqualFold(strings.TrimSpace(f.EnumMode), "multiple") {
+			return "[]"
+		}
+		return "''"
+	}
 	switch {
 	case f.IsTime():
 		return "''"
@@ -85,6 +123,12 @@ func (f Field) FormDefaultValue() string {
 }
 
 func (f Field) TSDefaultValue() string {
+	if f.HasEnum() {
+		if strings.EqualFold(strings.TrimSpace(f.EnumMode), "multiple") {
+			return "[]"
+		}
+		return "''"
+	}
 	switch f.GoType {
 	case "bool":
 		return "false"
@@ -102,6 +146,28 @@ func (f Field) TSDefaultValue() string {
 }
 
 func (f Field) FrontendControl() string {
+	if f.HasEnum() {
+		switch strings.ToLower(strings.TrimSpace(f.EnumMode)) {
+		case "multiple":
+			return "checkbox-group"
+		}
+		switch strings.ToLower(strings.TrimSpace(f.EnumDisplay)) {
+		case "radio":
+			return "radio"
+		case "checkbox-group":
+			return "checkbox-group"
+		case "switch":
+			return "switch"
+		case "autocomplete":
+			return "autocomplete"
+		case "remote-select":
+			return "select"
+		}
+		if len(f.EnumOptions) > 0 && len(f.EnumOptions) <= 3 {
+			return "radio"
+		}
+		return "select"
+	}
 	switch {
 	case f.IsTime():
 		return "datetime"
@@ -118,6 +184,9 @@ func (f Field) FrontendControl() string {
 
 func (f Field) FrontendDisplayExpression() string {
 	prop := "row." + f.JSONName
+	if f.HasEnum() {
+		return "{{ formatEnumLabel(" + prop + ", " + f.EnumValueMapName() + ") }}"
+	}
 	switch {
 	case f.IsTime():
 		return "{{ formatDateTime(" + prop + ") }}"
@@ -136,6 +205,12 @@ func (f Field) FrontendDisplayExpression() string {
 
 func (f Field) FrontendEditExpression() string {
 	prop := "row." + f.JSONName
+	if f.HasEnum() {
+		if strings.EqualFold(strings.TrimSpace(f.EnumMode), "multiple") {
+			return "Array.isArray(" + prop + ") ? " + prop + " : []"
+		}
+		return prop + " ?? ''"
+	}
 	switch {
 	case f.IsTime():
 		return prop + " ?? ''"
@@ -150,6 +225,12 @@ func (f Field) FrontendEditExpression() string {
 
 func (f Field) FrontendSubmitExpression() string {
 	prop := "form." + f.JSONName
+	if f.HasEnum() {
+		if f.EnumMode == "multiple" {
+			return prop + " ?? []"
+		}
+		return prop
+	}
 	switch {
 	case f.IsTime():
 		return prop
@@ -160,6 +241,46 @@ func (f Field) FrontendSubmitExpression() string {
 	default:
 		return prop + ".trim()"
 	}
+}
+
+func (f Field) HasEnum() bool {
+	return len(f.EnumValues) > 0 || len(f.EnumOptions) > 0 || strings.TrimSpace(f.EnumKind) != "" || strings.TrimSpace(f.EnumSource) != "" || strings.TrimSpace(f.EnumSourceRef) != "" || strings.TrimSpace(f.EnumDisplay) != ""
+}
+
+func (f Field) EnumDisplayOptions() []EnumOption {
+	if len(f.EnumOptions) > 0 {
+		options := make([]EnumOption, 0, len(f.EnumOptions))
+		for _, option := range f.EnumOptions {
+			clone := option
+			if clone.Label == "" {
+				clone.Label = clone.Value
+			}
+			options = append(options, clone)
+		}
+		return options
+	}
+	if len(f.EnumValues) == 0 {
+		return nil
+	}
+	options := make([]EnumOption, 0, len(f.EnumValues))
+	for i, value := range f.EnumValues {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		options = append(options, EnumOption{Value: trimmed, Label: trimmed, Order: i + 1})
+	}
+	return options
+}
+
+func (f Field) EnumValueMapName() string {
+	if name := strings.TrimSpace(f.JSONName); name != "" {
+		return name + "EnumLabelMap"
+	}
+	if name := strings.TrimSpace(f.GoName); name != "" {
+		return strings.ToLower(name) + "EnumLabelMap"
+	}
+	return "enumLabelMap"
 }
 
 type Route struct {

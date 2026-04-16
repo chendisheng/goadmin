@@ -12,6 +12,17 @@ import (
 	"gorm.io/gorm"
 )
 
+type enumParseResult struct {
+	Kind    string
+	Mode    string
+	Display string
+	Values  []string
+	Options []dbschema.EnumOption
+	Source  string
+	Ref     string
+	OK      bool
+}
+
 // GormInspector is a read-only database inspector backed by gorm.DB.
 type GormInspector struct {
 	db       *gorm.DB
@@ -218,6 +229,7 @@ func (i *GormInspector) inspectSQLiteColumns(table string) ([]dbschema.Column, e
 		if row.Default.Valid {
 			column.Default = strings.TrimSpace(row.Default.String)
 		}
+		applyEnumCommentMetadata(&column)
 		result = append(result, column)
 	}
 	if autoIncrementColumns, err := i.inspectSQLiteAutoIncrementColumns(table); err == nil {
@@ -425,7 +437,178 @@ func toColumn(columnType gorm.ColumnType) (dbschema.Column, error) {
 			column.Comment = strings.TrimSpace(comment)
 		}
 	}
+	applyEnumCommentMetadata(&column)
 	return column, nil
+}
+
+func applyEnumCommentMetadata(column *dbschema.Column) {
+	if column == nil {
+		return
+	}
+	parsed := parseEnumComment(column.Comment)
+	if !parsed.OK {
+		return
+	}
+	if column.Metadata == nil {
+		column.Metadata = map[string]any{}
+	}
+	column.EnumKind = parsed.Kind
+	column.EnumMode = parsed.Mode
+	column.EnumDisplay = parsed.Display
+	column.EnumSource = parsed.Source
+	column.EnumSourceRef = parsed.Ref
+	column.EnumValues = append([]string(nil), parsed.Values...)
+	column.EnumOptions = cloneDBEnumOptions(parsed.Options)
+	column.Metadata["enum_kind"] = parsed.Kind
+	column.Metadata["enum_mode"] = parsed.Mode
+	column.Metadata["enum_display"] = parsed.Display
+	column.Metadata["enum_source"] = parsed.Source
+	if parsed.Ref != "" {
+		column.Metadata["enum_source_ref"] = parsed.Ref
+	}
+	if len(parsed.Values) > 0 {
+		column.Metadata["enum_values"] = append([]string(nil), parsed.Values...)
+	}
+	if len(parsed.Options) > 0 {
+		column.Metadata["enum_options"] = cloneEnumOptionMetadata(parsed.Options)
+	}
+}
+
+func parseEnumComment(comment string) enumParseResult {
+	text := strings.TrimSpace(comment)
+	if text == "" {
+		return enumParseResult{}
+	}
+	if left, right, ok := strings.Cut(text, ":"); ok && strings.EqualFold(strings.TrimSpace(left), "enum") {
+		text = strings.TrimSpace(right)
+	}
+	if text == "" {
+		return enumParseResult{}
+	}
+	parts := splitEnumCommentParts(text)
+	if len(parts) == 0 {
+		return enumParseResult{}
+	}
+	result := enumParseResult{Kind: "comment", Mode: "single", Display: "select", Source: "comment", OK: true}
+	allValueLabel := true
+	for i, part := range parts {
+		option := parseEnumCommentOption(part)
+		if option.Value == "" && option.Label == "" {
+			continue
+		}
+		if option.Label == option.Value {
+			allValueLabel = allValueLabel && true
+		} else {
+			allValueLabel = false
+		}
+		if option.Order == 0 {
+			option.Order = i + 1
+		}
+		result.Options = append(result.Options, option)
+	}
+	if len(result.Options) == 0 {
+		return enumParseResult{}
+	}
+	result.Values = enumValuesFromDBOptions(result.Options)
+	if len(result.Options) == 2 {
+		result.Display = "radio"
+	}
+	if !allValueLabel {
+		result.Kind = "comment-mapped"
+	}
+	return result
+}
+
+func splitEnumCommentParts(text string) []string {
+	if strings.TrimSpace(text) == "" {
+		return nil
+	}
+	parts := strings.Split(text, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		result = append(result, trimmed)
+	}
+	return result
+}
+
+func parseEnumCommentOption(text string) dbschema.EnumOption {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return dbschema.EnumOption{}
+	}
+	value := trimmed
+	label := trimmed
+	if left, right, ok := strings.Cut(trimmed, "="); ok {
+		value = strings.TrimSpace(left)
+		label = strings.TrimSpace(right)
+	}
+	if value == "" {
+		value = label
+	}
+	if label == "" {
+		label = value
+	}
+	return dbschema.EnumOption{Value: value, Label: label}
+}
+
+func enumValuesFromDBOptions(options []dbschema.EnumOption) []string {
+	if len(options) == 0 {
+		return nil
+	}
+	values := make([]string, 0, len(options))
+	for _, option := range options {
+		value := strings.TrimSpace(option.Value)
+		if value == "" {
+			continue
+		}
+		values = append(values, value)
+	}
+	return values
+}
+
+func cloneDBEnumOptions(options []dbschema.EnumOption) []dbschema.EnumOption {
+	if len(options) == 0 {
+		return nil
+	}
+	cloned := make([]dbschema.EnumOption, 0, len(options))
+	for _, option := range options {
+		clone := option
+		if option.Metadata != nil {
+			clone.Metadata = make(map[string]any, len(option.Metadata))
+			for key, value := range option.Metadata {
+				clone.Metadata[key] = value
+			}
+		}
+		cloned = append(cloned, clone)
+	}
+	return cloned
+}
+
+func cloneEnumOptionMetadata(options []dbschema.EnumOption) []map[string]any {
+	if len(options) == 0 {
+		return nil
+	}
+	result := make([]map[string]any, 0, len(options))
+	for _, option := range options {
+		metadata := map[string]any{
+			"value":    option.Value,
+			"label":    option.Label,
+			"color":    option.Color,
+			"disabled": option.Disabled,
+			"order":    option.Order,
+		}
+		if option.Metadata != nil {
+			for key, value := range option.Metadata {
+				metadata[key] = value
+			}
+		}
+		result = append(result, metadata)
+	}
+	return result
 }
 
 func markAutoIncrementColumns(columns []dbschema.Column, autoIncrementColumns []string) {

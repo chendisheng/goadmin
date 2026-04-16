@@ -297,40 +297,71 @@ func (r *GormRepository) applyFilters(db *gorm.DB, filter menurepo.ListFilter) *
 	return db
 }
 
-func (r *GormRepository) exists(ctx context.Context, pathValue, excludeID string) (bool, error) {
-	query := r.db.WithContext(ctx).Model(&menuRecord{}).Where("path = ?", strings.TrimSpace(pathValue))
-	if strings.TrimSpace(excludeID) != "" {
-		query = query.Where("id <> ?", strings.TrimSpace(excludeID))
-	}
-	var count int64
-	if err := query.Count(&count).Error; err != nil {
-		return false, err
-	}
-	return count > 0, nil
-}
-
 func toMenuRecord(menu model.Menu) (menuRecord, error) {
-	typeValue := strings.TrimSpace(string(menu.Type))
-	if typeValue == "" {
-		typeValue = string(model.TypeMenu)
-	}
-	return menuRecord{ID: strings.TrimSpace(menu.ID), ParentID: strings.TrimSpace(menu.ParentID), Name: strings.TrimSpace(menu.Name), Path: strings.TrimSpace(menu.Path), Component: strings.TrimSpace(menu.Component), Icon: strings.TrimSpace(menu.Icon), Sort: menu.Sort, Permission: strings.TrimSpace(menu.Permission), Type: typeValue, Visible: menu.Visible, Enabled: menu.Enabled, Redirect: strings.TrimSpace(menu.Redirect), ExternalURL: strings.TrimSpace(menu.ExternalURL), CreatedAt: menu.CreatedAt, UpdatedAt: menu.UpdatedAt}, nil
+	return menuRecord{
+		ID:          strings.TrimSpace(menu.ID),
+		ParentID:    strings.TrimSpace(menu.ParentID),
+		Name:        strings.TrimSpace(menu.Name),
+		Path:        strings.TrimSpace(menu.Path),
+		Component:   strings.TrimSpace(menu.Component),
+		Icon:        strings.TrimSpace(menu.Icon),
+		Sort:        menu.Sort,
+		Permission:  strings.TrimSpace(menu.Permission),
+		Type:        string(menu.Type),
+		Visible:     menu.Visible,
+		Enabled:     menu.Enabled,
+		Redirect:    strings.TrimSpace(menu.Redirect),
+		ExternalURL: strings.TrimSpace(menu.ExternalURL),
+		CreatedAt:   menu.CreatedAt,
+		UpdatedAt:   menu.UpdatedAt,
+	}, nil
 }
 
 func (r menuRecord) toModel() (model.Menu, error) {
-	return model.Menu{ID: strings.TrimSpace(r.ID), ParentID: strings.TrimSpace(r.ParentID), Name: strings.TrimSpace(r.Name), Path: strings.TrimSpace(r.Path), Component: strings.TrimSpace(r.Component), Icon: strings.TrimSpace(r.Icon), Sort: r.Sort, Permission: strings.TrimSpace(r.Permission), Type: model.Type(strings.TrimSpace(r.Type)), Visible: r.Visible, Enabled: r.Enabled, Redirect: strings.TrimSpace(r.Redirect), ExternalURL: strings.TrimSpace(r.ExternalURL), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}, nil
+	return model.Menu{
+		ID:          strings.TrimSpace(r.ID),
+		ParentID:    strings.TrimSpace(r.ParentID),
+		Name:        strings.TrimSpace(r.Name),
+		Path:        strings.TrimSpace(r.Path),
+		Component:   strings.TrimSpace(r.Component),
+		Icon:        strings.TrimSpace(r.Icon),
+		Sort:        r.Sort,
+		Permission:  strings.TrimSpace(r.Permission),
+		Type:        model.Type(strings.TrimSpace(r.Type)),
+		Visible:     r.Visible,
+		Enabled:     r.Enabled,
+		Redirect:    strings.TrimSpace(r.Redirect),
+		ExternalURL: strings.TrimSpace(r.ExternalURL),
+		CreatedAt:   r.CreatedAt,
+		UpdatedAt:   r.UpdatedAt,
+	}, nil
 }
 
 func mapMenuRecords(rows []menuRecord) ([]model.Menu, error) {
-	items := make([]model.Menu, 0, len(rows))
+	result := make([]model.Menu, 0, len(rows))
 	for _, row := range rows {
 		item, err := row.toModel()
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, item)
+		result = append(result, item)
 	}
-	return items, nil
+	return result, nil
+}
+
+func (r *GormRepository) exists(ctx context.Context, pathValue, excludeID string) (bool, error) {
+	if r == nil || r.db == nil {
+		return false, fmt.Errorf("menu gorm repository is not configured")
+	}
+	query := r.db.WithContext(ctx).Model(&menuRecord{}).Where("path = ?", strings.TrimSpace(pathValue))
+	if trimmedID := strings.TrimSpace(excludeID); trimmedID != "" {
+		query = query.Where("id <> ?", trimmedID)
+	}
+	var count int64
+	if err := query.Count(&count).Error; err != nil {
+		return false, mapMenuRepoError(err)
+	}
+	return count > 0, nil
 }
 
 func buildMenuTree(items []model.Menu) []model.Menu {

@@ -23,12 +23,37 @@ const (
 )
 
 type Field struct {
-	Name     string `yaml:"name" json:"name"`
-	Type     string `yaml:"type" json:"type"`
-	Primary  bool   `yaml:"primary,omitempty" json:"primary,omitempty"`
-	Index    bool   `yaml:"index,omitempty" json:"index,omitempty"`
-	Unique   bool   `yaml:"unique,omitempty" json:"unique,omitempty"`
-	Required bool   `yaml:"required,omitempty" json:"required,omitempty"`
+	Name     string     `yaml:"name" json:"name"`
+	Type     string     `yaml:"type" json:"type"`
+	Enum     *EnumField `yaml:"enum,omitempty" json:"enum,omitempty"`
+	Primary  bool       `yaml:"primary,omitempty" json:"primary,omitempty"`
+	Index    bool       `yaml:"index,omitempty" json:"index,omitempty"`
+	Unique   bool       `yaml:"unique,omitempty" json:"unique,omitempty"`
+	Required bool       `yaml:"required,omitempty" json:"required,omitempty"`
+}
+
+type EnumField struct {
+	Kind       string         `yaml:"kind,omitempty" json:"kind,omitempty"`
+	Mode       string         `yaml:"mode,omitempty" json:"mode,omitempty"`
+	Display    string         `yaml:"display,omitempty" json:"display,omitempty"`
+	SourceRef  string         `yaml:"source_ref,omitempty" json:"source_ref,omitempty"`
+	Confidence string         `yaml:"confidence,omitempty" json:"confidence,omitempty"`
+	Fallback   string         `yaml:"fallback,omitempty" json:"fallback,omitempty"`
+	Options    []EnumOption   `yaml:"options,omitempty" json:"options,omitempty"`
+	Values     []string       `yaml:"values,omitempty" json:"values,omitempty"`
+	LabelField string         `yaml:"label_field,omitempty" json:"label_field,omitempty"`
+	ValueField string         `yaml:"value_field,omitempty" json:"value_field,omitempty"`
+	RemotePath string         `yaml:"remote_path,omitempty" json:"remote_path,omitempty"`
+	Metadata   map[string]any `yaml:"metadata,omitempty" json:"metadata,omitempty"`
+}
+
+type EnumOption struct {
+	Value    string         `yaml:"value,omitempty" json:"value,omitempty"`
+	Label    string         `yaml:"label,omitempty" json:"label,omitempty"`
+	Color    string         `yaml:"color,omitempty" json:"color,omitempty"`
+	Disabled bool           `yaml:"disabled,omitempty" json:"disabled,omitempty"`
+	Order    int            `yaml:"order,omitempty" json:"order,omitempty"`
+	Metadata map[string]any `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 }
 
 type Framework struct {

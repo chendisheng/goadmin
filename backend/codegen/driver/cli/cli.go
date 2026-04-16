@@ -313,10 +313,7 @@ func toLegacyFields(resource schema.Resource) ([]legacygenerate.Field, error) {
 	if len(fields) == 0 {
 		return nil, nil
 	}
-	parts := make([]string, 0, len(fields))
-	primary := make([]string, 0)
-	indexes := make([]string, 0)
-	uniques := make([]string, 0)
+	result := make([]legacygenerate.Field, 0, len(fields))
 	for _, field := range fields {
 		name := strings.TrimSpace(field.Name)
 		if name == "" {
@@ -326,23 +323,56 @@ func toLegacyFields(resource schema.Resource) ([]legacygenerate.Field, error) {
 		if typeName == "" {
 			typeName = "string"
 		}
-		parts = append(parts, fmt.Sprintf("%s:%s", name, typeName))
-		if field.Primary {
-			primary = append(primary, name)
+		legacyField := legacygenerate.Field{
+			Name:     name,
+			GoName:   legacygenerate.ToCamel(name),
+			JSONName: legacygenerate.ToSnake(name),
+			GoType:   legacygenerate.ParseGoType(typeName),
+			Column:   legacygenerate.ToSnake(name),
+			Primary:  field.Primary,
+			Index:    field.Index,
+			Unique:   field.Unique,
 		}
-		if field.Index {
-			indexes = append(indexes, name)
+		if legacyField.GoName == "" {
+			legacyField.GoName = legacygenerate.ToCamel(legacyField.JSONName)
 		}
-		if field.Unique {
-			uniques = append(uniques, name)
+		if legacyField.JSONName == "" {
+			legacyField.JSONName = legacygenerate.ToSnake(legacyField.GoName)
 		}
+		if field.Enum != nil {
+			legacyField.EnumKind = strings.TrimSpace(field.Enum.Kind)
+			legacyField.EnumMode = strings.TrimSpace(field.Enum.Mode)
+			legacyField.EnumDisplay = strings.TrimSpace(field.Enum.Display)
+			legacyField.EnumSource = strings.TrimSpace(field.Enum.SourceRef)
+			legacyField.EnumSourceRef = strings.TrimSpace(field.Enum.RemotePath)
+			if len(field.Enum.Options) > 0 {
+				legacyField.EnumOptions = make([]legacygenerate.EnumOption, 0, len(field.Enum.Options))
+				for _, option := range field.Enum.Options {
+					legacyField.EnumOptions = append(legacyField.EnumOptions, legacygenerate.EnumOption{
+						Value:    strings.TrimSpace(option.Value),
+						Label:    strings.TrimSpace(option.Label),
+						Color:    strings.TrimSpace(option.Color),
+						Disabled: option.Disabled,
+						Order:    option.Order,
+						Metadata: cloneAnyMap(option.Metadata),
+					})
+				}
+			}
+			if len(field.Enum.Values) > 0 {
+				legacyField.EnumValues = append([]string(nil), field.Enum.Values...)
+			}
+		}
+		if len(legacyField.EnumValues) == 0 && len(legacyField.EnumOptions) > 0 {
+			legacyField.EnumValues = make([]string, 0, len(legacyField.EnumOptions))
+			for _, option := range legacyField.EnumOptions {
+				if value := strings.TrimSpace(option.Value); value != "" {
+					legacyField.EnumValues = append(legacyField.EnumValues, value)
+				}
+			}
+		}
+		result = append(result, legacyField)
 	}
-	return legacygenerate.ParseFields(
-		strings.Join(parts, ","),
-		strings.Join(primary, ","),
-		strings.Join(indexes, ","),
-		strings.Join(uniques, ","),
-	)
+	return result, nil
 }
 
 func chooseModuleName(resource schema.Resource) string {
@@ -513,9 +543,34 @@ func toSchemaFields(fields []legacygenerate.Field) []schema.Field {
 	}
 	result := make([]schema.Field, 0, len(fields))
 	for _, field := range fields {
+		var enum *schema.EnumField
+		if field.HasEnum() {
+			enum = &schema.EnumField{
+				Kind:       strings.TrimSpace(field.EnumKind),
+				Mode:       strings.TrimSpace(field.EnumMode),
+				Display:    strings.TrimSpace(field.EnumDisplay),
+				SourceRef:  strings.TrimSpace(field.EnumSource),
+				RemotePath: strings.TrimSpace(field.EnumSourceRef),
+				Values:     append([]string(nil), field.EnumValues...),
+			}
+			if len(field.EnumOptions) > 0 {
+				enum.Options = make([]schema.EnumOption, 0, len(field.EnumOptions))
+				for _, option := range field.EnumOptions {
+					enum.Options = append(enum.Options, schema.EnumOption{
+						Value:    strings.TrimSpace(option.Value),
+						Label:    strings.TrimSpace(option.Label),
+						Color:    strings.TrimSpace(option.Color),
+						Disabled: option.Disabled,
+						Order:    option.Order,
+						Metadata: cloneAnyMap(option.Metadata),
+					})
+				}
+			}
+		}
 		result = append(result, schema.Field{
 			Name:    field.Name,
 			Type:    field.GoType,
+			Enum:    enum,
 			Primary: field.Primary,
 			Index:   field.Index,
 			Unique:  field.Unique,

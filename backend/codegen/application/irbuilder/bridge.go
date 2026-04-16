@@ -292,9 +292,34 @@ func convertIRField(field irmodel.Field) schema.Field {
 	if typeName == "" {
 		typeName = "string"
 	}
+	var enum *schema.EnumField
+	if field.HasEnum() {
+		enum = &schema.EnumField{
+			Kind:       strings.TrimSpace(field.EnumKind),
+			Mode:       strings.TrimSpace(field.EnumMode),
+			Display:    strings.TrimSpace(field.EnumDisplay),
+			SourceRef:  strings.TrimSpace(field.EnumSource),
+			RemotePath: strings.TrimSpace(field.EnumSourceRef),
+			Values:     append([]string(nil), field.EnumValues...),
+		}
+		if len(field.EnumOptions) > 0 {
+			enum.Options = make([]schema.EnumOption, 0, len(field.EnumOptions))
+			for _, option := range field.EnumOptions {
+				enum.Options = append(enum.Options, schema.EnumOption{
+					Value:    strings.TrimSpace(option.Value),
+					Label:    strings.TrimSpace(option.Label),
+					Color:    strings.TrimSpace(option.Color),
+					Disabled: option.Disabled,
+					Order:    option.Order,
+					Metadata: cloneAnyMap(option.Metadata),
+				})
+			}
+		}
+	}
 	return schema.Field{
 		Name:     name,
 		Type:     typeName,
+		Enum:     enum,
 		Primary:  field.Primary,
 		Index:    field.Index,
 		Unique:   field.Unique,

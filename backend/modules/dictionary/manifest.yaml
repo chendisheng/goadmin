@@ -42,7 +42,8 @@ menus:
     sort: 1
   - name: Categories
     path: /system/dictionary/categories
-    component: system/dictionary/category/index
+    parent_path: /system/dictionary
+    component: view/system/dictionary/category/index
     icon: menu
     permission: dictionary:category:list
     type: menu
@@ -51,7 +52,8 @@ menus:
     sort: 2
   - name: Items
     path: /system/dictionary/items
-    component: system/dictionary/item/index
+    parent_path: /system/dictionary
+    component: view/system/dictionary/item/index
     icon: menu
     permission: dictionary:item:list
     type: menu

@@ -733,7 +733,7 @@ function applyDbPreset(driver: 'mysql' | 'postgres' | 'sqlite') {
       schema: 'public',
     },
     sqlite: {
-      database: 'codegen',
+      database: 'goadmin',
       schema: '',
     },
   };

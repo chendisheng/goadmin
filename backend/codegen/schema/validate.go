@@ -9,6 +9,9 @@ func (f Field) Validate() error {
 	if strings.TrimSpace(f.Name) == "" {
 		return fmt.Errorf("field name is required")
 	}
+	if uiType := NormalizeUIType(f.UIType); uiType == "" && strings.TrimSpace(f.UIType) != "" {
+		return fmt.Errorf("field %s ui_type %q is not supported", strings.TrimSpace(f.Name), strings.TrimSpace(f.UIType))
+	}
 	if f.Enum != nil {
 		if err := f.Enum.Validate(); err != nil {
 			return fmt.Errorf("field %s enum: %w", strings.TrimSpace(f.Name), err)
@@ -99,4 +102,13 @@ func (p Plugin) Validate() error {
 		return fmt.Errorf("plugin name is required")
 	}
 	return nil
+}
+
+func NormalizeUIType(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "input", "textarea", "select", "radio", "checkbox-group", "switch", "number", "datetime", "autocomplete", "upload", "remote-select":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return ""
+	}
 }

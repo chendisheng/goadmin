@@ -164,9 +164,6 @@ func (f Field) FrontendControl() string {
 		case "remote-select":
 			return "select"
 		}
-		if len(f.EnumOptions) > 0 && len(f.EnumOptions) <= 3 {
-			return "radio"
-		}
 		return "select"
 	}
 	switch {

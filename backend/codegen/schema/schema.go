@@ -26,6 +26,7 @@ type Field struct {
 	Name     string     `yaml:"name" json:"name"`
 	Type     string     `yaml:"type" json:"type"`
 	Comment  string     `yaml:"comment,omitempty" json:"comment,omitempty"`
+	UIType   string     `yaml:"ui_type,omitempty" json:"ui_type,omitempty"`
 	Enum     *EnumField `yaml:"enum,omitempty" json:"enum,omitempty"`
 	Primary  bool       `yaml:"primary,omitempty" json:"primary,omitempty"`
 	Index    bool       `yaml:"index,omitempty" json:"index,omitempty"`

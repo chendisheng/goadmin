@@ -823,31 +823,31 @@ onMounted(() => {
             inline-prompt
             active-text="{{ (index $enumOptions 1).Label }}"
             inactive-text="{{ (index $enumOptions 0).Label }}"
-            :active-value="{{ printf "%q" (index $enumOptions 1).Value }}"
-            :inactive-value="{{ printf "%q" (index $enumOptions 0).Value }}"
+            :active-value="{{ vueStringLiteral (index $enumOptions 1).Value }}"
+            :inactive-value="{{ vueStringLiteral (index $enumOptions 0).Value }}"
           />
 {{- else if eq .FrontendControl "switch"}}
           <el-select v-model="form.{{.JSONName}}" filterable clearable placeholder="请选择{{.DisplayLabel}}" style="width: 100%">
 {{- range $enumOptions}}
-            <el-option :label="{{ printf "%q" .Label }}" :value="{{ printf "%q" .Value }}" :disabled="{{ .Disabled }}" />
+            <el-option :label="{{ vueStringLiteral .Label }}" :value="{{ vueStringLiteral .Value }}" :disabled="{{ .Disabled }}" />
 {{- end}}
           </el-select>
 {{- else if eq .FrontendControl "radio"}}
           <el-radio-group v-model="form.{{.JSONName}}">
 {{- range $enumOptions}}
-            <el-radio :label="{{ printf "%q" .Value }}" :disabled="{{ .Disabled }}">{{ .Label }}</el-radio>
+            <el-radio :label="{{ vueStringLiteral .Value }}" :disabled="{{ .Disabled }}">{{ .Label }}</el-radio>
 {{- end}}
           </el-radio-group>
 {{- else if eq .FrontendControl "checkbox-group"}}
           <el-checkbox-group v-model="form.{{.JSONName}}">
 {{- range $enumOptions}}
-            <el-checkbox :label="{{ printf "%q" .Value }}" :disabled="{{ .Disabled }}">{{ .Label }}</el-checkbox>
+            <el-checkbox :label="{{ vueStringLiteral .Value }}" :disabled="{{ .Disabled }}">{{ .Label }}</el-checkbox>
 {{- end}}
           </el-checkbox-group>
 {{- else}}
           <el-select v-model="form.{{.JSONName}}" filterable clearable :multiple="{{ if eq .EnumMode "multiple" }}true{{ else }}false{{ end }}" placeholder="请选择{{.DisplayLabel}}" style="width: 100%">
 {{- range $enumOptions}}
-            <el-option :label="{{ printf "%q" .Label }}" :value="{{ printf "%q" .Value }}" :disabled="{{ .Disabled }}" />
+            <el-option :label="{{ vueStringLiteral .Label }}" :value="{{ vueStringLiteral .Value }}" :disabled="{{ .Disabled }}" />
 {{- end}}
           </el-select>
 {{- end}}

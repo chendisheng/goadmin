@@ -23,6 +23,13 @@ entity:
     - name: name
       type: string
       required: true
+    - name: status
+      type: string
+      ui_type: radio
+      enum:
+        values:
+          - draft
+          - published
 pages:
   - list
   - form
@@ -51,8 +58,14 @@ permissions:
 	if got, want := doc.Entity.Name, "item"; got != want {
 		t.Fatalf("Entity.Name = %q, want %q", got, want)
 	}
-	if got, want := len(doc.Entity.Fields), 2; got != want {
+	if got, want := len(doc.Entity.Fields), 3; got != want {
 		t.Fatalf("Entity.Fields len = %d, want %d", got, want)
+	}
+	if got, want := doc.Entity.Fields[2].UIType, "radio"; got != want {
+		t.Fatalf("Entity.Fields[2].UIType = %q, want %q", got, want)
+	}
+	if doc.Entity.Fields[2].Enum == nil || len(doc.Entity.Fields[2].Enum.Values) != 2 {
+		t.Fatalf("Entity.Fields[2].Enum = %#v, want 2 values", doc.Entity.Fields[2].Enum)
 	}
 	if got, want := len(doc.Pages), 2; got != want {
 		t.Fatalf("Pages len = %d, want %d", got, want)

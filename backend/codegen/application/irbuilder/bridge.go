@@ -323,6 +323,7 @@ func convertIRField(field irmodel.Field) schema.Field {
 		Name:     name,
 		Type:     typeName,
 		Comment:  strings.TrimSpace(func() string { text, _ := stringMetadata(field.Metadata, "comment"); return text }()),
+		UIType:   strings.TrimSpace(field.UIType),
 		Enum:     enum,
 		Primary:  field.Primary,
 		Index:    field.Index,

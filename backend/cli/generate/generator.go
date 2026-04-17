@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
@@ -1150,8 +1151,16 @@ func shouldWrapGeneratedText(path string) bool {
 	}
 }
 
+func vueStringLiteral(value string) string {
+	quoted := strconv.Quote(value)
+	inner := strings.ReplaceAll(quoted[1:len(quoted)-1], "'", `\'`)
+	return "'" + inner + "'"
+}
+
 func renderTemplate(tmpl string, data any) (string, error) {
-	t, err := template.New("goadmin").Parse(tmpl)
+	t, err := template.New("goadmin").Funcs(template.FuncMap{
+		"vueStringLiteral": vueStringLiteral,
+	}).Parse(tmpl)
 	if err != nil {
 		return "", err
 	}

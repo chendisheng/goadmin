@@ -116,6 +116,48 @@ func TestBuildFromDatabaseWithDefaultFactory(t *testing.T) {
 	assertField(t, books.Fields, "Price", "price", "int64")
 }
 
+func TestBuildFieldUsesExplicitUITypeAndDefaultsEnumToSelect(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		column dbschema.Column
+		want   string
+	}{
+		{
+			name: "explicit ui type wins",
+			column: dbschema.Column{
+				Name:       "status",
+				Type:       "TEXT",
+				UIType:     "radio",
+				EnumValues: []string{"draft", "published"},
+			},
+			want: "radio",
+		},
+		{
+			name: "enum defaults to select",
+			column: dbschema.Column{
+				Name:       "status",
+				Type:       "TEXT",
+				EnumValues: []string{"draft", "published"},
+			},
+			want: "select",
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			field := buildField(tc.column)
+			if got := field.UIType; got != tc.want {
+				t.Fatalf("UIType = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func openIRBuilderTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 

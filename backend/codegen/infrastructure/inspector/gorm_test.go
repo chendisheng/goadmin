@@ -6,48 +6,113 @@ import (
 	"testing"
 
 	"goadmin/codegen/schema/database"
+	dbschema "goadmin/codegen/schema/database"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 )
 
-func TestParseEnumCommentSupportsPipePrefixedDescription(t *testing.T) {
+func TestParseEnumCommentSupportsExplicitFormats(t *testing.T) {
 	t.Parallel()
 
-	parsed := parseEnumComment("分类|tech=技术,novel=小说,history=历史,other=其他")
-	if !parsed.OK {
-		t.Fatal("parseEnumComment returned OK=false, want true")
+	tests := []struct {
+		name string
+		text string
+	}{
+		{name: "semicolon ui and enum", text: "分类|ui=select;enum=tech=技术,novel=小说,history=历史,other=其他"},
+		{name: "bare enum list", text: "分类|tech=技术,novel=小说,history=历史,other=其他"},
+		{name: "parenthesized ui and enum", text: "分类|(ui:select, enum:tech=技术,novel=小说,history=历史,other=其他)"},
+		{name: "enum only parenthesized", text: "分类|(enum:tech=技术,novel=小说,history=历史,other=其他)"},
+		{name: "parenthesized ui equals enum", text: "分类|(ui=select;enum=tech=技术,novel=小说,history=历史,other=其他)"},
 	}
-	if got, want := parsed.Source, "comment"; got != want {
-		t.Fatalf("Source = %q, want %q", got, want)
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			parsed := parseEnumComment(tc.text)
+			if !parsed.OK {
+				t.Fatalf("parseEnumComment(%q) returned OK=false, want true", tc.text)
+			}
+			if got, want := parsed.Source, "comment"; got != want {
+				t.Fatalf("Source = %q, want %q", got, want)
+			}
+			if got, want := parsed.Display, "select"; got != want {
+				t.Fatalf("Display = %q, want %q", got, want)
+			}
+			if got, want := len(parsed.Options), 4; got != want {
+				t.Fatalf("Options len = %d, want %d", got, want)
+			}
+			if got, want := parsed.Values, []string{"tech", "novel", "history", "other"}; !sameStrings(got, want) {
+				t.Fatalf("Values = %v, want %v", got, want)
+			}
+			if got, want := parsed.Options[0].Value, "tech"; got != want {
+				t.Fatalf("first option value = %q, want %q", got, want)
+			}
+			if got, want := parsed.Options[0].Label, "技术"; got != want {
+				t.Fatalf("first option label = %q, want %q", got, want)
+			}
+		})
 	}
-	if got, want := parsed.Display, "select"; got != want {
-		t.Fatalf("Display = %q, want %q", got, want)
+}
+
+func TestApplyEnumCommentMetadataParsesExplicitUIType(t *testing.T) {
+	t.Parallel()
+
+	column := dbschema.Column{Comment: "订单状态|ui=radio;enum=draft=草稿,published=已发布,archived=已归档"}
+	applyEnumCommentMetadata(&column)
+
+	if got, want := column.UIType, "radio"; got != want {
+		t.Fatalf("UIType = %q, want %q", got, want)
 	}
-	if got, want := len(parsed.Options), 4; got != want {
-		t.Fatalf("Options len = %d, want %d", got, want)
+	if got, want := column.EnumDisplay, "radio"; got != want {
+		t.Fatalf("EnumDisplay = %q, want %q", got, want)
 	}
-	if got, want := parsed.Values, []string{"tech", "novel", "history", "other"}; !sameStrings(got, want) {
-		t.Fatalf("Values = %v, want %v", got, want)
+	if got, want := len(column.EnumValues), 3; got != want {
+		t.Fatalf("EnumValues len = %d, want %d", got, want)
 	}
-	if got, want := parsed.Options[0].Value, "tech"; got != want {
-		t.Fatalf("first option value = %q, want %q", got, want)
+	if got, want := column.Metadata["ui_type"], "radio"; got != want {
+		t.Fatalf("ui_type metadata = %#v, want %q", got, want)
 	}
-	if got, want := parsed.Options[0].Label, "技术"; got != want {
-		t.Fatalf("first option label = %q, want %q", got, want)
+}
+
+func TestApplyEnumCommentMetadataDefaultsEnumUITypeToSelect(t *testing.T) {
+	t.Parallel()
+
+	column := dbschema.Column{Comment: "订单状态|enum=draft=草稿,published=已发布,archived=已归档"}
+	applyEnumCommentMetadata(&column)
+
+	if got, want := column.UIType, "select"; got != want {
+		t.Fatalf("UIType = %q, want %q", got, want)
+	}
+	if got, want := column.EnumDisplay, "select"; got != want {
+		t.Fatalf("EnumDisplay = %q, want %q", got, want)
 	}
 }
 
 func TestParseEnumCommentRejectsOrdinaryDescription(t *testing.T) {
 	t.Parallel()
 
-	parsed := parseEnumComment("分类|这是一个普通说明，不应被解析为枚举")
-	if parsed.OK {
-		t.Fatalf("parseEnumComment returned OK=true, want false: %#v", parsed)
-	}
-	if len(parsed.Options) != 0 || len(parsed.Values) != 0 {
-		t.Fatalf("expected empty enum result, got %#v", parsed)
+	for _, text := range []string{
+		"分类|这是一个普通说明，不应被解析为枚举",
+		"分类|tech,novel,history,other",
+		"分类|ui=radio",
+		"分类|(wrong:enum=tech=技术,novel=小说,history=历史,other=其他)",
+	} {
+		text := text
+		t.Run(text, func(t *testing.T) {
+			t.Parallel()
+
+			parsed := parseEnumComment(text)
+			if parsed.OK {
+				t.Fatalf("parseEnumComment returned OK=true, want false: %#v", parsed)
+			}
+			if len(parsed.Options) != 0 || len(parsed.Values) != 0 {
+				t.Fatalf("expected empty enum result, got %#v", parsed)
+			}
+		})
 	}
 }
 
@@ -89,7 +154,7 @@ func TestGormInspectorSQLite(t *testing.T) {
 	assertStringSliceContains(t, books.PrimaryKeys, "id")
 	assertIndexPresent(t, books.Indexes, "idx_books_title", false, []string{"title"})
 	assertIndexPresent(t, books.Indexes, "idx_books_author_title", true, []string{"author_id", "title"})
-	assertForeignKeyPresent(t, books.ForeignKeys, "fk_books_author", "authors", []string{"author_id"}, []string{"id"})
+	assertForeignKeyPresent(t, books.ForeignKeys, "", "authors", []string{"author_id"}, []string{"id"})
 
 	columns, err := inspector.InspectColumns("books")
 	if err != nil {
@@ -136,7 +201,7 @@ func TestGormInspectorSQLite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InspectRelations returned error: %v", err)
 	}
-	assertForeignKeyPresent(t, relations, "fk_books_author", "authors", []string{"author_id"}, []string{"id"})
+	assertForeignKeyPresent(t, relations, "", "authors", []string{"author_id"}, []string{"id"})
 }
 
 func TestInspectTablesCarriesTableCommentFromInspectorContext(t *testing.T) {
@@ -185,7 +250,7 @@ func TestApplyColumnCommentsPopulatesNonPrimaryFieldComments(t *testing.T) {
 	applyColumnComments(columns, map[string]string{
 		"id":     "订单ID",
 		"title":  "标题",
-		"status": "状态|draft=草稿,published=已发布",
+		"status": "状态|enum=draft=草稿,published=已发布",
 	})
 
 	if got, want := columns[0].Comment, "订单ID"; got != want {
@@ -194,10 +259,10 @@ func TestApplyColumnCommentsPopulatesNonPrimaryFieldComments(t *testing.T) {
 	if got, want := columns[1].Comment, "标题"; got != want {
 		t.Fatalf("non-primary column comment = %q, want %q", got, want)
 	}
-	if got, want := columns[2].Comment, "状态|draft=草稿,published=已发布"; got != want {
+	if got, want := columns[2].Comment, "状态|enum=draft=草稿,published=已发布"; got != want {
 		t.Fatalf("enum column comment = %q, want %q", got, want)
 	}
-	if columns[2].EnumKind == "" || len(columns[2].EnumValues) == 0 {
+	if columns[2].UIType != "select" || columns[2].EnumKind == "" || len(columns[2].EnumValues) == 0 {
 		t.Fatalf("expected enum metadata to be inferred from comment: %#v", columns[2])
 	}
 }
@@ -251,7 +316,7 @@ func assertIndexPresent(t *testing.T, indexes []database.Index, wantName string,
 func assertForeignKeyPresent(t *testing.T, foreignKeys []database.ForeignKey, wantName string, wantRefTable string, wantColumns []string, wantRefColumns []string) {
 	t.Helper()
 	for _, foreignKey := range foreignKeys {
-		if foreignKey.Name != wantName {
+		if wantName != "" && foreignKey.Name != wantName {
 			continue
 		}
 		if foreignKey.RefTable != wantRefTable {

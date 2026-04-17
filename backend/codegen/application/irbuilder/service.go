@@ -8,6 +8,7 @@ import (
 
 	insp "goadmin/codegen/infrastructure/inspector"
 	irmodel "goadmin/codegen/model/ir"
+	codeschema "goadmin/codegen/schema"
 	dbschema "goadmin/codegen/schema/database"
 
 	"gorm.io/gorm"
@@ -276,6 +277,9 @@ func buildField(column dbschema.Column) irmodel.Field {
 	if field.EnumSourceRef != "" {
 		field.Metadata["enum_source_ref"] = field.EnumSourceRef
 	}
+	if field.UIType != "" {
+		field.Metadata["ui_type"] = field.UIType
+	}
 	if field.HasEnum() {
 		field.Metadata["has_enum"] = true
 		if strings.TrimSpace(column.Comment) != "" && field.Label == "" {
@@ -464,6 +468,9 @@ func inferGoType(columnType string) string {
 }
 
 func uiTypeForColumn(column dbschema.Column, category string) string {
+	if uiType := codeschema.NormalizeUIType(column.UIType); uiType != "" {
+		return uiType
+	}
 	if hasColumnEnum(column) {
 		switch strings.ToLower(strings.TrimSpace(column.EnumMode)) {
 		case "multiple":
@@ -480,9 +487,6 @@ func uiTypeForColumn(column dbschema.Column, category string) string {
 			return "autocomplete"
 		case "remote-select":
 			return "select"
-		}
-		if len(column.EnumOptions) > 0 && len(column.EnumOptions) <= 3 {
-			return "radio"
 		}
 		if strings.EqualFold(strings.TrimSpace(column.EnumKind), "dictionary") || strings.TrimSpace(column.EnumSourceRef) != "" {
 			return "select"

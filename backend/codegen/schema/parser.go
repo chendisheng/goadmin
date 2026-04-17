@@ -187,6 +187,7 @@ type rawEntity struct {
 type rawField struct {
 	Name       string     `yaml:"name"`
 	Type       string     `yaml:"type,omitempty"`
+	UIType     string     `yaml:"ui_type,omitempty"`
 	Enum       *EnumField `yaml:"enum,omitempty"`
 	EnumValues []string   `yaml:"enum_values,omitempty"`
 	Primary    bool       `yaml:"primary,omitempty"`
@@ -218,6 +219,7 @@ type rawResource struct {
 	Kind             Kind            `yaml:"kind"`
 	Name             string          `yaml:"name"`
 	Module           string          `yaml:"module,omitempty"`
+	Schema           string          `yaml:"schema,omitempty"`
 	Framework        rawFramework    `yaml:"framework,omitempty"`
 	Entity           rawEntity       `yaml:"entity,omitempty"`
 	Fields           []rawField      `yaml:"fields,omitempty"`
@@ -437,6 +439,7 @@ func toFields(items []rawField) []Field {
 		field := Field{
 			Name:     strings.TrimSpace(item.Name),
 			Type:     strings.TrimSpace(item.Type),
+			UIType:   strings.TrimSpace(item.UIType),
 			Primary:  item.Primary,
 			Index:    item.Index,
 			Unique:   item.Unique,
@@ -454,6 +457,13 @@ func toFields(items []rawField) []Field {
 		if len(item.EnumValues) > 0 && (field.Enum == nil || len(field.Enum.Values) == 0) {
 			field.Enum = &EnumField{Kind: "static", Mode: "single", Display: "select", Values: append([]string(nil), item.EnumValues...)}
 			_ = field.Enum.normalize()
+		}
+		if field.UIType == "" && field.Enum != nil {
+			if uiType := NormalizeUIType(field.Enum.Display); uiType != "" {
+				field.UIType = uiType
+			} else {
+				field.UIType = "select"
+			}
 		}
 		fields = append(fields, field)
 	}

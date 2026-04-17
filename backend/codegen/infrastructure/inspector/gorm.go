@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"goadmin/codegen/driver/db"
+	codeschema "goadmin/codegen/schema"
 	dbschema "goadmin/codegen/schema/database"
 
 	"gorm.io/gorm"
@@ -569,54 +570,182 @@ func applyEnumCommentMetadata(column *dbschema.Column) {
 	if column == nil {
 		return
 	}
-	parsed := parseEnumComment(column.Comment)
-	if !parsed.OK {
+	parsed := parseColumnCommentMetadata(column.Comment)
+	if parsed.Label != "" {
+		if column.Metadata == nil {
+			column.Metadata = map[string]any{}
+		}
+		column.Metadata["label"] = parsed.Label
+	}
+	if parsed.UIType != "" {
+		column.UIType = parsed.UIType
+		if column.Metadata == nil {
+			column.Metadata = map[string]any{}
+		}
+		column.Metadata["ui_type"] = parsed.UIType
+	}
+	if !parsed.Enum.OK {
 		return
 	}
 	if column.Metadata == nil {
 		column.Metadata = map[string]any{}
 	}
-	column.EnumKind = parsed.Kind
-	column.EnumMode = parsed.Mode
-	column.EnumDisplay = parsed.Display
-	column.EnumSource = parsed.Source
-	column.EnumSourceRef = parsed.Ref
-	column.EnumValues = append([]string(nil), parsed.Values...)
-	column.EnumOptions = cloneDBEnumOptions(parsed.Options)
-	column.Metadata["enum_kind"] = parsed.Kind
-	column.Metadata["enum_mode"] = parsed.Mode
-	column.Metadata["enum_display"] = parsed.Display
-	column.Metadata["enum_source"] = parsed.Source
-	if parsed.Ref != "" {
-		column.Metadata["enum_source_ref"] = parsed.Ref
+	if column.UIType == "" {
+		column.UIType = parsed.Enum.Display
 	}
-	if len(parsed.Values) > 0 {
-		column.Metadata["enum_values"] = append([]string(nil), parsed.Values...)
+	column.EnumKind = parsed.Enum.Kind
+	column.EnumMode = parsed.Enum.Mode
+	column.EnumDisplay = parsed.Enum.Display
+	column.EnumSource = parsed.Enum.Source
+	column.EnumSourceRef = parsed.Enum.Ref
+	column.EnumValues = append([]string(nil), parsed.Enum.Values...)
+	column.EnumOptions = cloneDBEnumOptions(parsed.Enum.Options)
+	column.Metadata["enum_kind"] = parsed.Enum.Kind
+	column.Metadata["enum_mode"] = parsed.Enum.Mode
+	column.Metadata["enum_display"] = parsed.Enum.Display
+	column.Metadata["enum_source"] = parsed.Enum.Source
+	if parsed.Enum.Ref != "" {
+		column.Metadata["enum_source_ref"] = parsed.Enum.Ref
 	}
-	if len(parsed.Options) > 0 {
-		column.Metadata["enum_options"] = cloneEnumOptionMetadata(parsed.Options)
+	if len(parsed.Enum.Values) > 0 {
+		column.Metadata["enum_values"] = append([]string(nil), parsed.Enum.Values...)
+	}
+	if len(parsed.Enum.Options) > 0 {
+		column.Metadata["enum_options"] = cloneEnumOptionMetadata(parsed.Enum.Options)
 	}
 }
 
 func parseEnumComment(comment string) enumParseResult {
+	parsed := parseColumnCommentMetadata(comment)
+	if !parsed.Enum.OK {
+		return enumParseResult{}
+	}
+	return parsed.Enum
+}
+
+type columnCommentMetadata struct {
+	Label  string
+	UIType string
+	Enum   enumParseResult
+}
+
+func parseColumnCommentMetadata(comment string) columnCommentMetadata {
 	text := strings.TrimSpace(comment)
 	if text == "" {
-		return enumParseResult{}
+		return columnCommentMetadata{}
 	}
-	pipePrefixed := false
-	if left, right, ok := strings.Cut(text, ":"); ok && strings.EqualFold(strings.TrimSpace(left), "enum") {
-		text = strings.TrimSpace(right)
-	} else if _, right, ok := strings.Cut(text, "|"); ok {
-		trimmed := strings.TrimSpace(right)
-		if trimmed != "" {
-			text = trimmed
-			pipePrefixed = true
+	label := text
+	annotations := ""
+	if left, right, ok := strings.Cut(text, "|"); ok {
+		label = strings.TrimSpace(left)
+		annotations = strings.TrimSpace(right)
+	}
+	result := columnCommentMetadata{Label: label}
+	if annotations == "" {
+		return result
+	}
+	inner := annotations
+	if strings.HasPrefix(inner, "(") && strings.HasSuffix(inner, ")") {
+		inner = strings.TrimSpace(inner[1 : len(inner)-1])
+	}
+	parseSemiCommentAnnotations(inner, &result)
+	if !result.Enum.OK && strings.HasPrefix(annotations, "(") && strings.HasSuffix(annotations, ")") {
+		parseParenCommentAnnotations(inner, &result)
+	}
+	if !result.Enum.OK {
+		if enum := parseBareEnumDefinition(inner); enum.OK {
+			result.Enum = enum
 		}
 	}
-	if text == "" {
+	if result.Enum.OK {
+		if result.UIType == "" {
+			result.UIType = "select"
+		}
+		if result.UIType != "" {
+			result.Enum.Display = result.UIType
+		}
+	}
+	return result
+}
+
+func parseBareEnumDefinition(text string) enumParseResult {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
 		return enumParseResult{}
 	}
-	if pipePrefixed && !looksLikeEnumCommentText(text) {
+	if !strings.Contains(trimmed, ",") {
+		return enumParseResult{}
+	}
+	if strings.ContainsAny(trimmed, ";:()") {
+		return enumParseResult{}
+	}
+	return parseEnumDefinition(trimmed)
+}
+
+func parseSemiCommentAnnotations(text string, result *columnCommentMetadata) {
+	parts := strings.Split(text, ";")
+	for _, part := range parts {
+		if key, value, ok := strings.Cut(strings.TrimSpace(part), "="); ok {
+			parseCommentAnnotationValue(key, value, result)
+		}
+	}
+}
+
+func parseParenCommentAnnotations(text string, result *columnCommentMetadata) {
+	parts := strings.Split(text, ",")
+	for i := 0; i < len(parts); i++ {
+		part := strings.TrimSpace(parts[i])
+		if part == "" {
+			continue
+		}
+		key, value, ok := strings.Cut(part, ":")
+		if !ok {
+			continue
+		}
+		if normalizeCommentAnnotationKey(key) == "enum" {
+			if i < len(parts)-1 {
+				value = value + "," + strings.Join(trimmedParts(parts[i+1:]), ",")
+				i = len(parts)
+			}
+			parseCommentAnnotationValue("enum", value, result)
+			continue
+		}
+		parseCommentAnnotationValue(key, value, result)
+	}
+}
+
+func trimmedParts(parts []string) []string {
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		result = append(result, trimmed)
+	}
+	return result
+}
+
+func parseCommentAnnotationValue(key string, value string, result *columnCommentMetadata) {
+	switch normalizeCommentAnnotationKey(key) {
+	case "ui", "ui_type":
+		if ui := codeschema.NormalizeUIType(value); ui != "" {
+			result.UIType = ui
+		}
+	case "enum":
+		if enum := parseEnumDefinition(value); enum.OK {
+			result.Enum = enum
+		}
+	}
+}
+
+func normalizeCommentAnnotationKey(key string) string {
+	return strings.ToLower(strings.TrimSpace(key))
+}
+
+func parseEnumDefinition(spec string) enumParseResult {
+	text := strings.TrimSpace(spec)
+	if text == "" {
 		return enumParseResult{}
 	}
 	parts := splitEnumCommentParts(text)
@@ -626,13 +755,11 @@ func parseEnumComment(comment string) enumParseResult {
 	result := enumParseResult{Kind: "comment", Mode: "single", Display: "select", Source: "comment", OK: true}
 	allValueLabel := true
 	for i, part := range parts {
-		option := parseEnumCommentOption(part)
-		if option.Value == "" && option.Label == "" {
-			continue
+		option, ok := parseEnumCommentOption(part)
+		if !ok {
+			return enumParseResult{}
 		}
-		if option.Label == option.Value {
-			allValueLabel = allValueLabel && true
-		} else {
+		if option.Label != option.Value {
 			allValueLabel = false
 		}
 		if option.Order == 0 {
@@ -644,51 +771,10 @@ func parseEnumComment(comment string) enumParseResult {
 		return enumParseResult{}
 	}
 	result.Values = enumValuesFromDBOptions(result.Options)
-	if len(result.Options) == 2 {
-		result.Display = "radio"
-	}
 	if !allValueLabel {
 		result.Kind = "comment-mapped"
 	}
 	return result
-}
-
-func looksLikeEnumCommentText(text string) bool {
-	trimmed := strings.TrimSpace(text)
-	if trimmed == "" {
-		return false
-	}
-	if strings.Contains(trimmed, "=") {
-		return true
-	}
-	parts := splitEnumCommentParts(trimmed)
-	if len(parts) == 0 {
-		return false
-	}
-	for _, part := range parts {
-		if !isLikelyEnumToken(part) {
-			return false
-		}
-	}
-	return true
-}
-
-func isLikelyEnumToken(text string) bool {
-	trimmed := strings.TrimSpace(text)
-	if trimmed == "" {
-		return false
-	}
-	for _, r := range trimmed {
-		switch {
-		case r >= 'a' && r <= 'z':
-		case r >= 'A' && r <= 'Z':
-		case r >= '0' && r <= '9':
-		case r == '_' || r == '-' || r == '.' || r == '/' || r == '+':
-		default:
-			return false
-		}
-	}
-	return true
 }
 
 func splitEnumCommentParts(text string) []string {
@@ -707,24 +793,21 @@ func splitEnumCommentParts(text string) []string {
 	return result
 }
 
-func parseEnumCommentOption(text string) dbschema.EnumOption {
+func parseEnumCommentOption(text string) (dbschema.EnumOption, bool) {
 	trimmed := strings.TrimSpace(text)
 	if trimmed == "" {
-		return dbschema.EnumOption{}
+		return dbschema.EnumOption{}, false
 	}
-	value := trimmed
-	label := trimmed
-	if left, right, ok := strings.Cut(trimmed, "="); ok {
-		value = strings.TrimSpace(left)
-		label = strings.TrimSpace(right)
+	left, right, ok := strings.Cut(trimmed, "=")
+	if !ok {
+		return dbschema.EnumOption{}, false
 	}
-	if value == "" {
-		value = label
+	value := strings.TrimSpace(left)
+	label := strings.TrimSpace(right)
+	if value == "" || label == "" {
+		return dbschema.EnumOption{}, false
 	}
-	if label == "" {
-		label = value
-	}
-	return dbschema.EnumOption{Value: value, Label: label}
+	return dbschema.EnumOption{Value: value, Label: label}, true
 }
 
 func enumValuesFromDBOptions(options []dbschema.EnumOption) []string {

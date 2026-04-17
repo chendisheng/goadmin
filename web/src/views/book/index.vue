@@ -80,6 +80,30 @@ type EnumOption = {
   disabled?: boolean;
   order?: number;
 };
+const categoryEnumLabelMap: Record<string, string> = {
+  ["tech"]: "技术",
+  ["novel"]: "小说",
+  ["history"]: "历史",
+  ["other"]: "其他",
+};
+
+const categoryEnumOptions: EnumOption[] = [
+  { value: "tech", label: "技术", color: "", disabled: false, order: 1 },
+  { value: "novel", label: "小说", color: "", disabled: false, order: 2 },
+  { value: "history", label: "历史", color: "", disabled: false, order: 3 },
+  { value: "other", label: "其他", color: "", disabled: false, order: 4 },
+];
+const statusEnumLabelMap: Record<string, string> = {
+  ["draft"]: "草稿",
+  ["published"]: "已发布",
+  ["off_shelf"]: "已下架",
+};
+
+const statusEnumOptions: EnumOption[] = [
+  { value: "draft", label: "草稿", color: "", disabled: false, order: 1 },
+  { value: "published", label: "已发布", color: "", disabled: false, order: 2 },
+  { value: "off_shelf", label: "已下架", color: "", disabled: false, order: 3 },
+];
 
 function formatEnumLabel(value: unknown, labelMap: Record<string, string>) {
   if (Array.isArray(value)) {
@@ -145,9 +169,9 @@ async function submitForm() {
       isbn: form.isbn.trim(),
       publisher: form.publisher.trim(),
       publish_date: form.publish_date,
-      category: form.category.trim(),
+      category: form.category,
       description: form.description.trim(),
-      status: form.status.trim(),
+      status: form.status,
       price: Number(form.price ?? 0),
       stock_quantity: Number(form.stock_quantity ?? 0),
       cover_image_url: form.cover_image_url.trim(),
@@ -298,10 +322,9 @@ onMounted(() => {
           prop="category"
           label="Category"
           min-width="140"
-          show-overflow-tooltip
         >
           <template #default="{ row }">
-            {{ row.category || '-' }}
+            {{ formatEnumLabel(row.category, categoryEnumLabelMap) }}
           </template>
         </el-table-column>
         <el-table-column
@@ -318,10 +341,9 @@ onMounted(() => {
           prop="status"
           label="Status"
           min-width="140"
-          show-overflow-tooltip
         >
           <template #default="{ row }">
-            {{ row.status || '-' }}
+            {{ formatEnumLabel(row.status, statusEnumLabelMap) }}
           </template>
         </el-table-column>
         <el-table-column
@@ -429,13 +451,22 @@ onMounted(() => {
           />
         </el-form-item>
         <el-form-item label="Category">
-          <el-input v-model="form.category" :placeholder="'请输入Category'" />
+          <el-select v-model="form.category" filterable clearable :multiple="false" placeholder="请选择Category" style="width: 100%">
+            <el-option :label="'技术'" :value="'tech'" :disabled="false" />
+            <el-option :label="'小说'" :value="'novel'" :disabled="false" />
+            <el-option :label="'历史'" :value="'history'" :disabled="false" />
+            <el-option :label="'其他'" :value="'other'" :disabled="false" />
+          </el-select>
         </el-form-item>
         <el-form-item label="Description">
           <el-input v-model="form.description" type="textarea" :rows="4" :placeholder="'请输入Description'" />
         </el-form-item>
         <el-form-item label="Status">
-          <el-input v-model="form.status" :placeholder="'请输入Status'" />
+          <el-select v-model="form.status" filterable clearable :multiple="false" placeholder="请选择Status" style="width: 100%">
+            <el-option :label="'草稿'" :value="'draft'" :disabled="false" />
+            <el-option :label="'已发布'" :value="'published'" :disabled="false" />
+            <el-option :label="'已下架'" :value="'off_shelf'" :disabled="false" />
+          </el-select>
         </el-form-item>
         <el-form-item label="Price">
           <el-input-number v-model="form.price" :controls="false" style="width: 100%" />

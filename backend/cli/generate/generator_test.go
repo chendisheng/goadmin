@@ -115,6 +115,37 @@ func TestGormTagIncludesComment(t *testing.T) {
 	}
 }
 
+func TestFieldFrontendControlEnumDefaultsToSelect(t *testing.T) {
+	t.Parallel()
+
+	f := Field{
+		JSONName: "category",
+		EnumOptions: []EnumOption{
+			{Value: "tech", Label: "技术"},
+			{Value: "novel", Label: "小说"},
+		},
+	}
+	if got, want := f.FrontendControl(), "select"; got != want {
+		t.Fatalf("FrontendControl() = %q, want %q", got, want)
+	}
+}
+
+func TestFieldFrontendControlEnumExplicitRadio(t *testing.T) {
+	t.Parallel()
+
+	f := Field{
+		JSONName:    "status",
+		EnumDisplay: "radio",
+		EnumOptions: []EnumOption{
+			{Value: "draft", Label: "草稿"},
+			{Value: "published", Label: "已发布"},
+		},
+	}
+	if got, want := f.FrontendControl(), "radio"; got != want {
+		t.Fatalf("FrontendControl() = %q, want %q", got, want)
+	}
+}
+
 func TestGenerateModule(t *testing.T) {
 	t.Parallel()
 
@@ -438,6 +469,29 @@ func TestGenerateCRUDFrontendRendersUsablePage(t *testing.T) {
 	assertFileContains(t, viewPath, "el-input-number")
 	assertFileContains(t, viewPath, "prop=\"title\"")
 	assertFileContains(t, viewPath, "Book管理")
+}
+
+func TestRenderTemplateUsesVueStringLiteral(t *testing.T) {
+	t.Parallel()
+
+	got, err := renderTemplate(`<el-option :label="{{ vueStringLiteral .Label }}" :value="{{ vueStringLiteral .Value }}" />`, struct {
+		Label string
+		Value string
+	}{
+		Label: "待处理",
+		Value: "O'Reilly",
+	})
+	if err != nil {
+		t.Fatalf("renderTemplate returned error: %v", err)
+	}
+
+	want := `<el-option :label="'待处理'" :value="'O\'Reilly'" />`
+	if got != want {
+		t.Fatalf("renderTemplate() = %q, want %q", got, want)
+	}
+	if strings.Contains(got, `""`) {
+		t.Fatalf("renderTemplate output still contains malformed double quotes: %s", got)
+	}
 }
 
 func TestGeneratePageUsesRepoWebRoot(t *testing.T) {

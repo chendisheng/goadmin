@@ -36,6 +36,7 @@ type Column struct {
 	Nullable      bool           `json:"nullable,omitempty"`
 	Default       string         `json:"default,omitempty"`
 	Comment       string         `json:"comment,omitempty"`
+	UIType        string         `json:"ui_type,omitempty"`
 	Length        *int           `json:"length,omitempty"`
 	Precision     *int           `json:"precision,omitempty"`
 	Scale         *int           `json:"scale,omitempty"`

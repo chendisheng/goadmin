@@ -279,7 +279,7 @@ func TestExecuteDatabaseDocumentDryRunReport(t *testing.T) {
 
 	frontend := true
 	policy := true
-	report, err := ExecuteDatabaseDocument(root, nil, DatabaseExecutionRequest{
+	report, err := ExecuteDatabaseDocument(root, db, nil, DatabaseExecutionRequest{
 		Driver:           "sqlite",
 		DSN:              dbPath,
 		Database:         "codegen",

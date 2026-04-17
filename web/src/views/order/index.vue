@@ -107,6 +107,60 @@ type EnumOption = {
   disabled?: boolean;
   order?: number;
 };
+const order_statusEnumLabelMap: Record<string, string> = {
+  ["pending"]: "待处理",
+  ["paid"]: "已支付",
+  ["shipped"]: "已发货",
+  ["delivered"]: "已完成",
+  ["cancelled"]: "已取消",
+};
+
+const order_statusEnumOptions: EnumOption[] = [
+  { value: "pending", label: "待处理", color: "", disabled: false, order: 1 },
+  { value: "paid", label: "已支付", color: "", disabled: false, order: 2 },
+  { value: "shipped", label: "已发货", color: "", disabled: false, order: 3 },
+  { value: "delivered", label: "已完成", color: "", disabled: false, order: 4 },
+  { value: "cancelled", label: "已取消", color: "", disabled: false, order: 5 },
+];
+const payment_statusEnumLabelMap: Record<string, string> = {
+  ["unpaid"]: "未支付",
+  ["paid"]: "已支付",
+  ["refunded"]: "已退款",
+  ["failed"]: "支付失败",
+};
+
+const payment_statusEnumOptions: EnumOption[] = [
+  { value: "unpaid", label: "未支付", color: "", disabled: false, order: 1 },
+  { value: "paid", label: "已支付", color: "", disabled: false, order: 2 },
+  { value: "refunded", label: "已退款", color: "", disabled: false, order: 3 },
+  { value: "failed", label: "支付失败", color: "", disabled: false, order: 4 },
+];
+const payment_methodEnumLabelMap: Record<string, string> = {
+  ["wechat"]: "微信支付",
+  ["alipay"]: "支付宝",
+  ["card"]: "银行卡",
+  ["paypal"]: "PayPal",
+};
+
+const payment_methodEnumOptions: EnumOption[] = [
+  { value: "wechat", label: "微信支付", color: "", disabled: false, order: 1 },
+  { value: "alipay", label: "支付宝", color: "", disabled: false, order: 2 },
+  { value: "card", label: "银行卡", color: "", disabled: false, order: 3 },
+  { value: "paypal", label: "PayPal", color: "", disabled: false, order: 4 },
+];
+const currencyEnumLabelMap: Record<string, string> = {
+  ["CNY"]: "人民币",
+  ["USD"]: "美元",
+  ["EUR"]: "欧元",
+  ["JPY"]: "日元",
+};
+
+const currencyEnumOptions: EnumOption[] = [
+  { value: "CNY", label: "人民币", color: "", disabled: false, order: 1 },
+  { value: "USD", label: "美元", color: "", disabled: false, order: 2 },
+  { value: "EUR", label: "欧元", color: "", disabled: false, order: 3 },
+  { value: "JPY", label: "日元", color: "", disabled: false, order: 4 },
+];
 
 function formatEnumLabel(value: unknown, labelMap: Record<string, string>) {
   if (Array.isArray(value)) {
@@ -183,10 +237,10 @@ async function submitForm() {
       customer_phone: form.customer_phone.trim(),
       shipping_address: form.shipping_address.trim(),
       billing_address: form.billing_address.trim(),
-      order_status: form.order_status.trim(),
-      payment_status: form.payment_status.trim(),
-      payment_method: form.payment_method.trim(),
-      currency: form.currency.trim(),
+      order_status: form.order_status,
+      payment_status: form.payment_status,
+      payment_method: form.payment_method,
+      currency: form.currency,
       total_amount: Number(form.total_amount ?? 0),
       discount_amount: Number(form.discount_amount ?? 0),
       tax_amount: Number(form.tax_amount ?? 0),
@@ -364,40 +418,36 @@ onMounted(() => {
           prop="order_status"
           label="Order Status"
           min-width="140"
-          show-overflow-tooltip
         >
           <template #default="{ row }">
-            {{ row.order_status || '-' }}
+            {{ formatEnumLabel(row.order_status, order_statusEnumLabelMap) }}
           </template>
         </el-table-column>
         <el-table-column
           prop="payment_status"
           label="Payment Status"
           min-width="140"
-          show-overflow-tooltip
         >
           <template #default="{ row }">
-            {{ row.payment_status || '-' }}
+            {{ formatEnumLabel(row.payment_status, payment_statusEnumLabelMap) }}
           </template>
         </el-table-column>
         <el-table-column
           prop="payment_method"
           label="Payment Method"
           min-width="140"
-          show-overflow-tooltip
         >
           <template #default="{ row }">
-            {{ row.payment_method || '-' }}
+            {{ formatEnumLabel(row.payment_method, payment_methodEnumLabelMap) }}
           </template>
         </el-table-column>
         <el-table-column
           prop="currency"
           label="Currency"
           min-width="140"
-          show-overflow-tooltip
         >
           <template #default="{ row }">
-            {{ row.currency || '-' }}
+            {{ formatEnumLabel(row.currency, currencyEnumLabelMap) }}
           </template>
         </el-table-column>
         <el-table-column
@@ -558,16 +608,37 @@ onMounted(() => {
           <el-input v-model="form.billing_address" :placeholder="'请输入Billing Address'" />
         </el-form-item>
         <el-form-item label="Order Status">
-          <el-input v-model="form.order_status" :placeholder="'请输入Order Status'" />
+          <el-select v-model="form.order_status" filterable clearable :multiple="false" placeholder="请选择Order Status" style="width: 100%">
+            <el-option :label="'待处理'" :value="'pending'" :disabled="false" />
+            <el-option :label="'已支付'" :value="'paid'" :disabled="false" />
+            <el-option :label="'已发货'" :value="'shipped'" :disabled="false" />
+            <el-option :label="'已完成'" :value="'delivered'" :disabled="false" />
+            <el-option :label="'已取消'" :value="'cancelled'" :disabled="false" />
+          </el-select>
         </el-form-item>
         <el-form-item label="Payment Status">
-          <el-input v-model="form.payment_status" :placeholder="'请输入Payment Status'" />
+          <el-select v-model="form.payment_status" filterable clearable :multiple="false" placeholder="请选择Payment Status" style="width: 100%">
+            <el-option :label="'未支付'" :value="'unpaid'" :disabled="false" />
+            <el-option :label="'已支付'" :value="'paid'" :disabled="false" />
+            <el-option :label="'已退款'" :value="'refunded'" :disabled="false" />
+            <el-option :label="'支付失败'" :value="'failed'" :disabled="false" />
+          </el-select>
         </el-form-item>
         <el-form-item label="Payment Method">
-          <el-input v-model="form.payment_method" :placeholder="'请输入Payment Method'" />
+          <el-select v-model="form.payment_method" filterable clearable :multiple="false" placeholder="请选择Payment Method" style="width: 100%">
+            <el-option :label="'微信支付'" :value="'wechat'" :disabled="false" />
+            <el-option :label="'支付宝'" :value="'alipay'" :disabled="false" />
+            <el-option :label="'银行卡'" :value="'card'" :disabled="false" />
+            <el-option :label="'PayPal'" :value="'paypal'" :disabled="false" />
+          </el-select>
         </el-form-item>
         <el-form-item label="Currency">
-          <el-input v-model="form.currency" :placeholder="'请输入Currency'" />
+          <el-select v-model="form.currency" filterable clearable :multiple="false" placeholder="请选择Currency" style="width: 100%">
+            <el-option :label="'人民币'" :value="'CNY'" :disabled="false" />
+            <el-option :label="'美元'" :value="'USD'" :disabled="false" />
+            <el-option :label="'欧元'" :value="'EUR'" :disabled="false" />
+            <el-option :label="'日元'" :value="'JPY'" :disabled="false" />
+          </el-select>
         </el-form-item>
         <el-form-item label="Total Amount">
           <el-input-number v-model="form.total_amount" :controls="false" style="width: 100%" />

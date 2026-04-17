@@ -25,6 +25,7 @@ const (
 type Field struct {
 	Name     string     `yaml:"name" json:"name"`
 	Type     string     `yaml:"type" json:"type"`
+	Comment  string     `yaml:"comment,omitempty" json:"comment,omitempty"`
 	Enum     *EnumField `yaml:"enum,omitempty" json:"enum,omitempty"`
 	Primary  bool       `yaml:"primary,omitempty" json:"primary,omitempty"`
 	Index    bool       `yaml:"index,omitempty" json:"index,omitempty"`
@@ -95,6 +96,9 @@ type Resource struct {
 	Kind             Kind         `yaml:"kind" json:"kind"`
 	Name             string       `yaml:"name" json:"name"`
 	Module           string       `yaml:"module,omitempty" json:"module,omitempty"`
+	Comment          string       `yaml:"comment,omitempty" json:"comment,omitempty"`
+	Database         string       `yaml:"database,omitempty" json:"database,omitempty"`
+	Schema           string       `yaml:"schema,omitempty" json:"schema,omitempty"`
 	MountParentPath  string       `yaml:"mount_parent_path,omitempty" json:"mount_parent_path,omitempty"`
 	Framework        Framework    `yaml:"framework,omitempty" json:"framework,omitempty"`
 	Entity           Entity       `yaml:"entity,omitempty" json:"entity,omitempty"`

@@ -198,6 +198,9 @@ func generateCRUDFromSchemaResource(gen *legacygenerate.Generator, resource sche
 	return gen.GenerateCRUD(legacygenerate.CRUDOptions{
 		Name:                name,
 		Fields:              fields,
+		TableComment:        strings.TrimSpace(resource.Comment),
+		Database:            strings.TrimSpace(resource.Database),
+		Schema:              strings.TrimSpace(resource.Schema),
 		GenerateFrontend:    generateFrontend,
 		GeneratePolicy:      generatePolicy,
 		ManifestRoutes:      buildManifestRoutes(resource),
@@ -329,6 +332,7 @@ func toLegacyFields(resource schema.Resource) ([]legacygenerate.Field, error) {
 			JSONName: legacygenerate.ToSnake(name),
 			GoType:   legacygenerate.ParseGoType(typeName),
 			Column:   legacygenerate.ToSnake(name),
+			Comment:  strings.TrimSpace(field.Comment),
 			Primary:  field.Primary,
 			Index:    field.Index,
 			Unique:   field.Unique,
@@ -570,6 +574,7 @@ func toSchemaFields(fields []legacygenerate.Field) []schema.Field {
 		result = append(result, schema.Field{
 			Name:    field.Name,
 			Type:    field.GoType,
+			Comment: field.Comment,
 			Enum:    enum,
 			Primary: field.Primary,
 			Index:   field.Index,

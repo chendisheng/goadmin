@@ -71,6 +71,10 @@ func (i *GormInspector) InspectTables() ([]dbschema.Table, error) {
 		if name == "" {
 			continue
 		}
+		comment, err := i.inspectTableComment(name)
+		if err != nil {
+			return nil, err
+		}
 		columns, err := i.InspectColumns(name)
 		if err != nil {
 			return nil, err
@@ -83,7 +87,7 @@ func (i *GormInspector) InspectTables() ([]dbschema.Table, error) {
 		if err != nil {
 			return nil, err
 		}
-		table := dbschema.Table{Name: name, Columns: columns, Indexes: indexes, ForeignKeys: foreignKeys}
+		table := dbschema.Table{Name: name, Comment: comment, Columns: columns, Indexes: indexes, ForeignKeys: foreignKeys}
 		for _, column := range columns {
 			if column.Primary {
 				table.PrimaryKeys = append(table.PrimaryKeys, column.Name)
@@ -99,6 +103,70 @@ func (i *GormInspector) InspectTables() ([]dbschema.Table, error) {
 		result = append(result, table)
 	}
 	return result, nil
+}
+
+func applyColumnComments(columns []dbschema.Column, comments map[string]string) {
+	if len(columns) == 0 || len(comments) == 0 {
+		return
+	}
+	for idx := range columns {
+		name := strings.TrimSpace(columns[idx].Name)
+		if name == "" {
+			continue
+		}
+		if comment := strings.TrimSpace(comments[name]); comment != "" {
+			columns[idx].Comment = comment
+			applyEnumCommentMetadata(&columns[idx])
+		}
+	}
+}
+
+func (i *GormInspector) inspectTableComment(table string) (string, error) {
+	switch i.driver {
+	case dbschema.DriverKindSQLite, dbschema.DriverKindUnknown:
+		return "", nil
+	case dbschema.DriverKindMySQL, dbschema.DriverKindSQLServer:
+		return i.inspectTableCommentFromMigrator(table)
+	case dbschema.DriverKindPostgreSQL:
+		return i.inspectPostgresTableComment(table)
+	default:
+		return i.inspectTableCommentFromMigrator(table)
+	}
+}
+
+func (i *GormInspector) inspectTableCommentFromMigrator(table string) (string, error) {
+	migrator, err := i.migrator()
+	if err != nil {
+		return "", err
+	}
+	commenter, ok := migrator.(interface{ Comment(string) (string, bool) })
+	if !ok {
+		return "", nil
+	}
+	comment, ok := commenter.Comment(table)
+	if !ok {
+		return "", nil
+	}
+	return strings.TrimSpace(comment), nil
+}
+
+func (i *GormInspector) inspectPostgresTableComment(table string) (string, error) {
+	if i == nil || i.db == nil {
+		return "", fmt.Errorf("gorm inspector db is nil")
+	}
+	var row struct {
+		Comment sql.NullString `gorm:"column:comment"`
+	}
+	query := `
+SELECT obj_description((quote_ident(?)::regclass)::oid) AS comment
+`
+	if err := i.db.Raw(query, table).Scan(&row).Error; err != nil {
+		return "", fmt.Errorf("inspect postgres table comment for %s: %w", table, err)
+	}
+	if !row.Comment.Valid {
+		return "", nil
+	}
+	return strings.TrimSpace(row.Comment.String), nil
 }
 
 func (i *GormInspector) InspectColumns(table string) ([]dbschema.Column, error) {
@@ -186,6 +254,10 @@ func (i *GormInspector) inspectGenericColumns(table string) ([]dbschema.Column, 
 	if err != nil {
 		return nil, fmt.Errorf("inspect columns for %s: %w", table, err)
 	}
+	columnComments, err := i.inspectColumnComments(table)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]dbschema.Column, 0, len(columnTypes))
 	for _, columnType := range columnTypes {
 		column, err := toColumn(columnType)
@@ -193,6 +265,58 @@ func (i *GormInspector) inspectGenericColumns(table string) ([]dbschema.Column, 
 			return nil, fmt.Errorf("inspect column in %s: %w", table, err)
 		}
 		result = append(result, column)
+	}
+	applyColumnComments(result, columnComments)
+	return result, nil
+}
+
+func (i *GormInspector) inspectColumnComments(table string) (map[string]string, error) {
+	switch i.driver {
+	case dbschema.DriverKindMySQL:
+		return i.inspectMySQLColumnComments(table)
+	case dbschema.DriverKindSQLite, dbschema.DriverKindUnknown:
+		return map[string]string{}, nil
+	default:
+		return map[string]string{}, nil
+	}
+}
+
+func (i *GormInspector) inspectMySQLColumnComments(table string) (map[string]string, error) {
+	if i == nil || i.db == nil {
+		return map[string]string{}, fmt.Errorf("gorm inspector db is nil")
+	}
+	databaseName := strings.TrimSpace(i.database)
+	if databaseName == "" {
+		migrator, err := i.migrator()
+		if err != nil {
+			return map[string]string{}, err
+		}
+		databaseName = strings.TrimSpace(migrator.CurrentDatabase())
+	}
+	if databaseName == "" {
+		return map[string]string{}, nil
+	}
+	type row struct {
+		Name    string         `gorm:"column:column_name"`
+		Comment sql.NullString `gorm:"column:column_comment"`
+	}
+	var rows []row
+	query := `
+SELECT column_name, column_comment
+FROM information_schema.columns
+WHERE table_schema = ? AND table_name = ?
+ORDER BY ordinal_position
+`
+	if err := i.db.Raw(query, databaseName, table).Scan(&rows).Error; err != nil {
+		return nil, fmt.Errorf("inspect mysql column comments for %s: %w", table, err)
+	}
+	result := make(map[string]string, len(rows))
+	for _, row := range rows {
+		name := strings.TrimSpace(row.Name)
+		if name == "" || !row.Comment.Valid {
+			continue
+		}
+		result[name] = strings.TrimSpace(row.Comment.String)
 	}
 	return result, nil
 }

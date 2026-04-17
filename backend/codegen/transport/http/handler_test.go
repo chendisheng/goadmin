@@ -173,10 +173,9 @@ func TestHandlerPreviewDatabase(t *testing.T) {
 		t.Fatalf("create table: %v", err)
 	}
 
-	handler := NewHandler(Dependencies{ProjectRoot: root})
+	handler := NewHandler(Dependencies{ProjectRoot: root, DB: db})
 	ctx := &fakeContext{payload: DatabaseRequest{
 		Driver:   "sqlite",
-		DSN:      dbPath,
 		Database: "codegen",
 		Tables:   []string{"books"},
 	}}
@@ -222,13 +221,13 @@ func TestHandlerGenerateDatabaseDownloadAndArtifact(t *testing.T) {
 
 	handler := NewHandler(Dependencies{
 		ProjectRoot:     root,
+		DB:              db,
 		ArtifactEnabled: true,
 		ArtifactBaseDir: t.TempDir(),
 		ArtifactTTL:     time.Hour,
 	})
 	generateCtx := &fakeContext{payload: DatabaseRequest{
 		Driver:   "sqlite",
-		DSN:      dbPath,
 		Database: "codegen",
 		Tables:   []string{"books"},
 	}}
@@ -383,10 +382,9 @@ func TestHandlerGenerateDatabase(t *testing.T) {
 		t.Fatalf("create table: %v", err)
 	}
 
-	handler := NewHandler(Dependencies{ProjectRoot: root})
+	handler := NewHandler(Dependencies{ProjectRoot: root, DB: db})
 	ctx := &fakeContext{payload: DatabaseRequest{
 		Driver:   "sqlite",
-		DSN:      dbPath,
 		Database: "codegen",
 		Tables:   []string{"books"},
 	}}
@@ -429,7 +427,7 @@ func TestHandlerGenerateDatabaseValidation(t *testing.T) {
 	t.Parallel()
 
 	handler := NewHandler(Dependencies{ProjectRoot: t.TempDir()})
-	ctx := &fakeContext{payload: DatabaseRequest{DSN: "sqlite.db", Database: "codegen"}}
+	ctx := &fakeContext{payload: DatabaseRequest{Database: "codegen"}}
 
 	handler.GenerateDatabase(ctx)
 	if ctx.status != 400 {

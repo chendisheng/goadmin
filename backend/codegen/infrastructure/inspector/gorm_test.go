@@ -139,6 +139,69 @@ func TestGormInspectorSQLite(t *testing.T) {
 	assertForeignKeyPresent(t, relations, "fk_books_author", "authors", []string{"author_id"}, []string{"id"})
 }
 
+func TestInspectTablesCarriesTableCommentFromInspectorContext(t *testing.T) {
+	t.Parallel()
+
+	db := openSQLiteTestDB(t)
+	mustExec(t, db, `CREATE TABLE books (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL
+	);`)
+
+	inspector := NewGormInspector(db)
+	if inspector == nil {
+		t.Fatal("NewGormInspector returned nil")
+	}
+	if got := inspector.WithContext("goadmin", "public"); got == nil {
+		t.Fatal("WithContext returned nil")
+	}
+
+	tables, err := inspector.WithContext("goadmin", "public").InspectTables()
+	if err != nil {
+		t.Fatalf("InspectTables returned error: %v", err)
+	}
+	if len(tables) != 1 {
+		t.Fatalf("expected 1 table, got %d", len(tables))
+	}
+	if tables[0].Schema != "public" {
+		t.Fatalf("expected schema public, got %q", tables[0].Schema)
+	}
+	if tables[0].Metadata["database"] != "goadmin" {
+		t.Fatalf("expected database metadata goadmin, got %#v", tables[0].Metadata)
+	}
+	if tables[0].Comment != "" {
+		t.Fatalf("expected sqlite table comment to be empty, got %q", tables[0].Comment)
+	}
+}
+
+func TestApplyColumnCommentsPopulatesNonPrimaryFieldComments(t *testing.T) {
+	t.Parallel()
+
+	columns := []database.Column{
+		{Name: "id", Primary: true},
+		{Name: "title"},
+		{Name: "status"},
+	}
+	applyColumnComments(columns, map[string]string{
+		"id":     "订单ID",
+		"title":  "标题",
+		"status": "状态|draft=草稿,published=已发布",
+	})
+
+	if got, want := columns[0].Comment, "订单ID"; got != want {
+		t.Fatalf("primary column comment = %q, want %q", got, want)
+	}
+	if got, want := columns[1].Comment, "标题"; got != want {
+		t.Fatalf("non-primary column comment = %q, want %q", got, want)
+	}
+	if got, want := columns[2].Comment, "状态|draft=草稿,published=已发布"; got != want {
+		t.Fatalf("enum column comment = %q, want %q", got, want)
+	}
+	if columns[2].EnumKind == "" || len(columns[2].EnumValues) == 0 {
+		t.Fatalf("expected enum metadata to be inferred from comment: %#v", columns[2])
+	}
+}
+
 func openSQLiteTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 

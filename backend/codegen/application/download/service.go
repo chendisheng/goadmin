@@ -17,6 +17,8 @@ import (
 	packager "goadmin/codegen/infrastructure/package"
 	workspaceinfra "goadmin/codegen/infrastructure/workspace"
 	apperrors "goadmin/core/errors"
+
+	"gorm.io/gorm"
 )
 
 type Dependencies struct {
@@ -107,9 +109,12 @@ func (s *Service) Generate(req GenerateRequest) (ArtifactInfo, error) {
 	}, nil
 }
 
-func (s *Service) GenerateDatabase(req codegencli.DatabaseExecutionRequest) (ArtifactInfo, error) {
+func (s *Service) GenerateDatabase(db *gorm.DB, req codegencli.DatabaseExecutionRequest) (ArtifactInfo, error) {
 	if s == nil {
 		return ArtifactInfo{}, apperrors.New(apperrors.CodeInternal, "download service is required")
+	}
+	if db == nil {
+		return ArtifactInfo{}, apperrors.New(apperrors.CodeBadRequest, "database connection is required")
 	}
 	if err := req.Validate(); err != nil {
 		return ArtifactInfo{}, err
@@ -128,7 +133,7 @@ func (s *Service) GenerateDatabase(req codegencli.DatabaseExecutionRequest) (Art
 	defer func() {
 		_ = s.workspaces.Remove(taskID)
 	}()
-	report, err := codegencli.ExecuteDatabaseDocument(workspaceRoot, nil, req, false)
+	report, err := codegencli.ExecuteDatabaseDocument(workspaceRoot, db, nil, req, false)
 	if err != nil {
 		return ArtifactInfo{}, err
 	}

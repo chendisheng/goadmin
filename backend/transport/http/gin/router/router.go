@@ -26,12 +26,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Dependencies struct {
 	Config         *config.Config
 	Logger         *zap.Logger
 	Started        time.Time
+	DB             *gorm.DB
 	AuthService    *authservice.Service
 	MenuService    *menuservice.Service
 	PluginService  *pluginservice.Service
@@ -76,6 +78,7 @@ func Register(engine *gin.Engine, deps Dependencies) {
 		}
 		codegenhttp.Register(protected, codegenhttp.Dependencies{
 			ProjectRoot:     deps.ProjectRoot,
+			DB:              deps.DB,
 			ArtifactEnabled: artifactEnabled,
 			ArtifactBaseDir: artifactBaseDir,
 			ArtifactTTL:     artifactTTL,

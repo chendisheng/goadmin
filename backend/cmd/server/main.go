@@ -85,8 +85,15 @@ func main() {
 	if err := pluginrepopkg.Migrate(dbConn); err != nil {
 		logger.Fatal("migrate plugin repository", zap.Error(err))
 	}
-	if err := corebootstrap.MigrateAll(dbConn, corebootstrap.Modules()); err != nil {
-		logger.Fatal("migrate generated modules", zap.Error(err))
+	if err := corebootstrap.MigrateAll(dbConn, corebootstrap.BuiltinModules()); err != nil {
+		logger.Fatal("migrate builtin modules", zap.Error(err))
+	}
+	if cfg.CodeGen.GeneratedModulesAutoMigrate {
+		if err := corebootstrap.MigrateAll(dbConn, corebootstrap.GeneratedModules()); err != nil {
+			logger.Fatal("migrate generated modules", zap.Error(err))
+		}
+	} else {
+		logger.Info("skip generated module auto migration", zap.Bool("enabled", cfg.CodeGen.GeneratedModulesAutoMigrate))
 	}
 	if err := menurepopkg.SeedDefaults(dbConn); err != nil {
 		logger.Fatal("seed default menus", zap.Error(err))
@@ -133,6 +140,7 @@ func main() {
 		PluginService:  pluginSvc,
 		PluginRegistry: pluginRegistry,
 		ProjectRoot:    projectRoot,
+		DB:             dbConn,
 		// Generated modules use the shared bootstrap registry and only need DB/logger/event bus.
 		BootstrapDeps: corebootstrap.Dependencies{
 			DB:       dbConn,

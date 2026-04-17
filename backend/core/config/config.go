@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,7 +63,8 @@ type DatabaseConfig struct {
 }
 
 type CodeGenConfig struct {
-	Artifact CodeGenArtifactConfig `mapstructure:"artifact"`
+	Artifact                    CodeGenArtifactConfig `mapstructure:"artifact"`
+	GeneratedModulesAutoMigrate bool                  `mapstructure:"generated_modules_auto_migrate"`
 }
 
 type CodeGenArtifactConfig struct {
@@ -139,6 +141,7 @@ func Default() Config {
 			AutoMigrate: true,
 		},
 		CodeGen: CodeGenConfig{
+			GeneratedModulesAutoMigrate: true,
 			Artifact: CodeGenArtifactConfig{
 				Enabled: true,
 				BaseDir: filepath.Join(os.TempDir(), "goadmin", "codegen"),
@@ -221,6 +224,9 @@ func Load() (*Config, error) {
 	}
 	if strings.TrimSpace(cfg.CodeGen.Artifact.TTL) == "" {
 		cfg.CodeGen.Artifact.TTL = "24h"
+	}
+	if !cfg.CodeGen.GeneratedModulesAutoMigrate {
+		cfg.CodeGen.GeneratedModulesAutoMigrate = false
 	}
 	if !cfg.Tenant.Enabled {
 		cfg.Tenant.Enabled = false
@@ -360,12 +366,17 @@ func (c Config) Public() map[string]any {
 			"output":      c.Logger.Output,
 			"development": c.Logger.Development,
 		},
+		"database": map[string]any{
+			"driver": c.Database.Driver,
+			"name":   databaseNameFromDSN(c.Database.Driver, c.Database.DSN),
+		},
 		"codegen": map[string]any{
 			"artifact": map[string]any{
 				"enabled":  c.CodeGen.Artifact.Enabled,
 				"base_dir": c.CodeGen.Artifact.BaseDir,
 				"ttl":      c.CodeGen.Artifact.TTL,
 			},
+			"generated_modules_auto_migrate": c.CodeGen.GeneratedModulesAutoMigrate,
 		},
 		"auth": map[string]any{
 			"jwt": map[string]any{
@@ -387,6 +398,60 @@ func (c Config) Public() map[string]any {
 		"loaded_at":   c.LoadedAt,
 		"loaded_from": c.LoadedFrom,
 	}
+}
+
+func databaseNameFromDSN(driver, dsn string) string {
+	dsn = strings.TrimSpace(dsn)
+	if dsn == "" {
+		return ""
+	}
+
+	switch strings.ToLower(strings.TrimSpace(driver)) {
+	case "postgres", "postgresql", "pgx":
+		if parsed, err := url.Parse(dsn); err == nil {
+			if name := strings.Trim(parsed.Path, "/"); name != "" {
+				return name
+			}
+		}
+		if name := databaseNameFromPath(dsn); name != "" {
+			return name
+		}
+	case "sqlite", "sqlite3":
+		if parsed, err := url.Parse(dsn); err == nil {
+			if parsed.Path != "" {
+				if name := strings.TrimSuffix(filepath.Base(parsed.Path), filepath.Ext(parsed.Path)); name != "" && name != "." {
+					return name
+				}
+			}
+		}
+		trimmed := strings.TrimPrefix(dsn, "file:")
+		if idx := strings.IndexAny(trimmed, "?#"); idx >= 0 {
+			trimmed = trimmed[:idx]
+		}
+		if trimmed != "" {
+			base := strings.TrimSuffix(filepath.Base(trimmed), filepath.Ext(trimmed))
+			if base != "" && base != "." {
+				return base
+			}
+		}
+	default:
+		if name := databaseNameFromPath(dsn); name != "" {
+			return name
+		}
+	}
+
+	return ""
+}
+
+func databaseNameFromPath(dsn string) string {
+	if idx := strings.Index(dsn, "/"); idx >= 0 {
+		name := dsn[idx+1:]
+		if cut := strings.IndexAny(name, "?#"); cut >= 0 {
+			name = name[:cut]
+		}
+		return strings.TrimSpace(name)
+	}
+	return ""
 }
 
 func (c JWTConfig) Timeouts() (time.Duration, time.Duration, error) {
@@ -461,6 +526,7 @@ func applyDefaults(v *viper.Viper, cfg Config) {
 	v.SetDefault("codegen.artifact.enabled", cfg.CodeGen.Artifact.Enabled)
 	v.SetDefault("codegen.artifact.base_dir", cfg.CodeGen.Artifact.BaseDir)
 	v.SetDefault("codegen.artifact.ttl", cfg.CodeGen.Artifact.TTL)
+	v.SetDefault("codegen.generated_modules_auto_migrate", cfg.CodeGen.GeneratedModulesAutoMigrate)
 	v.SetDefault("tenant.enabled", cfg.Tenant.Enabled)
 	v.SetDefault("auth.jwt.secret", cfg.Auth.JWT.Secret)
 	v.SetDefault("auth.jwt.issuer", cfg.Auth.JWT.Issuer)

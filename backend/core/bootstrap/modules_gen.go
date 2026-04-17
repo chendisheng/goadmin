@@ -11,3 +11,7 @@ func generatedModules() []Module {
 		order.NewBootstrap(),
 	}
 }
+
+func GeneratedModules() []Module {
+	return generatedModules()
+}

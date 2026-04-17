@@ -103,6 +103,18 @@ func TestGormTagPrimaryKeyModes(t *testing.T) {
 	}
 }
 
+func TestGormTagIncludesComment(t *testing.T) {
+	t.Parallel()
+
+	tag := Field{GoType: "string", Column: "title", Comment: `标题 "A" \ B`}.GormTag()
+	if !strings.Contains(tag, "comment:标题") {
+		t.Fatalf("gorm tag missing comment prefix: %q", tag)
+	}
+	if !strings.Contains(tag, "A") || !strings.Contains(tag, "B") {
+		t.Fatalf("gorm tag missing comment content: %q", tag)
+	}
+}
+
 func TestGenerateModule(t *testing.T) {
 	t.Parallel()
 
@@ -194,6 +206,55 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	if got, want := len(lines), 5; got != want {
 		t.Fatalf("policy line count = %d, want %d; content=%q", got, want, string(content))
 	}
+}
+
+func TestGenerateCRUDModelIncludesFieldComments(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+	fields := []Field{
+		{Name: "id", GoName: "ID", JSONName: "id", GoType: "string", Column: "id", Primary: true, Comment: "主键ID"},
+		{Name: "title", GoName: "Title", JSONName: "title", GoType: "string", Column: "title", Comment: "标题"},
+	}
+
+	if err := gen.GenerateCRUD(CRUDOptions{Name: "Article", Fields: fields, GenerateFrontend: false, GeneratePolicy: false, Force: true}); err != nil {
+		t.Fatalf("GenerateCRUD returned error: %v", err)
+	}
+
+	modelPath := filepath.Join(root, "backend", "modules", "article", "domain", "model", "article.go")
+	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;type:varchar(64);size:64;comment:主键ID"`)
+	assertFileContains(t, modelPath, `gorm:"column:title;type:varchar(255);size:255;comment:标题"`)
+}
+
+func TestGenerateCRUDSchemaSQLIncludesCommentsAndLocation(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+	fields := []Field{
+		{Name: "id", GoName: "ID", JSONName: "id", GoType: "string", Column: "id", Primary: true, Comment: "主键"},
+		{Name: "title", GoName: "Title", JSONName: "title", GoType: "string", Column: "title", Comment: "标题"},
+	}
+
+	if err := gen.GenerateCRUD(CRUDOptions{
+		Name:         "Article",
+		Fields:       fields,
+		TableComment: "文章表",
+		Database:     "goadmin",
+		Schema:       "public",
+		Force:        true,
+	}); err != nil {
+		t.Fatalf("GenerateCRUD returned error: %v", err)
+	}
+
+	schemaPath := filepath.Join(root, "backend", "modules", "article", "schema.sql")
+	assertFileContains(t, schemaPath, "-- Auto-generated schema for articles")
+	assertFileContains(t, schemaPath, "-- Database: goadmin")
+	assertFileContains(t, schemaPath, "-- Schema: public")
+	assertFileContains(t, schemaPath, "-- Table Comment: 文章表")
+	assertFileContains(t, schemaPath, "`title` varchar(255) NOT NULL COMMENT '标题'")
+	assertFileContains(t, schemaPath, "COMMENT='文章表'")
 }
 
 func TestGenerateCRUDPrimaryKeyModes(t *testing.T) {

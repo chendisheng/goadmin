@@ -33,7 +33,6 @@ export interface CodegenDslExecutionReport {
 
 export interface CodegenDatabaseRequest {
   driver: string;
-  dsn: string;
   database: string;
   schema?: string;
   tables?: string[];

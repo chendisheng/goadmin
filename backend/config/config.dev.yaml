@@ -16,6 +16,7 @@ database:
   auto_migrate: true
 
 codegen:
+  generated_modules_auto_migrate: false
   artifact:
     enabled: true
     base_dir: /tmp/goadmin/codegen

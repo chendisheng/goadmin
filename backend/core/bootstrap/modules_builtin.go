@@ -17,3 +17,7 @@ func builtinModules() []Module {
 		user.NewBootstrap(),
 	}
 }
+
+func BuiltinModules() []Module {
+	return builtinModules()
+}

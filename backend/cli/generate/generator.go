@@ -194,6 +194,9 @@ type scaffoldData struct {
 	EntityPlural        string
 	Module              string
 	Kind                string
+	TableComment        string
+	Database            string
+	Schema              string
 	Fields              []Field
 	ModelFields         string
 	CloneBlock          string
@@ -370,7 +373,7 @@ func (g *Generator) GenerateCRUD(opts CRUDOptions) error {
 	if len(fields) == 0 {
 		fields, _ = ParseFields("", "", "", "")
 	}
-	data := buildScaffoldData(opts.Name, fields, opts.GenerateFrontend, opts.GeneratePolicy, opts.ManifestRoutes, opts.ManifestMenus, opts.ManifestPermissions, opts.Force)
+	data := buildScaffoldData(opts.Name, fields, opts.TableComment, opts.Database, opts.Schema, opts.GenerateFrontend, opts.GeneratePolicy, opts.ManifestRoutes, opts.ManifestMenus, opts.ManifestPermissions, opts.Force)
 	if err := g.writeScaffold(data); err != nil {
 		return err
 	}
@@ -441,7 +444,7 @@ func (g *Generator) AppendPolicyLines(lines []string) error {
 	return g.appendPolicyLines(lines)
 }
 
-func buildScaffoldData(name string, fields []Field, frontend, policy bool, manifestRoutes []ManifestRoute, manifestMenus []ManifestMenu, manifestPermissions []ManifestPermission, force bool) scaffoldData {
+func buildScaffoldData(name string, fields []Field, tableComment, database, schemaName string, frontend, policy bool, manifestRoutes []ManifestRoute, manifestMenus []ManifestMenu, manifestPermissions []ManifestPermission, force bool) scaffoldData {
 	entity := ToCamel(name)
 	entityLower := ToSnake(name)
 	if entityLower == "" {
@@ -465,6 +468,9 @@ func buildScaffoldData(name string, fields []Field, frontend, policy bool, manif
 		EntityPlural:        entityPlural,
 		Module:              entityLower,
 		Kind:                "business-module",
+		TableComment:        strings.TrimSpace(tableComment),
+		Database:            strings.TrimSpace(database),
+		Schema:              strings.TrimSpace(schemaName),
 		Fields:              sanitized,
 		ModelFields:         renderFieldBlock(sanitized, true),
 		CloneBlock:          renderCloneBlock(sanitized),
@@ -586,9 +592,22 @@ func (d scaffoldData) SQLSchema() string {
 	}
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("-- Auto-generated schema for %s\n", tableName))
+	if database := strings.TrimSpace(d.Database); database != "" {
+		builder.WriteString(fmt.Sprintf("-- Database: %s\n", database))
+	}
+	if schemaName := strings.TrimSpace(d.Schema); schemaName != "" {
+		builder.WriteString(fmt.Sprintf("-- Schema: %s\n", schemaName))
+	}
+	if comment := strings.TrimSpace(d.TableComment); comment != "" {
+		builder.WriteString(fmt.Sprintf("-- Table Comment: %s\n", comment))
+	}
 	builder.WriteString(fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` (\n", tableName))
 	builder.WriteString(strings.Join(definitions, ",\n"))
-	builder.WriteString("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n")
+	builder.WriteString("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")
+	if comment := strings.TrimSpace(d.TableComment); comment != "" {
+		builder.WriteString(fmt.Sprintf(" COMMENT='%s'", escapeSQLComment(comment)))
+	}
+	builder.WriteString(";\n")
 	return builder.String()
 }
 
@@ -596,33 +615,45 @@ func sqlColumnDefinition(field Field) string {
 	column := "`" + field.Column + "`"
 	switch field.GoType {
 	case "string":
-		return fmt.Sprintf("%s varchar(%d) NOT NULL", column, field.GormStringSize())
+		return renderSQLColumnWithComment(fmt.Sprintf("%s varchar(%d) NOT NULL", column, field.GormStringSize()), field.Comment)
 	case "bool":
-		return fmt.Sprintf("%s tinyint(1) NOT NULL DEFAULT 0", column)
+		return renderSQLColumnWithComment(fmt.Sprintf("%s tinyint(1) NOT NULL DEFAULT 0", column), field.Comment)
 	case "int":
 		if field.Primary {
-			return fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column)
+			return renderSQLColumnWithComment(fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column), field.Comment)
 		}
-		return fmt.Sprintf("%s int NOT NULL DEFAULT 0", column)
+		return renderSQLColumnWithComment(fmt.Sprintf("%s int NOT NULL DEFAULT 0", column), field.Comment)
 	case "int32":
 		if field.Primary {
-			return fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column)
+			return renderSQLColumnWithComment(fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column), field.Comment)
 		}
-		return fmt.Sprintf("%s int NOT NULL DEFAULT 0", column)
+		return renderSQLColumnWithComment(fmt.Sprintf("%s int NOT NULL DEFAULT 0", column), field.Comment)
 	case "int64":
 		if field.Primary {
-			return fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column)
+			return renderSQLColumnWithComment(fmt.Sprintf("%s bigint unsigned NOT NULL AUTO_INCREMENT", column), field.Comment)
 		}
-		return fmt.Sprintf("%s bigint NOT NULL DEFAULT 0", column)
+		return renderSQLColumnWithComment(fmt.Sprintf("%s bigint NOT NULL DEFAULT 0", column), field.Comment)
 	case "float64":
-		return fmt.Sprintf("%s decimal(18,4) NOT NULL DEFAULT 0", column)
+		return renderSQLColumnWithComment(fmt.Sprintf("%s decimal(18,4) NOT NULL DEFAULT 0", column), field.Comment)
 	case "time.Time":
-		return fmt.Sprintf("%s datetime NULL", column)
+		return renderSQLColumnWithComment(fmt.Sprintf("%s datetime NULL", column), field.Comment)
 	case "[]string", "[]int", "[]int64", "map[string]any":
-		return fmt.Sprintf("%s json NULL", column)
+		return renderSQLColumnWithComment(fmt.Sprintf("%s json NULL", column), field.Comment)
 	default:
-		return fmt.Sprintf("%s text NULL", column)
+		return renderSQLColumnWithComment(fmt.Sprintf("%s text NULL", column), field.Comment)
 	}
+}
+
+func renderSQLColumnWithComment(definition string, comment string) string {
+	comment = strings.TrimSpace(comment)
+	if comment == "" {
+		return definition
+	}
+	return definition + fmt.Sprintf(" COMMENT '%s'", escapeSQLComment(comment))
+}
+
+func escapeSQLComment(value string) string {
+	return strings.ReplaceAll(value, "'", "''")
 }
 
 type crudRouteSpec struct {

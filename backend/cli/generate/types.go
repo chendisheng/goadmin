@@ -13,6 +13,7 @@ type Field struct {
 	JSONName      string
 	GoType        string
 	Column        string
+	Comment       string
 	Primary       bool
 	Index         bool
 	Unique        bool
@@ -296,6 +297,9 @@ type ModuleOptions struct {
 type CRUDOptions struct {
 	Name                string
 	Fields              []Field
+	TableComment        string
+	Database            string
+	Schema              string
 	GenerateFrontend    bool
 	GeneratePolicy      bool
 	ManifestRoutes      []ManifestRoute
@@ -636,6 +640,9 @@ func (f Field) GormTag() string {
 	if f.Unique {
 		parts = append(parts, "uniqueIndex")
 	}
+	if comment := strings.TrimSpace(f.Comment); comment != "" {
+		parts = append(parts, "comment:"+escapeGormTagValue(comment))
+	}
 	return strings.Join(parts, ";")
 }
 
@@ -647,6 +654,12 @@ func (f Field) GormStringSize() int {
 		return 191
 	}
 	return 255
+}
+
+func escapeGormTagValue(value string) string {
+	value = strings.ReplaceAll(value, `\\`, `\\\\`)
+	value = strings.ReplaceAll(value, `"`, `\\"`)
+	return value
 }
 
 func (f Field) IsStringPrimaryKey() bool {

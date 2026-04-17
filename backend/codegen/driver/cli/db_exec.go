@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"goadmin/core/config"
 	apperrors "goadmin/core/errors"
 	infradb "goadmin/infrastructure/db"
+
+	"gorm.io/gorm"
 )
 
 // DatabaseExecutionRequest captures the shared database-driven codegen inputs.
@@ -29,31 +32,27 @@ func (req DatabaseExecutionRequest) Validate() error {
 	if strings.TrimSpace(req.Driver) == "" {
 		return apperrors.New(apperrors.CodeBadRequest, "database driver is required")
 	}
-	if strings.TrimSpace(req.DSN) == "" {
-		return apperrors.New(apperrors.CodeBadRequest, "database dsn is required")
-	}
 	if strings.TrimSpace(req.Database) == "" {
 		return apperrors.New(apperrors.CodeBadRequest, "database name is required")
 	}
 	return nil
 }
 
-// ExecuteDatabaseDocument inspects the configured database, converts it through
-// IR/DSL/planner, and optionally writes files via the existing generator flow.
-func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req DatabaseExecutionRequest, dryRun bool) (DatabasePreviewReport, error) {
+// ExecuteDatabaseDocument inspects an already-open database connection, converts
+// it through IR/DSL/planner, and optionally writes files via the existing
+// generator flow.
+func ExecuteDatabaseDocument(root string, db *gorm.DB, builder *irbuilderapp.Service, req DatabaseExecutionRequest, dryRun bool) (DatabasePreviewReport, error) {
 	if builder == nil {
 		builder = irbuilderapp.NewService(irbuilderapp.Dependencies{})
+	}
+	if db == nil {
+		return DatabasePreviewReport{}, apperrors.New(apperrors.CodeBadRequest, "database connection is required")
 	}
 	if strings.TrimSpace(root) == "" {
 		return DatabasePreviewReport{}, apperrors.New(apperrors.CodeBadRequest, "project root is required")
 	}
 	if err := req.Validate(); err != nil {
 		return DatabasePreviewReport{}, err
-	}
-
-	conn, err := infradb.Open(config.DatabaseConfig{Driver: req.Driver, DSN: req.DSN})
-	if err != nil {
-		return DatabasePreviewReport{}, apperrors.Wrap(err, apperrors.CodeInternal, "open database connection failed")
 	}
 
 	opts := irbuilderapp.DatabaseBuildOptions{
@@ -64,7 +63,7 @@ func ExecuteDatabaseDocument(root string, builder *irbuilderapp.Service, req Dat
 		MountParentPath:  req.MountParentPath,
 	}
 
-	irDoc, err := builder.BuildFromDatabaseWithOptions(conn, req.Database, req.Schema, opts)
+	irDoc, err := builder.BuildFromDatabaseWithOptions(db, req.Database, req.Schema, opts)
 	if err != nil {
 		return DatabasePreviewReport{}, apperrors.Wrap(err, apperrors.CodeInternal, "failed to build IR from database")
 	}
@@ -111,16 +110,9 @@ func maskDSN(dsn string) string {
 
 func runGenerateDB(root string, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("generate db requires a subcommand: preview, generate")
+		return errors.New("generate db requires a subcommand: preview or generate")
 	}
-	return runGenerateDBCommand(root, args)
-}
-
-func runGenerateDBCommand(root string, args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("generate db requires a subcommand: preview, generate")
-	}
-	mode := strings.ToLower(strings.TrimSpace(args[0]))
+	mode := args[0]
 	fs := flag.NewFlagSet("generate db "+mode, flag.ContinueOnError)
 	driver := fs.String("driver", "", "database driver name")
 	dsn := fs.String("dsn", "", "database dsn")
@@ -150,15 +142,22 @@ func runGenerateDBCommand(root string, args []string) error {
 	if err := request.Validate(); err != nil {
 		return err
 	}
+	if strings.TrimSpace(*dsn) == "" {
+		return apperrors.New(apperrors.CodeBadRequest, "database dsn is required")
+	}
+	dbConn, err := infradb.Open(config.DatabaseConfig{Driver: request.Driver, DSN: *dsn})
+	if err != nil {
+		return err
+	}
 	switch mode {
 	case "preview":
-		report, err := ExecuteDatabaseDocument(root, nil, request, true)
+		report, err := ExecuteDatabaseDocument(root, dbConn, nil, request, true)
 		if err != nil {
 			return err
 		}
 		return previewDatabaseReport(report)
 	case "generate":
-		_, err := ExecuteDatabaseDocument(root, nil, request, false)
+		_, err := ExecuteDatabaseDocument(root, dbConn, nil, request, false)
 		return err
 	default:
 		return fmt.Errorf("unknown generate db subcommand %q", args[0])

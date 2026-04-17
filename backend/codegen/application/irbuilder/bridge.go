@@ -246,6 +246,9 @@ func convertIRResource(resource irmodel.Resource) schema.Resource {
 		Kind:             schema.Kind(kind),
 		Name:             name,
 		Module:           normalizeSchemaName(resource.Module),
+		Comment:          strings.TrimSpace(func() string { text, _ := stringMetadata(resource.Metadata, "comment"); return text }()),
+		Database:         strings.TrimSpace(func() string { text, _ := stringMetadata(resource.Metadata, "database"); return text }()),
+		Schema:           strings.TrimSpace(func() string { text, _ := stringMetadata(resource.Metadata, "schema"); return text }()),
 		MountParentPath:  strings.TrimSpace(func() string { text, _ := stringMetadata(resource.Metadata, "mount_parent_path"); return text }()),
 		Entity:           schema.Entity{Name: name},
 		Fields:           make([]schema.Field, 0, len(resource.Fields)),
@@ -319,6 +322,7 @@ func convertIRField(field irmodel.Field) schema.Field {
 	return schema.Field{
 		Name:     name,
 		Type:     typeName,
+		Comment:  strings.TrimSpace(func() string { text, _ := stringMetadata(field.Metadata, "comment"); return text }()),
 		Enum:     enum,
 		Primary:  field.Primary,
 		Index:    field.Index,

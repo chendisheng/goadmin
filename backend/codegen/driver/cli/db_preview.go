@@ -46,6 +46,7 @@ type DatabasePreviewPlan struct {
 type DatabasePreviewField struct {
 	Name         string         `json:"name"`
 	ColumnName   string         `json:"column_name,omitempty"`
+	Comment      string         `json:"comment,omitempty"`
 	GoType       string         `json:"go_type,omitempty"`
 	DBType       string         `json:"db_type,omitempty"`
 	Nullable     bool           `json:"nullable,omitempty"`
@@ -312,9 +313,11 @@ func buildDatabasePreviewResource(root string, irResource irmodel.Resource, sche
 		Actions:     describeSchemaResourceActions(schemaResource),
 	}
 	for _, field := range irResource.Fields {
+		fieldComment := stringMetadata(field.Metadata, "comment")
 		resource.Fields = append(resource.Fields, DatabasePreviewField{
 			Name:         field.Name,
 			ColumnName:   field.ColumnName,
+			Comment:      fieldComment,
 			GoType:       field.GoType,
 			DBType:       field.DBType,
 			Nullable:     field.Nullable,
@@ -656,6 +659,21 @@ func cloneAnyMap(src map[string]any) map[string]any {
 	return dst
 }
 
+func stringMetadata(metadata map[string]any, key string) string {
+	if len(metadata) == 0 {
+		return ""
+	}
+	value, ok := metadata[key]
+	if !ok || value == nil {
+		return ""
+	}
+	text, ok := value.(string)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(text)
+}
+
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
@@ -727,7 +745,11 @@ func previewDatabaseReportText(report DatabasePreviewReport) string {
 	for _, resource := range report.Resources {
 		builder.WriteString(fmt.Sprintf("resource %s [%s] (%s) -> %s\n", resource.Name, resource.Kind, resource.TableName, strings.Join(resource.Actions, "; ")))
 		for _, field := range resource.Fields {
-			builder.WriteString(fmt.Sprintf("  field mapping %s <- %s [%s/%s] required=%t editable=%t sortable=%t\n", field.Name, field.ColumnName, field.SemanticType, field.UIType, field.Required, field.Editable, field.Sortable))
+			builder.WriteString(fmt.Sprintf("  field mapping %s <- %s [%s/%s] required=%t editable=%t sortable=%t", field.Name, field.ColumnName, field.SemanticType, field.UIType, field.Required, field.Editable, field.Sortable))
+			if comment := strings.TrimSpace(field.Comment); comment != "" {
+				builder.WriteString(fmt.Sprintf(" comment=%s", comment))
+			}
+			builder.WriteString("\n")
 		}
 		for _, relation := range resource.Relations {
 			builder.WriteString(fmt.Sprintf("  relation %s -> %s.%s (%s/%s)\n", relation.Field, relation.RefTable, relation.RefField, relation.Type, relation.Cardinality))

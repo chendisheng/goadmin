@@ -15,10 +15,13 @@ import (
 	"goadmin/core/response"
 	coretransport "goadmin/core/transport"
 	menuservice "goadmin/modules/menu/application/service"
+
+	"gorm.io/gorm"
 )
 
 type Dependencies struct {
 	ProjectRoot     string
+	DB              *gorm.DB
 	ArtifactEnabled bool
 	ArtifactBaseDir string
 	ArtifactTTL     time.Duration
@@ -27,6 +30,7 @@ type Dependencies struct {
 
 type Handler struct {
 	projectRoot     string
+	db              *gorm.DB
 	artifactEnabled bool
 	downloads       *downloadapp.Service
 	dbgen           *irbuilderapp.Service
@@ -49,7 +53,6 @@ type GenerateDownloadRequest struct {
 
 type DatabaseRequest struct {
 	Driver           string   `json:"driver"`
-	DSN              string   `json:"dsn"`
 	Database         string   `json:"database"`
 	Schema           string   `json:"schema,omitempty"`
 	Tables           []string `json:"tables,omitempty"`
@@ -67,7 +70,6 @@ type InstallManifestRequest struct {
 func (req DatabaseRequest) toExecutionRequest() codegencli.DatabaseExecutionRequest {
 	return codegencli.DatabaseExecutionRequest{
 		Driver:           req.Driver,
-		DSN:              req.DSN,
 		Database:         req.Database,
 		Schema:           req.Schema,
 		Tables:           append([]string(nil), req.Tables...),
@@ -92,6 +94,7 @@ func NewHandler(deps Dependencies) *Handler {
 	}
 	return &Handler{
 		projectRoot:     strings.TrimSpace(deps.ProjectRoot),
+		db:              deps.DB,
 		artifactEnabled: deps.ArtifactEnabled,
 		downloads:       downloads,
 		dbgen:           irbuilderapp.NewService(irbuilderapp.Dependencies{}),
@@ -222,7 +225,7 @@ func (h *Handler) GenerateDatabaseDownload(c coretransport.Context) {
 		h.writeError(c, err)
 		return
 	}
-	artifact, err := h.downloads.GenerateDatabase(executionReq)
+	artifact, err := h.downloads.GenerateDatabase(h.db, executionReq)
 	if err != nil {
 		h.writeError(c, err)
 		return
@@ -253,7 +256,7 @@ func (h *Handler) generateDatabase(c coretransport.Context, dryRun bool) {
 		h.writeError(c, err)
 		return
 	}
-	report, err := codegencli.ExecuteDatabaseDocument(h.projectRoot, h.dbgen, executionReq, dryRun)
+	report, err := codegencli.ExecuteDatabaseDocument(h.projectRoot, h.db, h.dbgen, executionReq, dryRun)
 	if err != nil {
 		h.writeError(c, err)
 		return

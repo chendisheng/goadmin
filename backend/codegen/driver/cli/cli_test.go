@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"goadmin/codegen/schema"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
@@ -148,6 +150,78 @@ func TestRunGenerateDBPreview(t *testing.T) {
 	}
 	if !strings.Contains(output, "file plan:") {
 		t.Fatalf("preview output missing file plan section:\n%s", output)
+	}
+}
+
+func TestPreviewDatabaseReportTextIncludesFieldComments(t *testing.T) {
+	t.Parallel()
+
+	report := DatabasePreviewReport{
+		Source: DatabasePreviewSource{Driver: "mysql", Database: "goadmin"},
+		Resources: []DatabasePreviewResource{
+			{
+				Name:      "order",
+				Kind:      "crud",
+				TableName: "orders",
+				Actions:   []string{"generate"},
+				Fields: []DatabasePreviewField{
+					{Name: "ID", ColumnName: "id", Comment: "订单ID", SemanticType: "string", UIType: "input", Required: true},
+					{Name: "Status", ColumnName: "status", Comment: "订单状态", SemanticType: "enum", UIType: "select", Required: true},
+				},
+			},
+		},
+	}
+
+	output := previewDatabaseReportText(report)
+	if !strings.Contains(output, "comment=订单ID") {
+		t.Fatalf("preview output missing primary field comment:\n%s", output)
+	}
+	if !strings.Contains(output, "comment=订单状态") {
+		t.Fatalf("preview output missing non-primary field comment:\n%s", output)
+	}
+	if !strings.Contains(output, "resource order [crud] (orders)") {
+		t.Fatalf("preview output missing resource summary:\n%s", output)
+	}
+}
+
+func TestExecuteDSLResourcesPreservesSchemaSQLFieldComments(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	resource := schema.Resource{
+		Kind:   schema.KindCRUD,
+		Name:   "order",
+		Module: "order",
+		Entity: schema.Entity{Name: "order", Fields: []schema.Field{
+			{Name: "id", Type: "string", Comment: "订单ID", Primary: true},
+			{Name: "tenant_id", Type: "string", Comment: "租户ID"},
+			{Name: "order_no", Type: "string", Comment: "订单号"},
+		}},
+		Fields: []schema.Field{
+			{Name: "id", Type: "string", Comment: "订单ID", Primary: true},
+			{Name: "tenant_id", Type: "string", Comment: "租户ID"},
+			{Name: "order_no", Type: "string", Comment: "订单号"},
+		},
+	}
+
+	if err := ExecuteDSLResources(root, []schema.Resource{resource}, true); err != nil {
+		t.Fatalf("ExecuteDSLResources returned error: %v", err)
+	}
+
+	schemaPath := filepath.Join(root, "backend", "modules", "order", "schema.sql")
+	content, err := os.ReadFile(schemaPath)
+	if err != nil {
+		t.Fatalf("read schema.sql: %v", err)
+	}
+	text := string(content)
+	if !strings.Contains(text, "`id` varchar(64) NOT NULL COMMENT '订单ID'") {
+		t.Fatalf("schema.sql missing primary column comment:\n%s", text)
+	}
+	if !strings.Contains(text, "`tenant_id` varchar(255) NOT NULL COMMENT '租户ID'") {
+		t.Fatalf("schema.sql missing non-primary column comment for tenant_id:\n%s", text)
+	}
+	if !strings.Contains(text, "`order_no` varchar(255) NOT NULL COMMENT '订单号'") {
+		t.Fatalf("schema.sql missing non-primary column comment for order_no:\n%s", text)
 	}
 }
 

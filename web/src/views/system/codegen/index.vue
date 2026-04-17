@@ -121,23 +121,7 @@
                     </el-col>
                   </el-row>
 
-                  <el-form-item label="DSN" class="db-form-item">
-                    <el-input
-                      v-model="dbDsn"
-                      type="password"
-                      show-password
-                      placeholder="请输入数据库连接串"
-                    >
-                      <template #append>
-                        <el-button text @click="dbDsn = ''">清空</el-button>
-                      </template>
-                    </el-input>
-                    <div class="db-field-help">
-                      <span>连接串仅用于当前页面请求，不会在结果区明文回显。</span>
-                    </div>
-                  </el-form-item>
-
-                  <el-form-item label="表名范围" class="db-form-item db-form-item--wide">
+                    <el-form-item label="表名范围" class="db-form-item db-form-item--wide">
                     <el-input
                       v-model="dbTablesText"
                       type="textarea"
@@ -452,8 +436,10 @@ import {
   type CodegenDatabaseRequest,
   type CodegenDslExecutionReport,
 } from '@/api/codegen';
+import { fetchPublicConfig } from '@/api/health';
 import { fetchMenuTree } from '@/api/system-menus';
 import { ApiError } from '@/api/types';
+import type { PublicConfigPayload } from '@/api/health';
 import type { MenuItem } from '@/types/admin';
 
 type CodegenMode = 'dsl' | 'db';
@@ -481,7 +467,6 @@ const includeReport = ref(true);
 const includeDsl = ref(true);
 
 const dbDriver = ref('mysql');
-const dbDsn = ref('');
 const dbDatabase = ref('');
 const dbSchema = ref('');
 const dbTablesText = ref('');
@@ -514,6 +499,7 @@ const currentTime = ref(Date.now());
 let artifactTicker: ReturnType<typeof window.setInterval> | null = null;
 let copyFeedbackTimer: ReturnType<typeof window.setTimeout> | null = null;
 const dbMountMenuOptions = ref<MenuMountOption[]>([]);
+const publicConfig = ref<PublicConfigPayload | null>(null);
 
 const currentReport = computed(() => (activeMode.value === 'db' ? dbReport.value : dslReport.value));
 const dbParsedTables = computed(() => parseTableNames(dbTablesText.value));
@@ -690,6 +676,7 @@ onMounted(() => {
   artifactTicker = window.setInterval(() => {
     currentTime.value = Date.now();
   }, 1000);
+  void loadPublicConfig();
   void loadDbMountMenuOptions();
 });
 
@@ -726,7 +713,6 @@ resources:
 function loadDbSample() {
   activeMode.value = 'db';
   applyDbPreset('sqlite');
-  dbDatabase.value = 'codegen';
   dbSchema.value = '';
   dbTablesText.value = 'books, orders';
   dbForce.value = false;
@@ -737,28 +723,44 @@ function loadDbSample() {
 }
 
 function applyDbPreset(driver: 'mysql' | 'postgres' | 'sqlite') {
-  const presets: Record<'mysql' | 'postgres' | 'sqlite', { dsn: string; database: string; schema: string }> = {
+  const presets: Record<'mysql' | 'postgres' | 'sqlite', { database: string; schema: string }> = {
     mysql: {
-      dsn: 'root:password@tcp(127.0.0.1:3306)/goadmin?charset=utf8mb4&parseTime=True&loc=Local',
       database: 'goadmin',
       schema: '',
     },
     postgres: {
-      dsn: 'postgres://postgres:password@127.0.0.1:5432/goadmin?sslmode=disable',
       database: 'goadmin',
       schema: 'public',
     },
     sqlite: {
-      dsn: 'file:./tmp/codegen.db?cache=shared&mode=rwc',
       database: 'codegen',
       schema: '',
     },
   };
   const preset = presets[driver];
   dbDriver.value = driver;
-  dbDsn.value = preset.dsn;
   dbDatabase.value = preset.database;
   dbSchema.value = preset.schema;
+}
+
+function applyDbConfigDefaults() {
+  const database = publicConfig.value?.database;
+  if (!database) {
+    return;
+  }
+  const name = database.name?.trim();
+  if (name && !dbDatabase.value.trim()) {
+    dbDatabase.value = name;
+  }
+}
+
+async function loadPublicConfig() {
+  try {
+    publicConfig.value = await fetchPublicConfig();
+    applyDbConfigDefaults();
+  } catch {
+    publicConfig.value = null;
+  }
 }
 
 function clearCurrentInputs() {
@@ -792,7 +794,6 @@ function clearDbTables() {
 }
 
 function clearDbInputs() {
-  dbDsn.value = '';
   dbDatabase.value = '';
   dbSchema.value = '';
   dbTablesText.value = '';
@@ -1096,7 +1097,6 @@ function buildDatabaseRequest(): CodegenDatabaseRequest {
   const tables = parseTableNames(dbTablesText.value);
   return {
     driver: dbDriver.value.trim(),
-    dsn: dbDsn.value.trim(),
     database: dbDatabase.value.trim(),
     schema: dbSchema.value.trim() || undefined,
     tables: tables.length > 0 ? tables : undefined,
@@ -1137,9 +1137,6 @@ function flattenMenuMountOptions(items: MenuItem[], depth = 0): MenuMountOption[
 function validateDatabaseInputs(): string {
   if (!dbDriver.value.trim()) {
     return '请先选择数据库驱动';
-  }
-  if (!dbDsn.value.trim()) {
-    return '请先填写 DSN';
   }
   if (!dbDatabase.value.trim()) {
     return '请先填写数据库名';

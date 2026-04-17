@@ -479,10 +479,20 @@ func parseEnumComment(comment string) enumParseResult {
 	if text == "" {
 		return enumParseResult{}
 	}
+	pipePrefixed := false
 	if left, right, ok := strings.Cut(text, ":"); ok && strings.EqualFold(strings.TrimSpace(left), "enum") {
 		text = strings.TrimSpace(right)
+	} else if _, right, ok := strings.Cut(text, "|"); ok {
+		trimmed := strings.TrimSpace(right)
+		if trimmed != "" {
+			text = trimmed
+			pipePrefixed = true
+		}
 	}
 	if text == "" {
+		return enumParseResult{}
+	}
+	if pipePrefixed && !looksLikeEnumCommentText(text) {
 		return enumParseResult{}
 	}
 	parts := splitEnumCommentParts(text)
@@ -517,6 +527,44 @@ func parseEnumComment(comment string) enumParseResult {
 		result.Kind = "comment-mapped"
 	}
 	return result
+}
+
+func looksLikeEnumCommentText(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return false
+	}
+	if strings.Contains(trimmed, "=") {
+		return true
+	}
+	parts := splitEnumCommentParts(trimmed)
+	if len(parts) == 0 {
+		return false
+	}
+	for _, part := range parts {
+		if !isLikelyEnumToken(part) {
+			return false
+		}
+	}
+	return true
+}
+
+func isLikelyEnumToken(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return false
+	}
+	for _, r := range trimmed {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case r == '_' || r == '-' || r == '.' || r == '/' || r == '+':
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func splitEnumCommentParts(text string) []string {

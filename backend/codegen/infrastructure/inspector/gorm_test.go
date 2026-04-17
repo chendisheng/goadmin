@@ -6,10 +6,50 @@ import (
 	"testing"
 
 	"goadmin/codegen/schema/database"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 )
+
+func TestParseEnumCommentSupportsPipePrefixedDescription(t *testing.T) {
+	t.Parallel()
+
+	parsed := parseEnumComment("分类|tech=技术,novel=小说,history=历史,other=其他")
+	if !parsed.OK {
+		t.Fatal("parseEnumComment returned OK=false, want true")
+	}
+	if got, want := parsed.Source, "comment"; got != want {
+		t.Fatalf("Source = %q, want %q", got, want)
+	}
+	if got, want := parsed.Display, "select"; got != want {
+		t.Fatalf("Display = %q, want %q", got, want)
+	}
+	if got, want := len(parsed.Options), 4; got != want {
+		t.Fatalf("Options len = %d, want %d", got, want)
+	}
+	if got, want := parsed.Values, []string{"tech", "novel", "history", "other"}; !sameStrings(got, want) {
+		t.Fatalf("Values = %v, want %v", got, want)
+	}
+	if got, want := parsed.Options[0].Value, "tech"; got != want {
+		t.Fatalf("first option value = %q, want %q", got, want)
+	}
+	if got, want := parsed.Options[0].Label, "技术"; got != want {
+		t.Fatalf("first option label = %q, want %q", got, want)
+	}
+}
+
+func TestParseEnumCommentRejectsOrdinaryDescription(t *testing.T) {
+	t.Parallel()
+
+	parsed := parseEnumComment("分类|这是一个普通说明，不应被解析为枚举")
+	if parsed.OK {
+		t.Fatalf("parseEnumComment returned OK=true, want false: %#v", parsed)
+	}
+	if len(parsed.Options) != 0 || len(parsed.Values) != 0 {
+		t.Fatalf("expected empty enum result, got %#v", parsed)
+	}
+}
 
 func TestGormInspectorSQLite(t *testing.T) {
 	t.Parallel()

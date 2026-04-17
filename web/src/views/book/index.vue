@@ -73,6 +73,27 @@ const defaultForm = (): BookFormState => ({
 
 const form = reactive<BookFormState>(defaultForm());
 
+type EnumOption = {
+  value: string;
+  label: string;
+  color?: string;
+  disabled?: boolean;
+  order?: number;
+};
+
+function formatEnumLabel(value: unknown, labelMap: Record<string, string>) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return '-';
+    }
+    return value.map((item) => labelMap[String(item)] ?? String(item)).join(', ');
+  }
+  if (value === null || value === undefined || value === '') {
+    return '-';
+  }
+  return labelMap[String(value)] ?? String(value);
+}
+
 function resetForm() {
   Object.assign(form, defaultForm());
 }

@@ -1,0 +1,27 @@
+-- Auto-generated schema for orders
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` varchar(64) NOT NULL,
+  `tenant_id` varchar(255) NOT NULL,
+  `order_no` varchar(255) NOT NULL,
+  `user_id` varchar(255) NOT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `customer_email` varchar(255) NOT NULL,
+  `customer_phone` varchar(255) NOT NULL,
+  `shipping_address` varchar(255) NOT NULL,
+  `billing_address` varchar(255) NOT NULL,
+  `order_status` varchar(255) NOT NULL,
+  `payment_status` varchar(255) NOT NULL,
+  `payment_method` varchar(255) NOT NULL,
+  `currency` varchar(255) NOT NULL,
+  `total_amount` bigint NOT NULL DEFAULT 0,
+  `discount_amount` bigint NOT NULL DEFAULT 0,
+  `tax_amount` bigint NOT NULL DEFAULT 0,
+  `shipping_amount` bigint NOT NULL DEFAULT 0,
+  `final_amount` bigint NOT NULL DEFAULT 0,
+  `order_date` datetime NULL,
+  `shipped_date` datetime NULL,
+  `delivered_date` datetime NULL,
+  `notes` varchar(255) NOT NULL,
+  `internal_notes` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

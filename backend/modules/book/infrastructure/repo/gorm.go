@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
 	"time"
 
 	"goadmin/modules/book/domain/model"
@@ -26,11 +27,6 @@ func Migrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("book migrate requires db")
 	}
-	if db.Dialector.Name() == "mysql" && db.Migrator().HasTable(&model.Book{}) {
-		if err := db.Exec("ALTER TABLE books MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
-			return fmt.Errorf("ensure books.tenant_id column: %w", err)
-		}
-	}
 	return db.AutoMigrate(&model.Book{})
 }
 
@@ -42,10 +38,20 @@ func (r *GormRepository) List(ctx context.Context, keyword string, page int, pag
 	if kw := strings.TrimSpace(strings.ToLower(keyword)); kw != "" {
 		like := "%" + kw + "%"
 		base = base.Where(
-			"LOWER(title) LIKE ? OR LOWER(author) LIKE ? OR LOWER(isbn) LIKE ? OR LOWER(publisher) LIKE ? OR LOWER(category) LIKE ? OR LOWER(description) LIKE ? OR LOWER(status) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(tenant_id) LIKE ?",
-			like, like, like, like, like, like, like, like, like,
+			"LOWER(tenant_id) LIKE ? OR LOWER(title) LIKE ? OR LOWER(author) LIKE ? OR LOWER(isbn) LIKE ? OR LOWER(publisher) LIKE ? OR LOWER(category) LIKE ? OR LOWER(description) LIKE ? OR LOWER(status) LIKE ? OR LOWER(cover_image_url) LIKE ? OR LOWER(tags) LIKE ?",
+			like,
+			like,
+			like,
+			like,
+			like,
+			like,
+			like,
+			like,
+			like,
+			like,
 		)
 	}
+
 	var total int64
 	if err := base.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -76,9 +82,11 @@ func (r *GormRepository) Create(ctx context.Context, item *model.Book) (*model.B
 	if item == nil {
 		return nil, fmt.Errorf("book item is nil")
 	}
+
 	if strings.TrimSpace(item.Id) == "" {
 		item.Id = nextRecordID("book")
 	}
+
 	if err := r.db.WithContext(ctx).Create(item).Error; err != nil {
 		return nil, err
 	}

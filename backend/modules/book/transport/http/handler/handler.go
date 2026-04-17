@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"go.uber.org/zap"
 	coreerrors "goadmin/core/errors"
 	coremiddleware "goadmin/core/middleware"
 	"goadmin/core/response"
@@ -13,8 +14,6 @@ import (
 	"goadmin/modules/book/domain/model"
 	bookreq "goadmin/modules/book/transport/http/request"
 	bookresp "goadmin/modules/book/transport/http/response"
-
-	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -71,12 +70,6 @@ func (h *Handler) Create(c coretransport.Context) {
 	}
 	item, err := h.service.Create(c.RequestContext(), command.CreateBook(req))
 	if err != nil {
-		h.logger.Error("create book failed",
-			zap.String("request_id", requestID(c)),
-			zap.String("tenant_id", req.TenantId),
-			zap.String("title", req.Title),
-			zap.Error(err),
-		)
 		status, body := response.Failure(err, requestID(c))
 		c.JSON(status, body)
 		return

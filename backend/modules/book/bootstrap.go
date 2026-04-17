@@ -9,7 +9,6 @@ import (
 	bookservice "goadmin/modules/book/application/service"
 	bookrepo "goadmin/modules/book/infrastructure/repo"
 	bookhttp "goadmin/modules/book/transport/http"
-
 	"gorm.io/gorm"
 )
 
@@ -46,7 +45,10 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 	if err != nil {
 		return err
 	}
-	bookhttp.Register(group, bookhttp.Dependencies{Service: service, Logger: deps.Logger})
+	bookhttp.Register(group, bookhttp.Dependencies{
+		Service: service,
+		Logger:  deps.Logger,
+	})
 	return nil
 }
 

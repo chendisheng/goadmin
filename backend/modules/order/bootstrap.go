@@ -9,7 +9,6 @@ import (
 	orderservice "goadmin/modules/order/application/service"
 	orderrepo "goadmin/modules/order/infrastructure/repo"
 	orderhttp "goadmin/modules/order/transport/http"
-
 	"gorm.io/gorm"
 )
 
@@ -46,7 +45,10 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 	if err != nil {
 		return err
 	}
-	orderhttp.Register(group, orderhttp.Dependencies{Service: service, Logger: deps.Logger})
+	orderhttp.Register(group, orderhttp.Dependencies{
+		Service: service,
+		Logger:  deps.Logger,
+	})
 	return nil
 }
 

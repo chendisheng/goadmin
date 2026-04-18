@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	deletionapp "goadmin/codegen/application/deletion"
-	deletionmodel "goadmin/codegen/model/deletion"
+	deleteapp "goadmin/codegen/application/delete"
+	lifecycle "goadmin/codegen/model/lifecycle"
 	"goadmin/codegen/schema"
 	casbinadapter "goadmin/core/auth/casbin/adapter"
 	menucommand "goadmin/modules/menu/application/command"
@@ -85,7 +85,7 @@ func TestRunRemovePreview(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run(remove preview) returned error: %v", err)
 	}
-	if !strings.Contains(output, "deletion preview report") {
+	if !strings.Contains(output, "delete preview report") {
 		t.Fatalf("preview output missing report header:\n%s", output)
 	}
 	if !strings.Contains(output, "module: book") {
@@ -191,10 +191,10 @@ func TestRunRemoveExecuteWithRuntimeDependencies(t *testing.T) {
 	if err := store.SavePolicies(context.Background(), rules); err != nil {
 		t.Fatalf("seed casbin rules: %v", err)
 	}
-	policyCleanup, err := deletionapp.NewPolicyCleanupService(deletionapp.PolicyCleanupDependencies{
+	policyCleanup, err := deleteapp.NewPolicyCleanupService(deleteapp.PolicyCleanupDependencies{
 		ProjectRoot: root,
 		BackendRoot: filepath.Join(root, "backend"),
-		Store:       deletionmodel.PolicyStoreDB,
+		Store:       lifecycle.PolicyStoreDB,
 		DB:          db,
 	})
 	if err != nil {
@@ -204,7 +204,7 @@ func TestRunRemoveExecuteWithRuntimeDependencies(t *testing.T) {
 		return RunWithDependencies(root, []string{"remove", "execute", "book", "--kind", "crud"}, Dependencies{
 			MenuService:   menuSvc,
 			PolicyCleanup: policyCleanup,
-			PolicyStore:   string(deletionmodel.PolicyStoreDB),
+			PolicyStore:   string(lifecycle.PolicyStoreDB),
 		})
 	})
 	if err != nil {
@@ -639,7 +639,7 @@ func testTitleFromModule(value string) string {
 	return strings.Join(parts, "")
 }
 
-func containsDeleteItemKind(items []deletionmodel.DeleteItem, kind deletionmodel.AssetKind) bool {
+func containsDeleteItemKind(items []lifecycle.DeleteItem, kind lifecycle.AssetKind) bool {
 	for _, item := range items {
 		if item.Kind == kind {
 			return true

@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	deletionapp "goadmin/codegen/application/deletion"
+	deleteapp "goadmin/codegen/application/delete"
 	downloadapp "goadmin/codegen/application/download"
 	installapp "goadmin/codegen/application/install"
 	cli "goadmin/codegen/driver/cli"
-	deletionmodel "goadmin/codegen/model/deletion"
+	lifecycle "goadmin/codegen/model/lifecycle"
 	"goadmin/core/response"
 	menuservice "goadmin/modules/menu/application/service"
 	menumodel "goadmin/modules/menu/domain/model"
@@ -42,7 +42,7 @@ func TestHandlerPreviewDelete(t *testing.T) {
 	root := t.TempDir()
 	createDeleteModuleFixture(t, root, "book", true, true)
 	handler := NewHandler(Dependencies{ProjectRoot: root, PolicyStore: "db"})
-	ctx := &fakeContext{payload: deletionmodel.DeleteRequest{
+	ctx := &fakeContext{payload: lifecycle.DeleteRequest{
 		Module:       "book",
 		Kind:         "crud",
 		DryRun:       true,
@@ -60,7 +60,7 @@ func TestHandlerPreviewDelete(t *testing.T) {
 	if !ok {
 		t.Fatalf("PreviewDelete body type = %T, want response.Envelope", ctx.jsonBody)
 	}
-	report, ok := envelope.Data.(deletionapp.PreviewReport)
+	report, ok := envelope.Data.(deleteapp.PreviewReport)
 	if !ok {
 		t.Fatalf("PreviewDelete data type = %T, want deletion.PreviewReport", envelope.Data)
 	}
@@ -87,7 +87,7 @@ func TestHandlerDelete(t *testing.T) {
 	root := t.TempDir()
 	createDeleteModuleFixture(t, root, "book", true, false)
 	handler := NewHandler(Dependencies{ProjectRoot: root})
-	ctx := &fakeContext{payload: deletionmodel.DeleteRequest{
+	ctx := &fakeContext{payload: lifecycle.DeleteRequest{
 		Module:       "book",
 		Kind:         "crud",
 		DryRun:       false,
@@ -105,12 +105,12 @@ func TestHandlerDelete(t *testing.T) {
 	if !ok {
 		t.Fatalf("Delete body type = %T, want response.Envelope", ctx.jsonBody)
 	}
-	result, ok := envelope.Data.(deletionmodel.DeleteResult)
+	result, ok := envelope.Data.(lifecycle.DeleteResult)
 	if !ok {
 		t.Fatalf("Delete data type = %T, want deletion.DeleteResult", envelope.Data)
 	}
-	if result.Status != deletionmodel.DeleteStatusSucceeded {
-		t.Fatalf("Delete status = %q, want %q", result.Status, deletionmodel.DeleteStatusSucceeded)
+	if result.Status != lifecycle.DeleteStatusSucceeded {
+		t.Fatalf("Delete status = %q, want %q", result.Status, lifecycle.DeleteStatusSucceeded)
 	}
 	if result.Summary.TotalDeleted == 0 {
 		t.Fatal("expected deleted items in delete result")

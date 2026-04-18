@@ -8,10 +8,10 @@ type ListRequest struct {
 
 type CreateRequest struct {
 	Name    string `json:"name,omitempty" form:"name"`
-	Enabled bool   `json:"enabled,omitempty" form:"enabled"`
+	Enabled int64  `json:"enabled,omitempty" form:"enabled"`
 }
 
 type UpdateRequest struct {
 	Name    string `json:"name,omitempty" form:"name"`
-	Enabled bool   `json:"enabled,omitempty" form:"enabled"`
+	Enabled int64  `json:"enabled,omitempty" form:"enabled"`
 }

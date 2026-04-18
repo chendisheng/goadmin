@@ -45,3 +45,13 @@ p, admin, /api/v1/orders/:id, GET
 p, admin, /api/v1/orders, POST
 p, admin, /api/v1/orders/:id, PUT
 p, admin, /api/v1/orders/:id, DELETE
+p, admin, /api/v1/casbin_models, GET
+p, admin, /api/v1/casbin_models/:id, GET
+p, admin, /api/v1/casbin_models, POST
+p, admin, /api/v1/casbin_models/:id, PUT
+p, admin, /api/v1/casbin_models/:id, DELETE
+p, admin, /api/v1/casbin_rules, GET
+p, admin, /api/v1/casbin_rules/:id, GET
+p, admin, /api/v1/casbin_rules, POST
+p, admin, /api/v1/casbin_rules/:id, PUT
+p, admin, /api/v1/casbin_rules/:id, DELETE

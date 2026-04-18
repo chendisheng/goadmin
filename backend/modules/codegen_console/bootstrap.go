@@ -8,7 +8,6 @@ import (
 	codegen_consoleservice "goadmin/modules/codegen_console/application/service"
 	codegen_consolerepo "goadmin/modules/codegen_console/infrastructure/repo"
 	codegen_consolehttp "goadmin/modules/codegen_console/transport/http"
-
 	"gorm.io/gorm"
 )
 
@@ -45,6 +44,9 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 	if err != nil {
 		return err
 	}
-	codegen_consolehttp.Register(group, codegen_consolehttp.Dependencies{Service: service, Logger: deps.Logger})
+	codegen_consolehttp.Register(group, codegen_consolehttp.Dependencies{
+		Service: service,
+		Logger:  deps.Logger,
+	})
 	return nil
 }

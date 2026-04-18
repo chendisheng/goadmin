@@ -1,11 +1,13 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type CodegenConsole struct {
-	ID        string    `json:"id,omitempty" gorm:"column:id;primaryKey"`
-	Name      string    `json:"name,omitempty" gorm:"column:name;index"`
-	Enabled   bool      `json:"enabled,omitempty" gorm:"column:enabled;index"`
+	Id        string    `json:"id,omitempty" gorm:"column:id;primaryKey;type:varchar(64);size:64"`
+	Name      string    `json:"name,omitempty" gorm:"column:name;type:varchar(255);size:255"`
+	Enabled   int64     `json:"enabled,omitempty" gorm:"column:enabled"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

@@ -113,7 +113,7 @@ func requestID(c coretransport.Context) string {
 
 func mapItem(item model.CodegenConsole) codegen_consoleresp.Item {
 	return codegen_consoleresp.Item{
-		ID:      item.ID,
+		Id:      item.Id,
 		Name:    item.Name,
 		Enabled: item.Enabled,
 	}

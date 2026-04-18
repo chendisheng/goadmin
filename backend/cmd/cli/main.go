@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	deletionapp "goadmin/codegen/application/deletion"
+	deleteapp "goadmin/codegen/application/delete"
 	codegencli "goadmin/codegen/driver/cli"
-	deletionmodel "goadmin/codegen/model/deletion"
+	lifecycle "goadmin/codegen/model/lifecycle"
 	casbinadapter "goadmin/core/auth/casbin/adapter"
 	coreconfig "goadmin/core/config"
 	infraDB "goadmin/infrastructure/db"
@@ -72,10 +72,10 @@ func loadCodegenRuntimeDependencies(projectRoot string) (codegencli.Dependencies
 	if err != nil {
 		return codegencli.Dependencies{}, fmt.Errorf("init menu service for codegen CLI: %w", err)
 	}
-	policyCleanup, err := deletionapp.NewPolicyCleanupService(deletionapp.PolicyCleanupDependencies{
+	policyCleanup, err := deleteapp.NewPolicyCleanupService(deleteapp.PolicyCleanupDependencies{
 		ProjectRoot: projectRoot,
 		BackendRoot: filepath.Join(projectRoot, "backend"),
-		Store:       deletionmodel.NormalizePolicyStoreKind(cfg.Auth.Casbin.Source),
+		Store:       lifecycle.NormalizePolicyStoreKind(cfg.Auth.Casbin.Source),
 		DB:          dbConn,
 	})
 	if err != nil {

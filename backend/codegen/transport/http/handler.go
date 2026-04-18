@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	deletionapp "goadmin/codegen/application/deletion"
+	deleteapp "goadmin/codegen/application/delete"
 	downloadapp "goadmin/codegen/application/download"
 	installapp "goadmin/codegen/application/install"
 	irbuilderapp "goadmin/codegen/application/irbuilder"
 	codegencli "goadmin/codegen/driver/cli"
-	deletionmodel "goadmin/codegen/model/deletion"
+	lifecycle "goadmin/codegen/model/lifecycle"
 	apperrors "goadmin/core/errors"
 	"goadmin/core/response"
 	coretransport "goadmin/core/transport"
@@ -38,7 +38,7 @@ type Handler struct {
 	downloads       *downloadapp.Service
 	dbgen           *irbuilderapp.Service
 	installer       *installapp.Service
-	deletion        *deletionapp.Service
+	deletion        *deleteapp.Service
 }
 
 type DSLRequest struct {
@@ -96,16 +96,17 @@ func NewHandler(deps Dependencies) *Handler {
 	if deps.MenuService != nil {
 		installer = installapp.NewService(installapp.Dependencies{MenuService: deps.MenuService})
 	}
-	var policyCleanup *deletionapp.PolicyCleanupService
-	if cleanup, err := deletionapp.NewPolicyCleanupService(deletionapp.PolicyCleanupDependencies{
+	var policyCleanup *deleteapp.PolicyCleanupService
+	if cleanup, err := deleteapp.NewPolicyCleanupService(deleteapp.PolicyCleanupDependencies{
 		ProjectRoot: deps.ProjectRoot,
-		Store:       deletionmodel.NormalizePolicyStoreKind(deps.PolicyStore),
+		Store:       lifecycle.NormalizePolicyStoreKind(deps.PolicyStore),
 		DB:          deps.DB,
 	}); err == nil {
 		policyCleanup = cleanup
 	}
-	deletionService := deletionapp.NewService(deletionapp.Dependencies{
+	deletionService := deleteapp.NewService(deleteapp.Dependencies{
 		ProjectRoot:   deps.ProjectRoot,
+		BackendRoot:   filepath.Join(deps.ProjectRoot, "backend"),
 		PolicyStore:   deps.PolicyStore,
 		MenuService:   deps.MenuService,
 		PolicyCleanup: policyCleanup,
@@ -269,7 +270,7 @@ func (h *Handler) PreviewDelete(c coretransport.Context) {
 		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "deletion preview is disabled"))
 		return
 	}
-	var req deletionmodel.DeleteRequest
+	var req lifecycle.DeleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "invalid request body"))
 		return
@@ -291,7 +292,7 @@ func (h *Handler) Delete(c coretransport.Context) {
 		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "deletion execution is disabled"))
 		return
 	}
-	var req deletionmodel.DeleteRequest
+	var req lifecycle.DeleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "invalid request body"))
 		return

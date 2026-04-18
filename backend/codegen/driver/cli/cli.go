@@ -10,8 +10,8 @@ import (
 	"time"
 
 	legacygenerate "goadmin/cli/generate"
-	deletionapp "goadmin/codegen/application/deletion"
-	deletionmodel "goadmin/codegen/model/deletion"
+	deleteapp "goadmin/codegen/application/delete"
+	lifecycle "goadmin/codegen/model/lifecycle"
 	"goadmin/codegen/planner"
 	"goadmin/codegen/schema"
 	menuservice "goadmin/modules/menu/application/service"
@@ -19,7 +19,7 @@ import (
 
 type Dependencies struct {
 	MenuService   *menuservice.Service
-	PolicyCleanup *deletionapp.PolicyCleanupService
+	PolicyCleanup *deleteapp.PolicyCleanupService
 	PolicyStore   string
 }
 
@@ -33,7 +33,7 @@ func RunWithDependencies(root string, args []string, deps Dependencies) error {
 	}
 	gen := legacygenerate.New(root)
 	plan := planner.New()
-	deleteService := deletionapp.NewService(deletionapp.Dependencies{
+	deleteService := deleteapp.NewService(deleteapp.Dependencies{
 		ProjectRoot:   root,
 		BackendRoot:   filepath.Join(root, "backend"),
 		PolicyStore:   deps.PolicyStore,
@@ -188,8 +188,8 @@ func runGenerateDSL(gen *legacygenerate.Generator, plan planner.Default, args []
 	return nil
 }
 
-func printDeletionResultReport(result deletionmodel.DeleteResult) error {
-	if _, err := fmt.Fprintln(os.Stdout, "deletion execution result"); err != nil {
+func printDeletionResultReport(result lifecycle.DeleteResult) error {
+	if _, err := fmt.Fprintln(os.Stdout, "delete execution result"); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprintf(os.Stdout, "module: %s status=%s started=%s finished=%s\n", result.Plan.Module, result.Status, result.StartedAt.Format(time.RFC3339), result.FinishedAt.Format(time.RFC3339)); err != nil {
@@ -263,7 +263,7 @@ func printDeletionResultReport(result deletionmodel.DeleteResult) error {
 	return nil
 }
 
-func runRemove(root string, deletion *deletionapp.Service, args []string) error {
+func runRemove(root string, deletion *deleteapp.Service, args []string) error {
 	if len(args) == 0 {
 		return errors.New("remove requires a subcommand: preview, execute")
 	}
@@ -277,10 +277,10 @@ func runRemove(root string, deletion *deletionapp.Service, args []string) error 
 	}
 }
 
-func runRemovePreview(root string, deletion *deletionapp.Service, args []string) error {
+func runRemovePreview(root string, deletion *deleteapp.Service, args []string) error {
 	fs := flag.NewFlagSet("remove preview", flag.ContinueOnError)
-	kind := fs.String("kind", "crud", "deletion kind (crud, module, plugin)")
-	force := fs.Bool("force", false, "confirm deletion scope in preview output")
+	kind := fs.String("kind", "crud", "delete kind (crud, module, plugin)")
+	force := fs.Bool("force", false, "confirm delete scope in preview output")
 	withPolicy := fs.Bool("with-policy", true, "include policy cleanup candidates")
 	withRuntime := fs.Bool("with-runtime", true, "include runtime cleanup candidates")
 	withFrontend := fs.Bool("with-frontend", true, "include frontend cleanup candidates")
@@ -294,10 +294,10 @@ func runRemovePreview(root string, deletion *deletionapp.Service, args []string)
 		return errors.New("remove preview requires a module name")
 	}
 	if deletion == nil {
-		return errors.New("deletion preview service is required")
+		return errors.New("delete preview service is required")
 	}
 	_ = root
-	report, err := deletion.Preview(deletionmodel.DeleteRequest{
+	report, err := deletion.Preview(lifecycle.DeleteRequest{
 		Module:       fs.Arg(0),
 		Kind:         strings.TrimSpace(*kind),
 		DryRun:       true,
@@ -306,7 +306,7 @@ func runRemovePreview(root string, deletion *deletionapp.Service, args []string)
 		WithRuntime:  *withRuntime,
 		WithFrontend: *withFrontend,
 		WithRegistry: *withRegistry,
-		PolicyStore:  deletionmodel.NormalizePolicyStoreKind(*policyStore),
+		PolicyStore:  lifecycle.NormalizePolicyStoreKind(*policyStore),
 	})
 	if err != nil {
 		return err
@@ -314,10 +314,10 @@ func runRemovePreview(root string, deletion *deletionapp.Service, args []string)
 	return printDeletionPreviewReport(report)
 }
 
-func runRemoveExecute(root string, deletion *deletionapp.Service, args []string) error {
+func runRemoveExecute(root string, deletion *deleteapp.Service, args []string) error {
 	fs := flag.NewFlagSet("remove execute", flag.ContinueOnError)
-	kind := fs.String("kind", "crud", "deletion kind (crud, module, plugin)")
-	force := fs.Bool("force", false, "confirm deletion scope in execution output")
+	kind := fs.String("kind", "crud", "delete kind (crud, module, plugin)")
+	force := fs.Bool("force", false, "confirm delete scope in execution output")
 	withPolicy := fs.Bool("with-policy", true, "include policy cleanup candidates")
 	withRuntime := fs.Bool("with-runtime", true, "include runtime cleanup candidates")
 	withFrontend := fs.Bool("with-frontend", true, "include frontend cleanup candidates")
@@ -331,10 +331,10 @@ func runRemoveExecute(root string, deletion *deletionapp.Service, args []string)
 		return errors.New("remove execute requires a module name")
 	}
 	if deletion == nil {
-		return errors.New("deletion execution service is required")
+		return errors.New("delete execution service is required")
 	}
 	_ = root
-	result, err := deletion.Delete(deletionmodel.DeleteRequest{
+	result, err := deletion.Delete(lifecycle.DeleteRequest{
 		Module:       fs.Arg(0),
 		Kind:         strings.TrimSpace(*kind),
 		DryRun:       false,
@@ -343,7 +343,7 @@ func runRemoveExecute(root string, deletion *deletionapp.Service, args []string)
 		WithRuntime:  *withRuntime,
 		WithFrontend: *withFrontend,
 		WithRegistry: *withRegistry,
-		PolicyStore:  deletionmodel.NormalizePolicyStoreKind(*policyStore),
+		PolicyStore:  lifecycle.NormalizePolicyStoreKind(*policyStore),
 	})
 	if err != nil {
 		return err
@@ -794,8 +794,8 @@ Examples:
 `))
 }
 
-func printDeletionPreviewReport(report deletionapp.PreviewReport) error {
-	if _, err := fmt.Fprintln(os.Stdout, "deletion preview report"); err != nil {
+func printDeletionPreviewReport(report deleteapp.PreviewReport) error {
+	if _, err := fmt.Fprintln(os.Stdout, "delete preview report"); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprintf(os.Stdout, "module: %s kind=%s dry-run=%t force=%t policy-store=%s\n", report.Plan.Module, report.Resolution.Kind, report.Plan.DryRun, report.Plan.Force, report.Plan.PolicyStore); err != nil {
@@ -826,7 +826,7 @@ func printDeletionPreviewReport(report deletionapp.PreviewReport) error {
 			}
 		}
 	}
-	printItems := func(title string, items []deletionmodel.DeleteItem) error {
+	printItems := func(title string, items []lifecycle.DeleteItem) error {
 		if len(items) == 0 {
 			return nil
 		}

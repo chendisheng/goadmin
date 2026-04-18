@@ -1,0 +1,61 @@
+# codegen:begin
+name: casbin_rule
+version: v1
+kind: crud
+module: casbin_rule
+dependencies:
+  - core/auth/bootstrap
+  - core/auth/casbin
+routes:
+  - method: GET
+    path: /api/v1/casbin_rules
+  - method: GET
+    path: /api/v1/casbin_rules/:id
+  - method: POST
+    path: /api/v1/casbin_rules
+  - method: PUT
+    path: /api/v1/casbin_rules/:id
+  - method: DELETE
+    path: /api/v1/casbin_rules/:id
+menus:
+  - name: CasbinRules
+    path: /casbin_rules
+    component: Layout
+    icon: menu
+    permission: casbin_rule:view
+    type: directory
+    redirect: /casbin_rules/list
+    visible: true
+    enabled: true
+    sort: 1
+  - name: List
+    path: /casbin_rules/list
+    parent_path: /casbin_rules
+    component: view/casbin_rule/index
+    icon: menu
+    permission: casbin_rule:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 2
+permissions:
+  - object: casbin_rule
+    action: list
+    description: List CasbinRule
+  - object: casbin_rule
+    action: view
+    description: View CasbinRule
+  - object: casbin_rule
+    action: create
+    description: Create CasbinRule
+  - object: casbin_rule
+    action: update
+    description: Update CasbinRule
+  - object: casbin_rule
+    action: delete
+    description: Delete CasbinRule
+capabilities:
+  - basic-crud
+  - policy-generated
+  - frontend-generated
+# codegen:end

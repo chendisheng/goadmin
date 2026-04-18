@@ -1,9 +1,9 @@
 package response
 
 type Item struct {
-	ID      string `json:"id,omitempty"`
+	Id      string `json:"id,omitempty"`
 	Name    string `json:"name,omitempty"`
-	Enabled bool   `json:"enabled,omitempty"`
+	Enabled int64  `json:"enabled,omitempty"`
 }
 
 type List struct {

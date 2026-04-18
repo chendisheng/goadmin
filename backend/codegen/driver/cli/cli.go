@@ -210,7 +210,49 @@ func printDeletionResultReport(result deletionmodel.DeleteResult) error {
 			return err
 		}
 		for _, failure := range result.Failures {
-			if _, err := fmt.Fprintf(os.Stdout, "- %s (%t)\n", failure.Reason, failure.Recoverable); err != nil {
+			if _, err := fmt.Fprintf(os.Stdout, "- [%s/%s] %s (%t)\n", failure.Category, failure.Stage, failure.Reason, failure.Recoverable); err != nil {
+				return err
+			}
+		}
+	}
+	if _, err := fmt.Fprintf(os.Stdout, "audit: planned=%d result_deleted=%d result_skipped=%d result_failed=%d failures_total=%d file=%d policy=%d database=%d registry=%d validation=%d recoverable=%d blocking=%d\n",
+		result.Audit.Planned.Total,
+		result.Audit.Result.TotalDeleted,
+		result.Audit.Result.Skipped,
+		result.Audit.Result.Failed,
+		result.Audit.Failures.Total,
+		result.Audit.Failures.File,
+		result.Audit.Failures.Policy,
+		result.Audit.Failures.Database,
+		result.Audit.Failures.Registry,
+		result.Audit.Failures.Validation,
+		result.Audit.Failures.Recoverable,
+		result.Audit.Failures.Blocking,
+	); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(os.Stdout, "validation: status=%s verified=%t checked=%d issues=%d\n", result.Validation.Status, result.Validation.Verified, result.Validation.Checked, len(result.Validation.Issues)); err != nil {
+		return err
+	}
+	if len(result.Validation.Issues) > 0 {
+		if _, err := fmt.Fprintln(os.Stdout, "validation issues:"); err != nil {
+			return err
+		}
+		for _, issue := range result.Validation.Issues {
+			if _, err := fmt.Fprintf(os.Stdout, "- [%s/%s] %s", issue.Category, issue.Stage, issue.Message); err != nil {
+				return err
+			}
+			if issue.Item.Path != "" {
+				if _, err := fmt.Fprintf(os.Stdout, " path=%s", issue.Item.Path); err != nil {
+					return err
+				}
+			}
+			if issue.Expected != "" || issue.Actual != "" {
+				if _, err := fmt.Fprintf(os.Stdout, " expected=%s actual=%s", issue.Expected, issue.Actual); err != nil {
+					return err
+				}
+			}
+			if _, err := fmt.Fprintln(os.Stdout); err != nil {
 				return err
 			}
 		}

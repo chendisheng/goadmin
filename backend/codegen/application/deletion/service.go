@@ -88,38 +88,122 @@ func (s *Service) Delete(req deletionmodel.DeleteRequest) (deletionmodel.DeleteR
 	if s == nil {
 		return deletionmodel.DeleteResult{}, errors.New("deletion planner service is required")
 	}
+	startedAt := nowUTC()
 	normalized := req.Normalize()
+	result := deletionmodel.DeleteResult{
+		Request:   normalized,
+		Status:    deletionmodel.DeleteStatusPlanned,
+		StartedAt: startedAt,
+		Audit: deletionmodel.DeleteAuditRecord{
+			Operation:   "delete",
+			Module:      normalized.Module,
+			Kind:        normalized.Kind,
+			PolicyStore: normalized.PolicyStore,
+			DryRun:      normalized.DryRun,
+			Force:       normalized.Force,
+			StartedAt:   startedAt,
+		},
+	}
 	if err := normalized.Validate(); err != nil {
-		return deletionmodel.DeleteResult{}, err
+		finishedAt := nowUTC()
+		result.Status = deletionmodel.DeleteStatusFailed
+		result.FinishedAt = finishedAt
+		result.Audit.FinishedAt = finishedAt
+		result.Failures = append(result.Failures, deletionmodel.DeleteFailure{
+			Category:    deletionmodel.DeleteFailureCategoryValidation,
+			Stage:       deletionmodel.DeleteFailureStageValidation,
+			Reason:      err.Error(),
+			Recoverable: false,
+		})
+		result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, result.Deleted, result.Skipped, result.Failures)
+		result.Audit.Result = result.Summary
+		result.Audit.Failures = summarizeDeleteFailures(result.Failures)
+		result.Validation = deletionmodel.DeleteValidationReport{
+			StartedAt:  finishedAt,
+			FinishedAt: finishedAt,
+			Status:     "failed",
+			Verified:   false,
+			Issues: []deletionmodel.DeleteValidationIssue{{
+				Category: deletionmodel.DeleteFailureCategoryValidation,
+				Stage:    deletionmodel.DeleteFailureStageValidation,
+				Message:  err.Error(),
+			}},
+		}
+		return result, err
 	}
 	if strings.TrimSpace(normalized.Kind) == "" {
 		normalized.Kind = "crud"
 	}
 	report, err := s.Preview(normalized)
 	if err != nil {
-		return deletionmodel.DeleteResult{}, err
+		finishedAt := nowUTC()
+		result.Status = deletionmodel.DeleteStatusFailed
+		result.FinishedAt = finishedAt
+		result.Audit.FinishedAt = finishedAt
+		result.Failures = append(result.Failures, deletionmodel.DeleteFailure{
+			Category:    deletionmodel.DeleteFailureCategoryValidation,
+			Stage:       deletionmodel.DeleteFailureStageValidation,
+			Reason:      err.Error(),
+			Recoverable: false,
+		})
+		result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, result.Deleted, result.Skipped, result.Failures)
+		result.Audit.Result = result.Summary
+		result.Audit.Failures = summarizeDeleteFailures(result.Failures)
+		result.Validation = deletionmodel.DeleteValidationReport{
+			StartedAt:  finishedAt,
+			FinishedAt: finishedAt,
+			Status:     "failed",
+			Verified:   false,
+			Issues: []deletionmodel.DeleteValidationIssue{{
+				Category: deletionmodel.DeleteFailureCategoryValidation,
+				Stage:    deletionmodel.DeleteFailureStageValidation,
+				Message:  err.Error(),
+			}},
+		}
+		return result, err
 	}
-	result := deletionmodel.DeleteResult{
-		Request:   report.Request,
-		Plan:      report.Plan,
-		Status:    deletionmodel.DeleteStatusPlanned,
-		StartedAt: nowUTC(),
-		Warnings:  append([]string(nil), report.Plan.Warnings...),
-	}
+	result.Request = report.Request
+	result.Plan = report.Plan
+	result.Warnings = append(result.Warnings, report.Plan.Warnings...)
+	result.Audit.Module = report.Plan.Module
+	result.Audit.Kind = report.Request.Kind
+	result.Audit.PolicyStore = report.Plan.PolicyStore
+	result.Audit.DryRun = report.Request.DryRun
+	result.Audit.Force = report.Request.Force
 	if normalized.DryRun {
 		result.Status = deletionmodel.DeleteStatusDryRun
 		result.FinishedAt = nowUTC()
 		result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, result.Deleted, result.Skipped, result.Failures)
+		result.Audit.FinishedAt = result.FinishedAt
+		result.Audit.Result = result.Summary
+		result.Audit.Failures = summarizeDeleteFailures(result.Failures)
+		result.Validation = deletionmodel.DeleteValidationReport{StartedAt: result.StartedAt, FinishedAt: result.FinishedAt, Status: "skipped", Verified: true}
 		return result, nil
 	}
 	if len(report.Plan.Conflicts) > 0 {
 		result.Status = deletionmodel.DeleteStatusFailed
 		result.FinishedAt = nowUTC()
 		result.Failures = append(result.Failures, deletionmodel.DeleteFailure{
+			Category:    deletionmodel.DeleteFailureCategoryValidation,
+			Stage:       deletionmodel.DeleteFailureStageValidation,
 			Reason:      fmt.Sprintf("delete plan has %d blocking conflict(s)", len(report.Plan.Conflicts)),
 			Recoverable: false,
 		})
 		result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, result.Deleted, result.Skipped, result.Failures)
+		result.Audit.FinishedAt = result.FinishedAt
+		result.Audit.Result = result.Summary
+		result.Audit.Failures = summarizeDeleteFailures(result.Failures)
+		result.Validation = deletionmodel.DeleteValidationReport{
+			StartedAt:  result.StartedAt,
+			FinishedAt: result.FinishedAt,
+			Status:     "blocked",
+			Verified:   false,
+			Issues: []deletionmodel.DeleteValidationIssue{{
+				Category: deletionmodel.DeleteFailureCategoryValidation,
+				Stage:    deletionmodel.DeleteFailureStageValidation,
+				Message:  fmt.Sprintf("delete plan has %d blocking conflict(s)", len(report.Plan.Conflicts)),
+			}},
+		}
 		return result, fmt.Errorf("delete plan has %d blocking conflict(s)", len(report.Plan.Conflicts))
 	}
 	deleted, skipped, failures, warnings := s.executeDeletePlan(context.Background(), report.Plan)
@@ -127,12 +211,20 @@ func (s *Service) Delete(req deletionmodel.DeleteRequest) (deletionmodel.DeleteR
 	result.Skipped = skipped
 	result.Failures = failures
 	result.Warnings = append(result.Warnings, warnings...)
+	validation := s.validateDeleteExecution(context.Background(), report.Plan, deleted, skipped)
+	result.Validation = validation
+	if len(validation.Issues) > 0 {
+		result.Failures = append(result.Failures, validationIssuesToFailures(validation.Issues)...)
+	}
 	result.FinishedAt = nowUTC()
-	result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, deleted, skipped, failures)
+	result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, result.Deleted, result.Skipped, result.Failures)
+	result.Audit.FinishedAt = result.FinishedAt
+	result.Audit.Result = result.Summary
+	result.Audit.Failures = summarizeDeleteFailures(result.Failures)
 	switch {
-	case len(failures) > 0 && len(deleted) > 0:
+	case len(result.Failures) > 0 && len(deleted) > 0:
 		result.Status = deletionmodel.DeleteStatusPartial
-	case len(failures) > 0:
+	case len(result.Failures) > 0:
 		result.Status = deletionmodel.DeleteStatusFailed
 	case len(skipped) > 0:
 		result.Status = deletionmodel.DeleteStatusPartial
@@ -884,7 +976,7 @@ func (s *Service) executeDeletePlan(ctx context.Context, plan deletionmodel.Dele
 	for _, item := range plan.SourceFiles {
 		if item.Kind == deletionmodel.AssetKindSourceDirectory {
 			if err := s.cleanupEmptyParents(s.resolveExecutionPath(item.Path), filepath.Join(s.backendRoot, "modules")); err != nil {
-				failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("cleanup source directory: %v", err), Recoverable: true})
+				failures = append(failures, newDeleteFailure(item, deletionmodel.DeleteFailureCategoryFile, deletionmodel.DeleteFailureStageFile, fmt.Sprintf("cleanup source directory: %v", err), true))
 			}
 			deleted = append(deleted, item)
 			continue
@@ -895,19 +987,19 @@ func (s *Service) executeDeletePlan(ctx context.Context, plan deletionmodel.Dele
 				warnings = append(warnings, fmt.Sprintf("source file already missing: %s", item.Path))
 				continue
 			}
-			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("delete source file: %v", err), Recoverable: true})
+			failures = append(failures, newDeleteFailure(item, deletionmodel.DeleteFailureCategoryFile, deletionmodel.DeleteFailureStageFile, fmt.Sprintf("delete source file: %v", err), true))
 			continue
 		}
 		deleted = append(deleted, item)
 		if err := s.cleanupGeneratedAncestors(item.Path); err != nil {
-			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("cleanup generated directories: %v", err), Recoverable: true})
+			failures = append(failures, newDeleteFailure(item, deletionmodel.DeleteFailureCategoryFile, deletionmodel.DeleteFailureStageFile, fmt.Sprintf("cleanup generated directories: %v", err), true))
 		}
 	}
 
 	if len(plan.RegistryChanges) > 0 {
 		if err := s.refreshBootstrapRegistry(); err != nil {
 			for _, item := range plan.RegistryChanges {
-				failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("refresh bootstrap registry: %v", err), Recoverable: true})
+				failures = append(failures, newDeleteFailure(item, deletionmodel.DeleteFailureCategoryRegistry, deletionmodel.DeleteFailureStageRegistry, fmt.Sprintf("refresh bootstrap registry: %v", err), true))
 			}
 		} else {
 			deleted = append(deleted, plan.RegistryChanges...)
@@ -921,12 +1013,12 @@ func (s *Service) executeDeletePlan(ctx context.Context, plan deletionmodel.Dele
 				warnings = append(warnings, fmt.Sprintf("frontend file already missing: %s", item.Path))
 				continue
 			}
-			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("delete frontend file: %v", err), Recoverable: true})
+			failures = append(failures, newDeleteFailure(item, deletionmodel.DeleteFailureCategoryFile, deletionmodel.DeleteFailureStageFile, fmt.Sprintf("delete frontend file: %v", err), true))
 			continue
 		}
 		deleted = append(deleted, item)
 		if err := s.cleanupGeneratedAncestors(item.Path); err != nil {
-			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("cleanup frontend directories: %v", err), Recoverable: true})
+			failures = append(failures, newDeleteFailure(item, deletionmodel.DeleteFailureCategoryFile, deletionmodel.DeleteFailureStageFile, fmt.Sprintf("cleanup frontend directories: %v", err), true))
 		}
 	}
 
@@ -958,6 +1050,8 @@ func (s *Service) executeDeletePlan(ctx context.Context, plan deletionmodel.Dele
 			cleanupResult, err := s.policyCleanup.Delete(ctx, cleanupReq)
 			if err != nil {
 				failures = append(failures, deletionmodel.DeleteFailure{
+					Category:    policyFailureCategory(plan.PolicyStore),
+					Stage:       deletionmodel.DeleteFailureStagePolicy,
 					Reason:      fmt.Sprintf("policy cleanup: %v", err),
 					Recoverable: true,
 				})
@@ -983,9 +1077,6 @@ func (s *Service) executeDeletePlan(ctx context.Context, plan deletionmodel.Dele
 		skipped = append(skipped, logicalSkipped...)
 		failures = append(failures, logicalFailures...)
 		warnings = append(warnings, logicalWarnings...)
-	}
-	if err := s.validateMenuCleanup(ctx, deleted); err != nil {
-		failures = append(failures, deletionmodel.DeleteFailure{Reason: fmt.Sprintf("validate menu tree: %v", err), Recoverable: true})
 	}
 	return deleted, skipped, failures, warnings
 }
@@ -1065,6 +1156,254 @@ func (s *Service) cleanupLogicalRuntimeAssets(plan deletionmodel.DeletePlan, ite
 	return logicalDeleted, logicalSkipped, logicalFailures, warnings
 }
 
+func (s *Service) validateDeleteExecution(ctx context.Context, plan deletionmodel.DeletePlan, deleted, skipped []deletionmodel.DeleteItem) deletionmodel.DeleteValidationReport {
+	startedAt := nowUTC()
+	report := deletionmodel.DeleteValidationReport{
+		StartedAt: startedAt,
+		Status:    "skipped",
+		Verified:  true,
+	}
+	issues := make([]deletionmodel.DeleteValidationIssue, 0, len(deleted))
+	checked := 0
+	registryChecks := make(map[string]struct{})
+	menuItems := make([]deletionmodel.DeleteItem, 0)
+	policyItems := make([]deletionmodel.DeleteItem, 0)
+	for _, item := range deleted {
+		checked++
+		switch item.Kind {
+		case deletionmodel.AssetKindSourceFile, deletionmodel.AssetKindSourceDirectory, deletionmodel.AssetKindFrontendFile:
+			absolute := s.resolveExecutionPath(item.Path)
+			if absolute == "" {
+				issues = append(issues, deletionmodel.DeleteValidationIssue{
+					Item:     item,
+					Category: deletionmodel.DeleteFailureCategoryFile,
+					Stage:    deletionmodel.DeleteFailureStageValidation,
+					Message:  "deleted file path could not be resolved",
+				})
+				continue
+			}
+			if _, err := os.Stat(absolute); err == nil {
+				issues = append(issues, deletionmodel.DeleteValidationIssue{
+					Item:     item,
+					Category: deletionmodel.DeleteFailureCategoryFile,
+					Stage:    deletionmodel.DeleteFailureStageValidation,
+					Message:  "file still exists after deletion",
+					Actual:   absolute,
+				})
+			} else if !errors.Is(err, os.ErrNotExist) {
+				issues = append(issues, deletionmodel.DeleteValidationIssue{
+					Item:     item,
+					Category: deletionmodel.DeleteFailureCategoryFile,
+					Stage:    deletionmodel.DeleteFailureStageValidation,
+					Message:  fmt.Sprintf("validate file removal: %v", err),
+					Actual:   absolute,
+				})
+			}
+		case deletionmodel.AssetKindRuntimeRegistry:
+			if _, ok := registryChecks[item.Path]; ok {
+				continue
+			}
+			registryChecks[item.Path] = struct{}{}
+			absolute := s.resolveExecutionPath(item.Path)
+			if absolute == "" {
+				issues = append(issues, deletionmodel.DeleteValidationIssue{
+					Item:     item,
+					Category: deletionmodel.DeleteFailureCategoryRegistry,
+					Stage:    deletionmodel.DeleteFailureStageValidation,
+					Message:  "registry path could not be resolved",
+				})
+				continue
+			}
+			content, err := os.ReadFile(absolute)
+			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				issues = append(issues, deletionmodel.DeleteValidationIssue{
+					Item:     item,
+					Category: deletionmodel.DeleteFailureCategoryRegistry,
+					Stage:    deletionmodel.DeleteFailureStageValidation,
+					Message:  fmt.Sprintf("read registry file: %v", err),
+					Actual:   absolute,
+				})
+				continue
+			}
+			if strings.Contains(string(content), "goadmin/modules/"+plan.Module) {
+				issues = append(issues, deletionmodel.DeleteValidationIssue{
+					Item:     item,
+					Category: deletionmodel.DeleteFailureCategoryRegistry,
+					Stage:    deletionmodel.DeleteFailureStageValidation,
+					Message:  "bootstrap registry still contains deleted module",
+					Expected: "module removed from generated registry",
+					Actual:   absolute,
+				})
+			}
+		case deletionmodel.AssetKindRuntimeMenu:
+			menuItems = append(menuItems, item)
+		case deletionmodel.AssetKindPolicyRule:
+			if item.Selector != nil {
+				policyItems = append(policyItems, item)
+			}
+		case deletionmodel.AssetKindRuntimeRoute, deletionmodel.AssetKindRuntimePermission, deletionmodel.AssetKindRuntimePage:
+			continue
+		default:
+			continue
+		}
+	}
+	if len(menuItems) > 0 {
+		if s.menuService == nil {
+			for _, item := range menuItems {
+				issues = append(issues, deletionmodel.DeleteValidationIssue{
+					Item:     item,
+					Category: deletionmodel.DeleteFailureCategoryDatabase,
+					Stage:    deletionmodel.DeleteFailureStageValidation,
+					Message:  "menu service is not configured for validation",
+				})
+			}
+		} else if tree, err := s.menuService.Tree(ctx); err != nil {
+			for _, item := range menuItems {
+				issues = append(issues, deletionmodel.DeleteValidationIssue{
+					Item:     item,
+					Category: deletionmodel.DeleteFailureCategoryDatabase,
+					Stage:    deletionmodel.DeleteFailureStageValidation,
+					Message:  fmt.Sprintf("load menu tree: %v", err),
+				})
+			}
+		} else {
+			menusByPath := flattenMenusByPath(tree)
+			for _, item := range menuItems {
+				if _, ok := menusByPath[normalizeRuntimePath(item.Path)]; ok {
+					issues = append(issues, deletionmodel.DeleteValidationIssue{
+						Item:     item,
+						Category: deletionmodel.DeleteFailureCategoryDatabase,
+						Stage:    deletionmodel.DeleteFailureStageValidation,
+						Message:  "menu still exists after deletion",
+						Expected: "menu path removed",
+						Actual:   item.Path,
+					})
+				}
+			}
+		}
+	}
+	if len(policyItems) > 0 && s.policyCleanup != nil {
+		selectors := make([]deletionmodel.PolicySelector, 0, len(policyItems))
+		for _, item := range policyItems {
+			if item.Selector == nil {
+				continue
+			}
+			selectors = append(selectors, *item.Selector)
+		}
+		if len(selectors) > 0 {
+			preview, err := s.policyCleanup.Preview(ctx, PolicyCleanupRequest{Module: plan.Module, Store: plan.PolicyStore, Selectors: selectors})
+			if err != nil {
+				for _, item := range policyItems {
+					issues = append(issues, deletionmodel.DeleteValidationIssue{
+						Item:     item,
+						Category: policyFailureCategory(plan.PolicyStore),
+						Stage:    deletionmodel.DeleteFailureStageValidation,
+						Message:  fmt.Sprintf("validate policy cleanup: %v", err),
+					})
+				}
+			} else {
+				for _, item := range preview.Items {
+					if item.Decision != "delete" {
+						continue
+					}
+					issue := deletionmodel.DeleteValidationIssue{
+						Item:     policyCleanupItemToDeleteItem(item),
+						Category: policyFailureCategory(plan.PolicyStore),
+						Stage:    deletionmodel.DeleteFailureStageValidation,
+						Message:  "policy rule still exists after deletion",
+						Expected: "policy rule removed",
+						Actual:   item.Rule.SourceRef,
+					}
+					if item.Reason != "" {
+						issue.Metadata = map[string]any{"reason": item.Reason}
+					}
+					issues = append(issues, issue)
+				}
+			}
+		}
+	}
+	report.Checked = checked
+	report.FinishedAt = nowUTC()
+	report.Issues = issues
+	if len(issues) == 0 {
+		report.Status = "passed"
+		report.Verified = true
+		if len(deleted) == 0 {
+			report.Status = "skipped"
+		}
+		return report
+	}
+	report.Status = "failed"
+	report.Verified = false
+	return report
+}
+
+func validationIssuesToFailures(issues []deletionmodel.DeleteValidationIssue) []deletionmodel.DeleteFailure {
+	if len(issues) == 0 {
+		return nil
+	}
+	failures := make([]deletionmodel.DeleteFailure, 0, len(issues))
+	for _, issue := range issues {
+		failures = append(failures, deletionmodel.DeleteFailure{
+			Item:        issue.Item,
+			Category:    issue.Category,
+			Stage:       issue.Stage,
+			Reason:      issue.Message,
+			Recoverable: false,
+			Metadata:    cloneAnyMap(issue.Metadata),
+		})
+	}
+	return failures
+}
+
+func summarizeDeleteFailures(failures []deletionmodel.DeleteFailure) deletionmodel.DeleteFailureSummary {
+	summary := deletionmodel.DeleteFailureSummary{Total: len(failures)}
+	for _, failure := range failures {
+		switch failure.Category {
+		case deletionmodel.DeleteFailureCategoryFile:
+			summary.File++
+		case deletionmodel.DeleteFailureCategoryPolicy:
+			summary.Policy++
+		case deletionmodel.DeleteFailureCategoryDatabase:
+			summary.Database++
+		case deletionmodel.DeleteFailureCategoryRegistry:
+			summary.Registry++
+		case deletionmodel.DeleteFailureCategoryValidation:
+			summary.Validation++
+		}
+		if failure.Recoverable {
+			summary.Recoverable++
+		} else {
+			summary.Blocking++
+		}
+	}
+	return summary
+}
+
+func newDeleteFailure(item deletionmodel.DeleteItem, category deletionmodel.DeleteFailureCategory, stage deletionmodel.DeleteFailureStage, reason string, recoverable bool) deletionmodel.DeleteFailure {
+	return deletionmodel.DeleteFailure{
+		Item:        item,
+		Category:    category,
+		Stage:       stage,
+		Reason:      reason,
+		Recoverable: recoverable,
+	}
+}
+
+func policyFailureCategory(store deletionmodel.PolicyStoreKind) deletionmodel.DeleteFailureCategory {
+	switch store {
+	case deletionmodel.PolicyStoreDB:
+		return deletionmodel.DeleteFailureCategoryDatabase
+	case deletionmodel.PolicyStoreCSV:
+		return deletionmodel.DeleteFailureCategoryPolicy
+	default:
+		return deletionmodel.DeleteFailureCategoryPolicy
+	}
+}
+
 func hasDeletedKind(items []deletionmodel.DeleteItem, kinds ...deletionmodel.AssetKind) bool {
 	if len(items) == 0 || len(kinds) == 0 {
 		return false
@@ -1124,7 +1463,7 @@ func (s *Service) deleteRuntimeMenus(ctx context.Context, items []deletionmodel.
 	tree, err := s.menuService.Tree(ctx)
 	if err != nil {
 		for _, item := range items {
-			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("load menu tree: %v", err), Recoverable: true})
+			failures = append(failures, newDeleteFailure(item, deletionmodel.DeleteFailureCategoryDatabase, deletionmodel.DeleteFailureStageDatabase, fmt.Sprintf("load menu tree: %v", err), true))
 		}
 		return deleted, skipped, failures, warnings
 	}
@@ -1142,7 +1481,7 @@ func (s *Service) deleteRuntimeMenus(ctx context.Context, items []deletionmodel.
 			continue
 		}
 		if err := s.menuService.Delete(ctx, menu.ID); err != nil {
-			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("delete menu %s: %v", item.Path, err), Recoverable: true})
+			failures = append(failures, newDeleteFailure(item, deletionmodel.DeleteFailureCategoryDatabase, deletionmodel.DeleteFailureStageDatabase, fmt.Sprintf("delete menu %s: %v", item.Path, err), true))
 			continue
 		}
 		deleted = append(deleted, item)

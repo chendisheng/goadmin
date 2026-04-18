@@ -181,6 +181,141 @@ export interface CodegenDatabasePreviewReport {
   audit: CodegenDatabaseAuditRecord;
 }
 
+export interface CodegenDeleteCompatibility {
+  mode?: string;
+  require_manifest?: boolean;
+  require_explicit_confirm?: boolean;
+  allow_path_inference?: boolean;
+  manifest_paths?: string[];
+  module_roots?: string[];
+  owned_file_patterns?: string[];
+  fallback_policy_stores?: string[];
+  notes?: string[];
+}
+
+export interface CodegenDeleteRequest {
+  module: string;
+  kind?: string;
+  dry_run?: boolean;
+  force?: boolean;
+  with_policy?: boolean;
+  with_runtime?: boolean;
+  with_frontend?: boolean;
+  with_registry?: boolean;
+  policy_store?: string;
+  compatibility?: CodegenDeleteCompatibility;
+  metadata_hints?: Record<string, unknown>;
+}
+
+export interface CodegenDeletePlanItem {
+  module?: string;
+  kind?: string;
+  path?: string;
+  ref?: string;
+  store?: string;
+  origin?: string;
+  managed?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CodegenDeleteConflict {
+  kind?: string;
+  severity?: string;
+  message?: string;
+  path?: string;
+  ref?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CodegenDeletePlanSummary {
+  source_files?: number;
+  runtime_assets?: number;
+  registry_changes?: number;
+  policy_changes?: number;
+  frontend_changes?: number;
+  warnings?: number;
+  conflicts?: number;
+  total?: number;
+}
+
+export interface CodegenDeletePlan {
+  request?: CodegenDeleteRequest;
+  ownership?: Record<string, unknown>;
+  module?: string;
+  dry_run?: boolean;
+  force?: boolean;
+  policy_store?: string;
+  policy_stores?: string[];
+  source_files?: CodegenDeletePlanItem[];
+  runtime_assets?: CodegenDeletePlanItem[];
+  registry_changes?: CodegenDeletePlanItem[];
+  policy_changes?: CodegenDeletePlanItem[];
+  frontend_changes?: CodegenDeletePlanItem[];
+  warnings?: string[];
+  conflicts?: CodegenDeleteConflict[];
+  summary?: CodegenDeletePlanSummary;
+}
+
+export interface CodegenDeleteResolution {
+  input?: string;
+  module?: string;
+  kind?: string;
+  project_root?: string;
+  backend_root?: string;
+  module_dir?: string;
+  manifest_path?: string;
+  module_go_path?: string;
+  bootstrap_path?: string;
+  registry_path?: string;
+  builtin_registry_path?: string;
+  manifest_name?: string;
+  manifest_kind?: string;
+  manifest_version?: string;
+  generated_bootstrap?: boolean;
+  has_manifest?: boolean;
+  has_module_go?: boolean;
+  is_builtin?: boolean;
+  policy_store?: string;
+  compatibility?: CodegenDeleteCompatibility;
+}
+
+export interface CodegenDeletePreviewReport {
+  request: CodegenDeleteRequest;
+  resolution: CodegenDeleteResolution;
+  plan: CodegenDeletePlan;
+}
+
+export interface CodegenDeleteFailure {
+  item?: CodegenDeletePlanItem;
+  reason?: string;
+  recoverable?: boolean;
+}
+
+export interface CodegenDeleteResultSummary {
+  deleted_source_files?: number;
+  deleted_runtime_assets?: number;
+  deleted_registry_changes?: number;
+  deleted_policy_changes?: number;
+  deleted_frontend_changes?: number;
+  skipped?: number;
+  failed?: number;
+  total_deleted?: number;
+  elapsed_millis?: number;
+}
+
+export interface CodegenDeleteResult {
+  request?: CodegenDeleteRequest;
+  plan?: CodegenDeletePlan;
+  status?: string;
+  started_at?: string;
+  finished_at?: string;
+  deleted?: CodegenDeletePlanItem[];
+  skipped?: CodegenDeletePlanItem[];
+  failures?: CodegenDeleteFailure[];
+  warnings?: string[];
+  summary?: CodegenDeleteResultSummary;
+}
+
 export interface CodegenInstallManifestRequest {
   manifest_path?: string;
   module?: string;
@@ -238,6 +373,14 @@ export function generateCodegenDatabase(payload: CodegenDatabaseRequest) {
 
 export function generateDownloadCodegenDatabase(payload: CodegenDatabaseRequest) {
   return http.post<CodegenArtifactInfo>('/codegen/db/generate-download', payload);
+}
+
+export function previewCodegenDelete(payload: CodegenDeleteRequest) {
+  return http.post<CodegenDeletePreviewReport>('/codegen/delete/preview', payload);
+}
+
+export function executeCodegenDelete(payload: CodegenDeleteRequest) {
+  return http.post<CodegenDeleteResult>('/codegen/delete/execute', payload);
 }
 
 export function installCodegenManifest(payload: CodegenInstallManifestRequest) {

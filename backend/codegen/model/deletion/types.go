@@ -286,10 +286,79 @@ const (
 	DeleteStatusFailed    DeleteStatus = "failed"
 )
 
+type DeleteFailureCategory string
+
+const (
+	DeleteFailureCategoryUnknown    DeleteFailureCategory = ""
+	DeleteFailureCategoryFile       DeleteFailureCategory = "file"
+	DeleteFailureCategoryPolicy     DeleteFailureCategory = "policy"
+	DeleteFailureCategoryDatabase   DeleteFailureCategory = "database"
+	DeleteFailureCategoryRegistry   DeleteFailureCategory = "registry"
+	DeleteFailureCategoryValidation DeleteFailureCategory = "validation"
+)
+
+type DeleteFailureStage string
+
+const (
+	DeleteFailureStageUnknown    DeleteFailureStage = ""
+	DeleteFailureStageFile       DeleteFailureStage = "file"
+	DeleteFailureStagePolicy     DeleteFailureStage = "policy"
+	DeleteFailureStageDatabase   DeleteFailureStage = "database"
+	DeleteFailureStageRegistry   DeleteFailureStage = "registry"
+	DeleteFailureStageValidation DeleteFailureStage = "validation"
+)
+
 type DeleteFailure struct {
-	Item        DeleteItem `json:"item,omitempty"`
-	Reason      string     `json:"reason,omitempty"`
-	Recoverable bool       `json:"recoverable,omitempty"`
+	Item        DeleteItem            `json:"item,omitempty"`
+	Category    DeleteFailureCategory `json:"category,omitempty"`
+	Stage       DeleteFailureStage    `json:"stage,omitempty"`
+	Reason      string                `json:"reason,omitempty"`
+	Recoverable bool                  `json:"recoverable,omitempty"`
+	Metadata    map[string]any        `json:"metadata,omitempty"`
+}
+
+type DeleteFailureSummary struct {
+	Total       int `json:"total,omitempty"`
+	File        int `json:"file,omitempty"`
+	Policy      int `json:"policy,omitempty"`
+	Database    int `json:"database,omitempty"`
+	Registry    int `json:"registry,omitempty"`
+	Validation  int `json:"validation,omitempty"`
+	Recoverable int `json:"recoverable,omitempty"`
+	Blocking    int `json:"blocking,omitempty"`
+}
+
+type DeleteValidationIssue struct {
+	Item     DeleteItem            `json:"item,omitempty"`
+	Category DeleteFailureCategory `json:"category,omitempty"`
+	Stage    DeleteFailureStage    `json:"stage,omitempty"`
+	Message  string                `json:"message,omitempty"`
+	Expected string                `json:"expected,omitempty"`
+	Actual   string                `json:"actual,omitempty"`
+	Metadata map[string]any        `json:"metadata,omitempty"`
+}
+
+type DeleteValidationReport struct {
+	StartedAt  time.Time               `json:"started_at,omitempty"`
+	FinishedAt time.Time               `json:"finished_at,omitempty"`
+	Status     string                  `json:"status,omitempty"`
+	Verified   bool                    `json:"verified,omitempty"`
+	Checked    int                     `json:"checked,omitempty"`
+	Issues     []DeleteValidationIssue `json:"issues,omitempty"`
+}
+
+type DeleteAuditRecord struct {
+	Operation   string               `json:"operation,omitempty"`
+	Module      string               `json:"module,omitempty"`
+	Kind        string               `json:"kind,omitempty"`
+	PolicyStore PolicyStoreKind      `json:"policy_store,omitempty"`
+	DryRun      bool                 `json:"dry_run,omitempty"`
+	Force       bool                 `json:"force,omitempty"`
+	StartedAt   time.Time            `json:"started_at,omitempty"`
+	FinishedAt  time.Time            `json:"finished_at,omitempty"`
+	Planned     DeletePlanSummary    `json:"planned,omitempty"`
+	Result      DeleteResultSummary  `json:"result,omitempty"`
+	Failures    DeleteFailureSummary `json:"failures,omitempty"`
 }
 
 type DeleteResultSummary struct {
@@ -305,16 +374,18 @@ type DeleteResultSummary struct {
 }
 
 type DeleteResult struct {
-	Request    DeleteRequest       `json:"request,omitempty"`
-	Plan       DeletePlan          `json:"plan,omitempty"`
-	Status     DeleteStatus        `json:"status,omitempty"`
-	StartedAt  time.Time           `json:"started_at,omitempty"`
-	FinishedAt time.Time           `json:"finished_at,omitempty"`
-	Deleted    []DeleteItem        `json:"deleted,omitempty"`
-	Skipped    []DeleteItem        `json:"skipped,omitempty"`
-	Failures   []DeleteFailure     `json:"failures,omitempty"`
-	Warnings   []string            `json:"warnings,omitempty"`
-	Summary    DeleteResultSummary `json:"summary,omitempty"`
+	Request    DeleteRequest          `json:"request,omitempty"`
+	Plan       DeletePlan             `json:"plan,omitempty"`
+	Status     DeleteStatus           `json:"status,omitempty"`
+	StartedAt  time.Time              `json:"started_at,omitempty"`
+	FinishedAt time.Time              `json:"finished_at,omitempty"`
+	Deleted    []DeleteItem           `json:"deleted,omitempty"`
+	Skipped    []DeleteItem           `json:"skipped,omitempty"`
+	Failures   []DeleteFailure        `json:"failures,omitempty"`
+	Warnings   []string               `json:"warnings,omitempty"`
+	Audit      DeleteAuditRecord      `json:"audit,omitempty"`
+	Validation DeleteValidationReport `json:"validation,omitempty"`
+	Summary    DeleteResultSummary    `json:"summary,omitempty"`
 }
 
 func normalizeToken(value string) string {

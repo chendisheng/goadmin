@@ -7,11 +7,12 @@
             <div class="card-header">
               <div>
                 <div class="title">CodeGen Console</div>
-                <div class="subtitle">在同一页面中切换 DSL 与 DB 输入模式，复用统一结果区。</div>
+                <div class="subtitle">在同一页面中切换 DSL、DB 与删除模式，复用统一结果区。</div>
               </div>
               <el-space wrap>
                 <el-button v-if="activeMode === 'dsl'" @click="loadSample">载入示例</el-button>
-                <el-button v-else @click="loadDbSample">载入示例</el-button>
+                <el-button v-else-if="activeMode === 'db'" @click="loadDbSample">载入示例</el-button>
+                <el-button v-else @click="loadDeleteSample">载入示例</el-button>
                 <el-button @click="clearCurrentInputs">清空</el-button>
                 <el-button v-if="activeMode === 'dsl'" @click="triggerFileSelect">上传 DSL</el-button>
                 <el-button v-if="activeMode === 'dsl'" type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
@@ -20,6 +21,9 @@
                 <el-button v-if="activeMode === 'db'" type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
                 <el-button v-if="activeMode === 'db'" type="success" :loading="generateLoading || installLoading" @click="handleGenerateAndInstall">生成并安装</el-button>
                 <el-button v-if="activeMode === 'db'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
+                <el-button v-if="activeMode === 'delete'" @click="loadDeleteSample">载入示例</el-button>
+                <el-button v-if="activeMode === 'delete'" type="primary" :loading="previewLoading" @click="handleDeletePreview">删除预览</el-button>
+                <el-button v-if="activeMode === 'delete'" type="danger" :loading="deleteLoading" :disabled="!deleteExecuteEnabled" @click="handleDeleteExecute">确认删除</el-button>
               </el-space>
             </div>
           </template>
@@ -122,32 +126,32 @@
                   </el-row>
 
                     <el-form-item label="表名范围" class="db-form-item db-form-item--wide">
-                    <el-input
-                      v-model="dbTablesText"
-                      type="textarea"
-                      :rows="6"
-                      resize="none"
-                      placeholder="支持逗号、换行分隔，例如：books, orders"
-                    />
-                    <div class="db-form-row">
-                      <span class="db-field-help">留空则表示扫描全部表；建议优先预填少量表进行预览。</span>
-                      <el-space wrap>
-                        <el-button text size="small" @click="loadDbSample">载入示例</el-button>
-                        <el-button text size="small" @click="clearDbTables">清空范围</el-button>
-                      </el-space>
-                    </div>
-                    <div v-if="dbParsedTables.length" class="db-table-chip-list">
-                      <el-tag
-                        v-for="table in dbParsedTables"
-                        :key="table"
-                        size="small"
-                        effect="plain"
-                        class="db-table-chip"
-                      >
-                        {{ table }}
-                      </el-tag>
-                    </div>
-                  </el-form-item>
+                      <el-input
+                        v-model="dbTablesText"
+                        type="textarea"
+                        :rows="6"
+                        resize="none"
+                        placeholder="支持逗号、换行分隔，例如：books, orders"
+                      />
+                      <div class="db-form-row">
+                        <span class="db-field-help">留空则表示扫描全部表；建议优先预填少量表进行预览。</span>
+                        <el-space wrap>
+                          <el-button text size="small" @click="loadDbSample">载入示例</el-button>
+                          <el-button text size="small" @click="clearDbTables">清空范围</el-button>
+                        </el-space>
+                      </div>
+                      <div v-if="dbParsedTables.length" class="db-table-chip-list">
+                        <el-tag
+                          v-for="table in dbParsedTables"
+                          :key="table"
+                          size="small"
+                          effect="plain"
+                          class="db-table-chip"
+                        >
+                          {{ table }}
+                        </el-tag>
+                      </div>
+                    </el-form-item>
 
                   <div class="db-advanced">
                     <div class="db-section-header">
@@ -163,6 +167,61 @@
                       <el-switch v-model="dbGeneratePolicy" inline-prompt active-text="Policy" inactive-text="Policy" />
                     </el-space>
                   </div>
+                </el-form>
+              </div>
+            </el-tab-pane>
+
+            <el-tab-pane label="删除" name="delete">
+              <div class="delete-mode-panel">
+                <el-alert
+                  title="请先执行删除预览，确认计划、风险与冲突后，再点击确认删除。"
+                  type="warning"
+                  :closable="false"
+                  show-icon
+                />
+
+                <el-form label-position="top" class="codegen-form db-form delete-form">
+                  <el-row :gutter="16">
+                    <el-col :xs="24" :md="8">
+                      <el-form-item label="模块名">
+                        <el-input v-model="deleteModule" placeholder="例如 book" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :xs="24" :md="8">
+                      <el-form-item label="模块类型">
+                        <el-input v-model="deleteKind" placeholder="例如 crud" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :xs="24" :md="8">
+                      <el-form-item label="Policy Store">
+                        <el-select v-model="deletePolicyStore" clearable filterable placeholder="自动识别或手动指定">
+                          <el-option label="自动识别" value="" />
+                          <el-option label="CSV" value="csv" />
+                          <el-option label="DB" value="db" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+
+                  <el-form-item label="删除范围">
+                    <el-space wrap>
+                      <el-switch v-model="deleteWithRuntime" inline-prompt active-text="Runtime" inactive-text="Runtime" />
+                      <el-switch v-model="deleteWithPolicy" inline-prompt active-text="Policy" inactive-text="Policy" />
+                      <el-switch v-model="deleteWithFrontend" inline-prompt active-text="Frontend" inactive-text="Frontend" />
+                      <el-switch v-model="deleteWithRegistry" inline-prompt active-text="Registry" inactive-text="Registry" />
+                      <el-switch v-model="deleteForce" inline-prompt active-text="Force" inactive-text="Force" />
+                    </el-space>
+                  </el-form-item>
+
+                  <el-form-item label="执行说明">
+                    <el-input
+                      v-model="deleteNotes"
+                      type="textarea"
+                      :rows="5"
+                      resize="none"
+                      placeholder="可选：补充删除说明，仅用于界面记录，不会直接传给后端核心"
+                    />
+                  </el-form-item>
                 </el-form>
               </div>
             </el-tab-pane>
@@ -254,6 +313,25 @@
             </el-table>
           </el-card>
 
+          <el-card v-if="activeMode === 'delete'" shadow="never" class="codegen-card">
+            <template #header>
+              <div class="card-header compact">
+                <div>
+                  <div class="title">风险与冲突</div>
+                  <div class="subtitle">展示删除预览中的风险提示和阻断冲突。</div>
+                </div>
+              </div>
+            </template>
+
+            <el-empty v-if="!deleteConflicts.length" description="暂无冲突" />
+            <el-table v-else :data="deleteConflicts" size="small" border class="preview-table">
+              <el-table-column prop="kind" label="Kind" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="severity" label="Severity" width="110" />
+              <el-table-column prop="path" label="Path" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="message" label="Message" min-width="280" show-overflow-tooltip />
+            </el-table>
+          </el-card>
+
           <el-card v-if="activeMode === 'db'" shadow="never" class="codegen-card">
             <template #header>
               <div class="card-header compact">
@@ -323,17 +401,85 @@
             </div>
           </el-card>
 
-          <el-card shadow="never" class="codegen-card">
+          <el-card v-if="activeMode === 'delete' && deleteResult" shadow="never" class="codegen-card">
             <template #header>
               <div class="card-header compact">
                 <div>
-                  <div class="title">消息</div>
-                  <div class="subtitle">包含 dry-run 提示、生成摘要和校验信息。</div>
+                  <div class="title">删除结果</div>
+                  <div class="subtitle">展示本次删除的执行概览、异常情况与处理明细。</div>
                 </div>
               </div>
             </template>
 
-            <el-empty v-if="!messages.length" description="暂无消息" />
+            <div class="artifact-panel">
+              <el-alert
+                :title="deleteResultStatusMessage"
+                :type="deleteResultStatusType"
+                :closable="false"
+                show-icon
+              />
+              <div class="artifact-summary-grid">
+                <div class="artifact-summary-card" :class="`artifact-summary-card--${deleteResultStatusTone}`">
+                  <span class="artifact-summary-label">结果状态</span>
+                  <span class="artifact-summary-value">{{ deleteResultStatusLabel }}</span>
+                  <span class="artifact-summary-meta">{{ deleteResultSummaryText }}</span>
+                </div>
+                <div class="artifact-summary-card">
+                  <span class="artifact-summary-label">已处理</span>
+                  <span class="artifact-summary-value">{{ deleteResultSummary?.total_deleted ?? 0 }}</span>
+                  <span class="artifact-summary-meta">源文件 {{ deleteResultSummary?.deleted_source_files ?? 0 }} · 运行时 {{ deleteResultSummary?.deleted_runtime_assets ?? 0 }}</span>
+                </div>
+                <div class="artifact-summary-card">
+                  <span class="artifact-summary-label">跳过 / 异常</span>
+                  <span class="artifact-summary-value">{{ deleteResultSummary?.skipped ?? 0 }} / {{ deleteResultSummary?.failed ?? 0 }}</span>
+                  <span class="artifact-summary-meta">权限 {{ deleteResultSummary?.deleted_policy_changes ?? 0 }} · 前端 {{ deleteResultSummary?.deleted_frontend_changes ?? 0 }}</span>
+                </div>
+                <div class="artifact-summary-card">
+                  <span class="artifact-summary-label">执行耗时</span>
+                  <span class="artifact-summary-value">{{ deleteResultElapsedText }}</span>
+                  <span class="artifact-summary-meta">开始于 {{ formatDateTime(deleteResult?.started_at ?? '') }} · 结束于 {{ formatDateTime(deleteResult?.finished_at ?? '') }}</span>
+                </div>
+              </div>
+              <div class="artifact-grid artifact-grid--compact">
+                <div class="artifact-item artifact-item--wide">
+                  <span class="artifact-label">删除明细</span>
+                  <ul class="message-list compact-list">
+                    <li v-for="item in deleteResultDeleted" :key="deleteItemKey(item)">
+                      {{ describeDeleteItem(item) }}
+                    </li>
+                  </ul>
+                </div>
+                <div class="artifact-item artifact-item--wide">
+                  <span class="artifact-label">跳过明细</span>
+                  <ul class="message-list compact-list">
+                    <li v-for="item in deleteResultSkipped" :key="deleteItemKey(item)">
+                      {{ describeDeleteItem(item) }}
+                    </li>
+                  </ul>
+                </div>
+                <div class="artifact-item artifact-item--wide" v-if="deleteResultFailures.length">
+                  <span class="artifact-label">异常明细</span>
+                  <ul class="message-list compact-list">
+                    <li v-for="failure in deleteResultFailures" :key="describeDeleteFailureKey(failure)">
+                      {{ describeDeleteFailure(failure) }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </el-card>
+
+          <el-card shadow="never" class="codegen-card">
+            <template #header>
+              <div class="card-header compact">
+                <div>
+                  <div class="title">{{ messagePanelTitle }}</div>
+                  <div class="subtitle">{{ messagePanelSubtitle }}</div>
+                </div>
+              </div>
+            </template>
+
+            <el-empty v-if="!messages.length" :description="messagePanelEmptyText" />
             <ul v-else class="message-list">
               <li v-for="message in messages" :key="message">{{ message }}</li>
             </ul>
@@ -423,6 +569,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
   downloadCodegenArtifact,
+  executeCodegenDelete,
   generateCodegenDatabase,
   generateCodegenDsl,
   generateDownloadCodegenDsl,
@@ -430,10 +577,16 @@ import {
   installCodegenManifest,
   previewCodegenDatabase,
   previewCodegenDsl,
+  previewCodegenDelete,
   type CodegenArtifactInfo,
   type CodegenDatabasePreviewReport,
   type CodegenDatabasePreviewResource,
   type CodegenDatabaseRequest,
+  type CodegenDeletePlan,
+  type CodegenDeletePlanItem,
+  type CodegenDeletePreviewReport,
+  type CodegenDeleteRequest,
+  type CodegenDeleteResult,
   type CodegenDslExecutionReport,
 } from '@/api/codegen';
 import { fetchPublicConfig } from '@/api/health';
@@ -442,13 +595,14 @@ import { ApiError } from '@/api/types';
 import type { PublicConfigPayload } from '@/api/health';
 import type { MenuItem } from '@/types/admin';
 
-type CodegenMode = 'dsl' | 'db';
+type CodegenMode = 'dsl' | 'db' | 'delete';
 
 type PreviewRow = {
   index: number;
   kind: string;
   name: string;
   force: boolean;
+  managed?: boolean;
   actions: string[];
 };
 
@@ -475,13 +629,27 @@ const dbGenerateFrontend = ref(true);
 const dbGeneratePolicy = ref(true);
 const dbMountParentPath = ref('');
 
+const deleteModule = ref('');
+const deleteKind = ref('crud');
+const deletePolicyStore = ref('');
+const deleteWithRuntime = ref(true);
+const deleteWithPolicy = ref(true);
+const deleteWithFrontend = ref(true);
+const deleteWithRegistry = ref(true);
+const deleteForce = ref(false);
+const deleteNotes = ref('');
+
 const previewLoading = ref(false);
 const generateLoading = ref(false);
 const downloadLoading = ref(false);
 const installLoading = ref(false);
+const deleteLoading = ref(false);
 
 const dslReport = ref<CodegenDslExecutionReport | null>(null);
 const dbReport = ref<CodegenDatabasePreviewReport | null>(null);
+const deletePreviewReport = ref<CodegenDeletePreviewReport | null>(null);
+const deleteResult = ref<CodegenDeleteResult | null>(null);
+const deleteRequestCache = ref<CodegenDeleteRequest | null>(null);
 const artifactInfo = ref<CodegenArtifactInfo | null>(null);
 const artifactForceExpired = ref(false);
 const lastDownloadAt = ref('');
@@ -520,6 +688,139 @@ const dbOptionSummary = computed(() => {
   return parts.join(' · ');
 });
 const dbGeneratedModuleName = computed(() => dbReport.value?.resources?.[0]?.module?.trim() || '');
+const deletePreviewPlan = computed(() => deletePreviewReport.value?.plan ?? null);
+const deletePlanSummary = computed(() => deletePreviewPlan.value?.summary ?? null);
+const deletePlanItems = computed<PreviewRow[]>(() => mapDeletePlanToPreviewRows(deletePreviewPlan.value));
+const deleteConflicts = computed(() => deletePreviewPlan.value?.conflicts ?? []);
+const deleteRequestSnapshotLabel = computed(() => {
+  if (!deleteRequestCache.value) {
+    return '未预览';
+  }
+  return `${deleteRequestCache.value.module || '-'} · ${deleteRequestCache.value.dry_run ? 'dry-run' : 'execute'}`;
+});
+const deletePolicyStoreLabel = computed(() => deleteRequestCache.value?.policy_store || 'auto');
+const deletePlanTotalText = computed(() => String(deletePlanSummary.value?.total ?? deletePlanItems.value.length));
+const deletePlanStatusMessage = computed(() => {
+  const warnings = deletePreviewPlan.value?.warnings ?? [];
+  const conflicts = deleteConflicts.value.length;
+  const total = deletePlanItems.value.length;
+  if (conflicts > 0) {
+    return `删除预览完成：${total} 项计划中包含 ${conflicts} 个冲突，请确认后再执行。`;
+  }
+  if (warnings.length > 0) {
+    return `删除预览完成：${total} 项计划，存在 ${warnings.length} 条风险提示。`;
+  }
+  return `删除预览完成：共 ${total} 项计划，可继续确认执行。`;
+});
+const deletePlanStatusType = computed(() => {
+  if (deleteConflicts.value.length > 0) {
+    return 'warning';
+  }
+  if ((deletePreviewPlan.value?.warnings ?? []).length > 0) {
+    return 'info';
+  }
+  return 'success';
+});
+const deleteResultSummary = computed(() => deleteResult.value?.summary ?? null);
+const deleteResultDeleted = computed(() => deleteResult.value?.deleted ?? []);
+const deleteResultSkipped = computed(() => deleteResult.value?.skipped ?? []);
+const deleteResultFailures = computed(() => deleteResult.value?.failures ?? []);
+const deleteResultElapsedText = computed(() => formatElapsedMillis(deleteResultSummary.value?.elapsed_millis ?? 0));
+const deleteResultSummaryText = computed(() => {
+  const summary = deleteResultSummary.value;
+  if (!summary) {
+    return '-';
+  }
+  return `已处理 ${summary.total_deleted ?? 0} 项 · 跳过 ${summary.skipped ?? 0} 项 · 异常 ${summary.failed ?? 0} 项`;
+});
+const deleteResultStatusLabel = computed(() => {
+  switch (deleteResult.value?.status ?? '') {
+    case 'succeeded':
+      return '成功';
+    case 'partial':
+      return '部分成功';
+    case 'failed':
+      return '失败';
+    case 'dry_run':
+      return 'Dry-run';
+    case 'planned':
+      return '已计划';
+    default:
+      return '未知';
+  }
+});
+const deleteResultStatusType = computed(() => {
+  switch (deleteResult.value?.status ?? '') {
+    case 'succeeded':
+      return 'success';
+    case 'partial':
+      return 'warning';
+    case 'failed':
+      return 'error';
+    case 'dry_run':
+    case 'planned':
+      return 'info';
+    default:
+      return 'info';
+  }
+});
+const deleteResultStatusTone = computed(() => {
+  switch (deleteResult.value?.status ?? '') {
+    case 'succeeded':
+      return 'success';
+    case 'partial':
+      return 'warning';
+    case 'failed':
+      return 'danger';
+    default:
+      return 'warning';
+  }
+});
+const deleteResultStatusMessage = computed(() => {
+  const result = deleteResult.value;
+  if (!result) {
+    return '';
+  }
+  const summary = result.summary;
+  if (result.status === 'succeeded') {
+    return `删除已完成，共处理 ${summary?.total_deleted ?? 0} 项。`;
+  }
+  if (result.status === 'partial') {
+    return `删除已完成，但有 ${summary?.skipped ?? 0} 项被跳过、${summary?.failed ?? 0} 项出现异常。`;
+  }
+  if (result.status === 'failed') {
+    return `删除执行未完成，请先查看异常明细。`;
+  }
+  return `删除执行已结束，当前状态为 ${deleteResultStatusLabel.value}。`;
+});
+const deleteMessages = computed(() => {
+  const messages: string[] = [];
+  if (deletePreviewPlan.value) {
+    messages.push(...(deletePreviewPlan.value.warnings ?? []).map((message) => `预览提示：${message}`));
+    if ((deletePreviewPlan.value.warnings ?? []).length === 0 && deletePreviewPlan.value.conflicts.length === 0) {
+      messages.push('预览提示：未发现额外风险提示。');
+    }
+  }
+  if (deleteResult.value) {
+    messages.push(...(deleteResult.value.warnings ?? []).map((message) => `执行提示：${message}`));
+    for (const failure of deleteResult.value.failures ?? []) {
+      const detail = failure.reason || '未提供原因';
+      messages.push(`异常：${detail}${failure.item ? `（${describeDeleteItem(failure.item)}）` : ''}`);
+    }
+    if ((deleteResult.value.warnings ?? []).length === 0 && (deleteResult.value.failures ?? []).length === 0) {
+      messages.push('执行提示：未发现额外异常。');
+    }
+  }
+  return messages;
+});
+const messagePanelTitle = computed(() => (activeMode.value === 'delete' ? '删除提示' : '消息'));
+const messagePanelSubtitle = computed(() =>
+  activeMode.value === 'delete'
+    ? '汇总删除预览提示、执行提示与异常信息。'
+    : '包含 dry-run 提示、生成摘要和校验信息。',
+);
+const messagePanelEmptyText = computed(() => (activeMode.value === 'delete' ? '暂无删除提示' : '暂无消息'));
+const deleteExecuteEnabled = computed(() => activeMode.value === 'delete' && deletePreviewReport.value !== null);
 const dbMountMenuLabel = computed(() => {
   if (!dbMountParentPath.value) {
     return '顶层根菜单';
@@ -529,6 +830,9 @@ const dbMountMenuLabel = computed(() => {
 });
 
 const previewItems = computed<PreviewRow[]>(() => {
+  if (activeMode.value === 'delete') {
+    return deletePlanItems.value;
+  }
   if (activeMode.value === 'db') {
     return mapDatabaseResourcesToPreviewRows(dbReport.value?.resources ?? [], dbForce.value);
   }
@@ -542,6 +846,9 @@ const previewItems = computed<PreviewRow[]>(() => {
 });
 
 const messages = computed(() => {
+  if (activeMode.value === 'delete') {
+    return deleteMessages.value;
+  }
   const base = currentReport.value?.messages ?? [];
   if (activeMode.value === 'db') {
     return [...base, ...(dbReport.value?.planner.messages ?? [])];
@@ -722,6 +1029,20 @@ function loadDbSample() {
   ElMessage.success('示例数据库配置已载入');
 }
 
+function loadDeleteSample() {
+  activeMode.value = 'delete';
+  deleteModule.value = 'book';
+  deleteKind.value = 'crud';
+  deletePolicyStore.value = 'db';
+  deleteWithRuntime.value = true;
+  deleteWithPolicy.value = true;
+  deleteWithFrontend.value = true;
+  deleteWithRegistry.value = true;
+  deleteForce.value = false;
+  deleteNotes.value = '先预览再确认执行';
+  ElMessage.success('示例删除配置已载入');
+}
+
 function applyDbPreset(driver: 'mysql' | 'postgres' | 'sqlite') {
   const presets: Record<'mysql' | 'postgres' | 'sqlite', { database: string; schema: string }> = {
     mysql: {
@@ -754,6 +1075,62 @@ function applyDbConfigDefaults() {
   }
 }
 
+async function handleDeleteExecute() {
+  if (!deleteExecuteEnabled.value || !deletePreviewReport.value || !deleteRequestCache.value) {
+    ElMessage.warning('请先完成删除预览');
+    return;
+  }
+  const preview = deletePreviewReport.value;
+  const conflicts = preview.plan.conflicts?.length ?? 0;
+  const warnings = preview.plan.warnings?.length ?? 0;
+  const total = preview.plan.summary?.total ?? deletePlanItems.value.length;
+  try {
+    await ElMessageBox.confirm(
+      `即将对模块 ${preview.plan.module || deleteModule.value} 执行删除，共 ${total} 项。当前方案包含 ${warnings} 条提示和 ${conflicts} 个冲突。确认后将调用后端删除执行接口。`,
+      '确认删除方案',
+      {
+        confirmButtonText: '确认执行',
+        cancelButtonText: '返回修改',
+        type: 'warning',
+        distinguishCancelAndClose: true,
+      },
+    );
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      ElMessage.info('已取消删除操作');
+      return;
+    }
+    throw error;
+  }
+  deleteLoading.value = true;
+  operationStatus.value = '';
+  lastRunSuccess.value = false;
+  try {
+    const request = {
+      ...deleteRequestCache.value,
+      dry_run: false,
+    } satisfies CodegenDeleteRequest;
+    deleteRequestCache.value = request;
+    deleteResult.value = await executeCodegenDelete(request);
+    const status = deleteResult.value.status || '';
+    lastRunSuccess.value = status === 'succeeded' || status === 'partial';
+    operationStatus.value = deleteResultStatusMessage.value;
+    if (status === 'failed') {
+      ElMessage.error(deleteResultStatusMessage.value || '删除执行失败');
+      return;
+    }
+    if (status === 'partial') {
+      ElMessage.warning(deleteResultStatusMessage.value || '删除部分完成');
+      return;
+    }
+    ElMessage.success(deleteResultStatusMessage.value || '删除执行完成');
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '删除执行失败');
+  } finally {
+    deleteLoading.value = false;
+  }
+}
+
 async function loadPublicConfig() {
   try {
     publicConfig.value = await fetchPublicConfig();
@@ -766,6 +1143,10 @@ async function loadPublicConfig() {
 function clearCurrentInputs() {
   if (activeMode.value === 'db') {
     clearDbInputs();
+    return;
+  }
+  if (activeMode.value === 'delete') {
+    clearDeleteInputs();
     return;
   }
   clearDslInputs();
@@ -785,6 +1166,23 @@ function clearDslInputs() {
   downloadStartAt.value = 0;
   resetCopyFeedback();
   installLoading.value = false;
+  operationStatus.value = '';
+  lastRunSuccess.value = false;
+}
+
+function clearDeleteInputs() {
+  deleteModule.value = '';
+  deleteKind.value = 'crud';
+  deletePolicyStore.value = '';
+  deleteWithRuntime.value = true;
+  deleteWithPolicy.value = true;
+  deleteWithFrontend.value = true;
+  deleteWithRegistry.value = true;
+  deleteForce.value = false;
+  deleteNotes.value = '';
+  deletePreviewReport.value = null;
+  deleteResult.value = null;
+  deleteRequestCache.value = null;
   operationStatus.value = '';
   lastRunSuccess.value = false;
 }
@@ -839,6 +1237,10 @@ async function handleFileChange(event: Event) {
 }
 
 async function handlePreview() {
+  if (activeMode.value === 'delete') {
+    await handleDeletePreview();
+    return;
+  }
   if (activeMode.value === 'db') {
     const validationError = validateDatabaseInputs();
     if (validationError) {
@@ -1144,6 +1546,32 @@ function validateDatabaseInputs(): string {
   return '';
 }
 
+function validateDeleteInputs(): string {
+  if (!deleteModule.value.trim()) {
+    return '请先填写要删除的模块名';
+  }
+  return '';
+}
+
+function buildDeleteRequest(dryRun: boolean): CodegenDeleteRequest {
+  return {
+    module: deleteModule.value.trim(),
+    kind: deleteKind.value.trim() || 'crud',
+    dry_run: dryRun,
+    force: deleteForce.value,
+    with_policy: deleteWithPolicy.value,
+    with_runtime: deleteWithRuntime.value,
+    with_frontend: deleteWithFrontend.value,
+    with_registry: deleteWithRegistry.value,
+    policy_store: deletePolicyStore.value.trim() || undefined,
+    metadata_hints: deleteNotes.value.trim()
+      ? {
+          notes: deleteNotes.value.trim(),
+        }
+      : undefined,
+  };
+}
+
 function parseTableNames(value: string): string[] {
   return value
     .split(/[\n,]/)
@@ -1159,6 +1587,82 @@ function mapDatabaseResourcesToPreviewRows(resources: CodegenDatabasePreviewReso
     force: forceValue,
     actions: resource.actions ?? [],
   }));
+}
+
+function mapDeletePlanToPreviewRows(plan: CodegenDeletePlan | null): PreviewRow[] {
+  if (!plan) {
+    return [];
+  }
+  const items = [
+    ...(plan.source_files ?? []),
+    ...(plan.runtime_assets ?? []),
+    ...(plan.registry_changes ?? []),
+    ...(plan.policy_changes ?? []),
+    ...(plan.frontend_changes ?? []),
+  ];
+  return items.map((item, index) => ({
+    index: index + 1,
+    kind: item.kind || 'asset',
+    name: item.path || item.ref || item.module || 'asset',
+    force: plan.force ?? false,
+    managed: item.managed ?? false,
+    actions: buildDeleteItemActions(item),
+  }));
+}
+
+function buildDeleteItemActions(item: CodegenDeletePlanItem): string[] {
+  const actions: string[] = [];
+  if (item.origin) {
+    actions.push(`origin:${item.origin}`);
+  }
+  actions.push(item.managed ? 'managed' : 'manual');
+  if (item.store) {
+    actions.push(`store:${item.store}`);
+  }
+  return actions;
+}
+
+function describeDeleteItem(item: CodegenDeletePlanItem): string {
+  const parts = [item.kind || 'asset'];
+  if (item.path) {
+    parts.push(item.path);
+  } else if (item.ref) {
+    parts.push(item.ref);
+  }
+  if (item.origin) {
+    parts.push(`origin=${item.origin}`);
+  }
+  if (item.managed !== undefined) {
+    parts.push(item.managed ? 'managed' : 'manual');
+  }
+  return parts.join(' · ');
+}
+
+function deleteItemKey(item: CodegenDeletePlanItem): string {
+  return [item.kind, item.path, item.ref, item.origin].filter((value): value is string => Boolean(value)).join('::');
+}
+
+function describeDeleteFailure(failure: { reason?: string; item?: CodegenDeletePlanItem }): string {
+  const parts = [failure.reason || '删除失败'];
+  if (failure.item) {
+    parts.push(describeDeleteItem(failure.item));
+  }
+  return parts.join(' · ');
+}
+
+function describeDeleteFailureKey(failure: { reason?: string; item?: CodegenDeletePlanItem }): string {
+  return `${failure.reason || 'failure'}::${failure.item ? deleteItemKey(failure.item) : 'none'}`;
+}
+
+function formatElapsedMillis(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '-';
+  }
+  if (value < 1000) {
+    return `${Math.round(value)}ms`;
+  }
+  const seconds = value / 1000;
+  return `${seconds.toFixed(seconds >= 10 ? 1 : 2)}s`;
 }
 
 function rememberArtifactError(message: string) {

@@ -1,6 +1,8 @@
 package deletion
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -102,6 +104,36 @@ func TestPreviewInferredManifestForGeneratedModule(t *testing.T) {
 	}
 }
 
+func TestPlanReturnsPreviewPlan(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, false)
+
+	service := NewService(Dependencies{ProjectRoot: root, PolicyStore: "db"})
+	plan, err := service.Plan(deletionmodel.DeleteRequest{
+		Module:       "Book",
+		WithPolicy:   true,
+		WithFrontend: true,
+		WithRegistry: true,
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if plan.Module != "book" {
+		t.Fatalf("plan module = %q, want book", plan.Module)
+	}
+	if plan.PolicyStore != deletionmodel.PolicyStoreDB {
+		t.Fatalf("policy store = %q, want db", plan.PolicyStore)
+	}
+	if len(plan.SourceFiles) == 0 || len(plan.PolicyChanges) == 0 || len(plan.RegistryChanges) == 0 {
+		t.Fatalf("expected populated delete plan, got %#v", plan)
+	}
+	if plan.Summary.Total == 0 {
+		t.Fatalf("expected non-zero plan summary, got %#v", plan.Summary)
+	}
+}
+
 func TestDeleteRemovesGeneratedAssetsAndRefreshesRegistry(t *testing.T) {
 	t.Parallel()
 
@@ -125,6 +157,15 @@ func TestDeleteRemovesGeneratedAssetsAndRefreshesRegistry(t *testing.T) {
 	if len(result.Failures) > 0 {
 		t.Fatalf("unexpected failures: %#v", result.Failures)
 	}
+	if result.Audit.Operation != "delete" || result.Audit.Module != "book" {
+		t.Fatalf("unexpected audit metadata: %#v", result.Audit)
+	}
+	if result.Audit.Failures.Total != 0 {
+		t.Fatalf("expected zero audit failures, got %#v", result.Audit.Failures)
+	}
+	if !result.Validation.Verified || result.Validation.Status != "passed" {
+		t.Fatalf("expected validation to pass, got %#v", result.Validation)
+	}
 	moduleDir := filepath.Join(root, "backend", "modules", "book")
 	if _, err := os.Stat(moduleDir); !os.IsNotExist(err) {
 		t.Fatalf("expected module dir to be removed, got err=%v", err)
@@ -142,6 +183,72 @@ func TestDeleteRemovesGeneratedAssetsAndRefreshesRegistry(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "func generatedModules() []Module") {
 		t.Fatalf("registry missing generatedModules function: %s", content)
+	}
+}
+
+func TestDeleteBlockedByConflictsProducesValidationAudit(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, true)
+
+	service := NewService(Dependencies{ProjectRoot: root, PolicyStore: "db"})
+	result, err := service.Delete(deletionmodel.DeleteRequest{
+		Module:       "book",
+		WithRuntime:  true,
+		WithPolicy:   true,
+		WithFrontend: true,
+		WithRegistry: true,
+	})
+	if err == nil {
+		t.Fatal("expected delete to fail because fixture contains an unknown owned file")
+	}
+	if result.Status != deletionmodel.DeleteStatusFailed {
+		t.Fatalf("status = %s, want failed", result.Status)
+	}
+	if len(result.Failures) == 0 {
+		t.Fatal("expected validation failure to be recorded")
+	}
+	if result.Failures[0].Category != deletionmodel.DeleteFailureCategoryValidation {
+		t.Fatalf("failure category = %s, want validation", result.Failures[0].Category)
+	}
+	if result.Audit.Failures.Validation == 0 {
+		t.Fatalf("expected validation failures to be counted in audit: %#v", result.Audit.Failures)
+	}
+	if result.Validation.Verified {
+		t.Fatalf("expected validation to fail, got %#v", result.Validation)
+	}
+}
+
+func TestValidateDeleteExecutionDetectsResidualFile(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, false)
+
+	service := NewService(Dependencies{ProjectRoot: root, PolicyStore: "db"})
+	report := service.validateDeleteExecution(context.Background(), deletionmodel.DeletePlan{
+		Module:      "book",
+		PolicyStore: deletionmodel.PolicyStoreDB,
+	}, []deletionmodel.DeleteItem{{
+		Module: "book",
+		Kind:   deletionmodel.AssetKindSourceFile,
+		Path:   "backend/modules/book/module.go",
+	}}, nil)
+	if report.Verified {
+		t.Fatalf("expected validation to fail for residual file, got %#v", report)
+	}
+	if report.Status != "failed" {
+		t.Fatalf("status = %s, want failed", report.Status)
+	}
+	if len(report.Issues) == 0 {
+		t.Fatal("expected validation issues for residual file")
+	}
+	if report.Issues[0].Category != deletionmodel.DeleteFailureCategoryFile {
+		t.Fatalf("issue category = %s, want file", report.Issues[0].Category)
+	}
+	if !strings.Contains(report.Issues[0].Message, "still exists") {
+		t.Fatalf("expected residual file message, got %#v", report.Issues[0])
 	}
 }
 
@@ -191,6 +298,41 @@ func TestDeleteCountsRuntimeRouteCleanupWhenCoreAssetsSucceed(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "backend", "modules", "book")); !os.IsNotExist(err) {
 		t.Fatalf("expected module dir to be removed, got err=%v", err)
+	}
+}
+
+func TestDeleteReportsPolicyCleanupExecutionFailure(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, false)
+
+	service := NewService(Dependencies{ProjectRoot: root, PolicyStore: "db"})
+	service.policyCleanup = &PolicyCleanupService{store: &failingPolicyStore{
+		kind:      deletionmodel.PolicyStoreDB,
+		deleteErr: errors.New("policy cleanup failed"),
+	}}
+
+	result, err := service.Delete(deletionmodel.DeleteRequest{
+		Module:       "book",
+		WithPolicy:   true,
+		WithFrontend: true,
+		WithRegistry: true,
+	})
+	if err != nil {
+		t.Fatalf("Delete returned error: %v", err)
+	}
+	if result.Status != deletionmodel.DeleteStatusPartial {
+		t.Fatalf("status = %s, want partial", result.Status)
+	}
+	if !containsFailure(result.Failures, deletionmodel.DeleteFailureCategoryDatabase, deletionmodel.DeleteFailureStagePolicy) {
+		t.Fatalf("expected policy execution failure, got %#v", result.Failures)
+	}
+	if result.Validation.Verified {
+		t.Fatalf("expected validation to fail after policy cleanup error, got %#v", result.Validation)
+	}
+	if result.Audit.Failures.Policy == 0 {
+		t.Fatalf("expected policy failure count in audit, got %#v", result.Audit.Failures)
 	}
 }
 
@@ -326,6 +468,69 @@ func containsDeleteItemKind(items []deletionmodel.DeleteItem, kind deletionmodel
 		}
 	}
 	return false
+}
+
+func containsFailure(failures []deletionmodel.DeleteFailure, category deletionmodel.DeleteFailureCategory, stage deletionmodel.DeleteFailureStage) bool {
+	for _, failure := range failures {
+		if failure.Category == category && failure.Stage == stage {
+			return true
+		}
+	}
+	return false
+}
+
+type failingPolicyStore struct {
+	kind      deletionmodel.PolicyStoreKind
+	deleteErr error
+}
+
+func (s *failingPolicyStore) Kind() deletionmodel.PolicyStoreKind { return s.kind }
+
+func (s *failingPolicyStore) ListByModule(context.Context, string) ([]deletionmodel.PolicyAsset, error) {
+	return []deletionmodel.PolicyAsset{{
+		Store:     s.kind,
+		Module:    "book",
+		SourceRef: "casbin_rule:1",
+		PType:     "p",
+		V0:        "book",
+		V1:        "book",
+		V2:        "read",
+		Managed:   true,
+	}}, nil
+}
+
+func (s *failingPolicyStore) DeleteBySelector(context.Context, deletionmodel.PolicySelector) (int, error) {
+	return 0, s.deleteErr
+}
+
+func (s *failingPolicyStore) Validate(context.Context) error { return nil }
+
+func (s *failingPolicyStore) Preview(ctx context.Context, req PolicyCleanupRequest) (PolicyCleanupPreview, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	_ = ctx
+	if len(req.Selectors) == 0 {
+		req.Selectors = []deletionmodel.PolicySelector{{Module: req.Module, Store: s.kind, Metadata: map[string]any{"managed": true}, V0: req.Module, V1: req.Module, V2: "read"}}
+	}
+	selector := req.Selectors[0]
+	item := PolicyCleanupItem{
+		Selector:   selector,
+		Rule:       deletionmodel.PolicyAsset{Store: s.kind, Module: req.Module, SourceRef: "casbin_rule:1", PType: "p", V0: selector.V0, V1: selector.V1, V2: selector.V2, Managed: true},
+		Decision:   "delete",
+		Reason:     "matched by structured selector",
+		MatchCount: 1,
+	}
+	return PolicyCleanupPreview{
+		Request: req,
+		Store:   s.kind,
+		Items:   []PolicyCleanupItem{item},
+		Summary: PolicyCleanupSummary{Backend: string(s.kind), Total: 1, Selected: 1, Deleted: 1, Validated: true},
+	}, nil
+}
+
+func (s *failingPolicyStore) Delete(context.Context, PolicyCleanupRequest) (PolicyCleanupResult, error) {
+	return PolicyCleanupResult{}, s.deleteErr
 }
 
 func testTitleFromModule(value string) string {

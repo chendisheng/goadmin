@@ -81,6 +81,45 @@ func TestHandlerPreviewDelete(t *testing.T) {
 	}
 }
 
+func TestHandlerDelete(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, false)
+	handler := NewHandler(Dependencies{ProjectRoot: root})
+	ctx := &fakeContext{payload: deletionmodel.DeleteRequest{
+		Module:       "book",
+		Kind:         "crud",
+		DryRun:       false,
+		WithPolicy:   false,
+		WithRuntime:  false,
+		WithFrontend: true,
+		WithRegistry: true,
+	}}
+
+	handler.Delete(ctx)
+	if ctx.status != 200 {
+		t.Fatalf("Delete status = %d, want 200, body=%#v", ctx.status, ctx.jsonBody)
+	}
+	envelope, ok := ctx.jsonBody.(response.Envelope)
+	if !ok {
+		t.Fatalf("Delete body type = %T, want response.Envelope", ctx.jsonBody)
+	}
+	result, ok := envelope.Data.(deletionmodel.DeleteResult)
+	if !ok {
+		t.Fatalf("Delete data type = %T, want deletion.DeleteResult", envelope.Data)
+	}
+	if result.Status != deletionmodel.DeleteStatusSucceeded {
+		t.Fatalf("Delete status = %q, want %q", result.Status, deletionmodel.DeleteStatusSucceeded)
+	}
+	if result.Summary.TotalDeleted == 0 {
+		t.Fatal("expected deleted items in delete result")
+	}
+	if len(result.Deleted) == 0 {
+		t.Fatal("expected deleted items list")
+	}
+}
+
 func createDeleteModuleFixture(t *testing.T, root, module string, includeManifest, includeUnknown bool) {
 	t.Helper()
 	moduleDir := filepath.Join(root, "backend", "modules", module)

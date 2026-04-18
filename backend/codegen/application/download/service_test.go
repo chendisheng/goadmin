@@ -87,7 +87,7 @@ permissions:
 		"changes.txt",
 		"backend/modules/inventory/module.go",
 		"backend/modules/item/domain/model/item.go",
-		"backend/web/src/views/item/index.vue",
+		"web/src/views/item/index.vue",
 	} {
 		if _, ok := entries[want]; !ok {
 			t.Fatalf("zip missing %s; entries=%v", want, keys(entries))

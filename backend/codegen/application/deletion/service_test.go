@@ -62,8 +62,8 @@ func TestPreviewCollectsOwnedAssetsAndConflicts(t *testing.T) {
 	assertDeleteItemPath(t, report.Plan.SourceFiles, "backend/modules/book/schema.sql")
 	assertDeleteItemPath(t, report.Plan.RegistryChanges, "backend/core/bootstrap/modules_gen.go")
 	assertDeleteItemPath(t, report.Plan.FrontendChanges, "web/src/views/book/index.vue")
-	if len(report.Plan.PolicyChanges) != 5 {
-		t.Fatalf("policy changes = %d, want 5", len(report.Plan.PolicyChanges))
+	if len(report.Plan.PolicyChanges) != 10 {
+		t.Fatalf("policy changes = %d, want 10", len(report.Plan.PolicyChanges))
 	}
 	if len(report.Plan.Conflicts) == 0 {
 		t.Fatal("expected conflicts for unknown file")
@@ -99,6 +99,98 @@ func TestPreviewInferredManifestForGeneratedModule(t *testing.T) {
 	}
 	if len(report.Plan.Warnings) == 0 {
 		t.Fatal("expected warnings for inferred manifest preview")
+	}
+}
+
+func TestDeleteRemovesGeneratedAssetsAndRefreshesRegistry(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, false)
+
+	service := NewService(Dependencies{ProjectRoot: root, PolicyStore: "db"})
+	result, err := service.Delete(deletionmodel.DeleteRequest{
+		Module:       "book",
+		WithRuntime:  false,
+		WithPolicy:   false,
+		WithFrontend: true,
+		WithRegistry: true,
+	})
+	if err != nil {
+		t.Fatalf("Delete returned error: %v", err)
+	}
+	if result.Status != deletionmodel.DeleteStatusSucceeded {
+		t.Fatalf("status = %s, want succeeded", result.Status)
+	}
+	if len(result.Failures) > 0 {
+		t.Fatalf("unexpected failures: %#v", result.Failures)
+	}
+	moduleDir := filepath.Join(root, "backend", "modules", "book")
+	if _, err := os.Stat(moduleDir); !os.IsNotExist(err) {
+		t.Fatalf("expected module dir to be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "web", "src", "views", "book")); !os.IsNotExist(err) {
+		t.Fatalf("expected frontend view dir to be removed, got err=%v", err)
+	}
+	registryPath := filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go")
+	content, err := os.ReadFile(registryPath)
+	if err != nil {
+		t.Fatalf("read refreshed registry: %v", err)
+	}
+	if strings.Contains(string(content), "goadmin/modules/book") {
+		t.Fatalf("registry still contains deleted module: %s", content)
+	}
+	if !strings.Contains(string(content), "func generatedModules() []Module") {
+		t.Fatalf("registry missing generatedModules function: %s", content)
+	}
+}
+
+func TestDeleteCountsRuntimeRouteCleanupWhenCoreAssetsSucceed(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, false)
+
+	service := NewService(Dependencies{ProjectRoot: root, PolicyStore: "db"})
+	report, err := service.Preview(deletionmodel.DeleteRequest{
+		Module:       "book",
+		DryRun:       true,
+		WithRuntime:  true,
+		WithPolicy:   false,
+		WithFrontend: true,
+		WithRegistry: true,
+	})
+	if err != nil {
+		t.Fatalf("Preview returned error: %v", err)
+	}
+	routeCount := 0
+	for _, item := range report.Plan.RuntimeAssets {
+		if item.Kind == deletionmodel.AssetKindRuntimeRoute {
+			routeCount++
+		}
+	}
+	if routeCount == 0 {
+		t.Fatal("expected runtime route candidates in preview")
+	}
+
+	result, err := service.Delete(deletionmodel.DeleteRequest{
+		Module:       "book",
+		WithRuntime:  true,
+		WithPolicy:   false,
+		WithFrontend: true,
+		WithRegistry: true,
+	})
+	if err != nil {
+		t.Fatalf("Delete returned error: %v", err)
+	}
+	if result.Summary.DeletedRuntimeAssets != routeCount {
+		t.Fatalf("deleted runtime assets = %d, want %d", result.Summary.DeletedRuntimeAssets, routeCount)
+	}
+	if !containsDeleteItemKind(result.Deleted, deletionmodel.AssetKindRuntimeRoute) {
+		t.Fatal("expected runtime route items to be reported as deleted")
+	}
+	if _, err := os.Stat(filepath.Join(root, "backend", "modules", "book")); !os.IsNotExist(err) {
+		t.Fatalf("expected module dir to be removed, got err=%v", err)
 	}
 }
 

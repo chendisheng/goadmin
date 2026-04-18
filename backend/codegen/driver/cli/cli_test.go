@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -9,7 +10,14 @@ import (
 	"strings"
 	"testing"
 
+	deletionapp "goadmin/codegen/application/deletion"
+	deletionmodel "goadmin/codegen/model/deletion"
 	"goadmin/codegen/schema"
+	casbinadapter "goadmin/core/auth/casbin/adapter"
+	menucommand "goadmin/modules/menu/application/command"
+	menuservice "goadmin/modules/menu/application/service"
+	menuModel "goadmin/modules/menu/domain/model"
+	menurepopkg "goadmin/modules/menu/infrastructure/repo"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -103,6 +111,132 @@ func TestRunRemovePreviewValidation(t *testing.T) {
 	root := t.TempDir()
 	if err := Run(root, []string{"remove", "preview"}); err == nil || !strings.Contains(err.Error(), "remove preview requires a module name") {
 		t.Fatalf("Run(remove preview) validation error = %v, want module name required", err)
+	}
+}
+
+func TestRunRemoveExecuteWithRuntimeDependencies(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, false)
+
+	dbPath := filepath.Join(t.TempDir(), "remove-execute.db")
+	db := openCLIIntegrationSQLiteDB(t, dbPath)
+	if err := menurepopkg.Migrate(db); err != nil {
+		t.Fatalf("migrate menus: %v", err)
+	}
+	if err := casbinadapter.Migrate(db); err != nil {
+		t.Fatalf("migrate casbin: %v", err)
+	}
+	if err := menurepopkg.SeedDefaults(db); err != nil {
+		t.Fatalf("seed default menus: %v", err)
+	}
+	menuRepo, err := menurepopkg.NewGormRepository(db)
+	if err != nil {
+		t.Fatalf("new menu repository: %v", err)
+	}
+	menuSvc, err := menuservice.New(menuRepo)
+	if err != nil {
+		t.Fatalf("new menu service: %v", err)
+	}
+	tree, err := menuSvc.Tree(context.Background())
+	if err != nil {
+		t.Fatalf("load menu tree: %v", err)
+	}
+	systemMenu := mustFindMenuByPath(t, tree, "/system")
+	booksMenu, err := menuSvc.Create(context.Background(), menucommand.CreateMenu{
+		ParentID:   systemMenu.ID,
+		Name:       "Books",
+		Path:       "/books",
+		Component:  "Layout",
+		Sort:       1,
+		Permission: "book:view",
+		Type:       "directory",
+		Visible:    true,
+		Enabled:    true,
+		Redirect:   "/books/list",
+	})
+	if err != nil {
+		t.Fatalf("create books menu: %v", err)
+	}
+	if _, err := menuSvc.Create(context.Background(), menucommand.CreateMenu{
+		ParentID:   booksMenu.ID,
+		Name:       "List",
+		Path:       "/books/list",
+		Component:  "view/book/index",
+		Sort:       2,
+		Permission: "book:list",
+		Type:       "menu",
+		Visible:    true,
+		Enabled:    true,
+	}); err != nil {
+		t.Fatalf("create books list menu: %v", err)
+	}
+	store, err := casbinadapter.NewGormStore(db)
+	if err != nil {
+		t.Fatalf("new casbin store: %v", err)
+	}
+	rules := []casbinadapter.Rule{
+		{Subject: "admin", Object: "/api/v1/books", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/books/:id", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/books", Action: "POST"},
+		{Subject: "admin", Object: "/api/v1/books/:id", Action: "PUT"},
+		{Subject: "admin", Object: "/api/v1/books/:id", Action: "DELETE"},
+		{Subject: "admin", Object: "book", Action: "list"},
+		{Subject: "admin", Object: "book", Action: "view"},
+		{Subject: "admin", Object: "book", Action: "create"},
+		{Subject: "admin", Object: "book", Action: "update"},
+		{Subject: "admin", Object: "book", Action: "delete"},
+	}
+	if err := store.SavePolicies(context.Background(), rules); err != nil {
+		t.Fatalf("seed casbin rules: %v", err)
+	}
+	policyCleanup, err := deletionapp.NewPolicyCleanupService(deletionapp.PolicyCleanupDependencies{
+		ProjectRoot: root,
+		BackendRoot: filepath.Join(root, "backend"),
+		Store:       deletionmodel.PolicyStoreDB,
+		DB:          db,
+	})
+	if err != nil {
+		t.Fatalf("new policy cleanup service: %v", err)
+	}
+	output, err := captureCLIStdout(t, func() error {
+		return RunWithDependencies(root, []string{"remove", "execute", "book", "--kind", "crud"}, Dependencies{
+			MenuService:   menuSvc,
+			PolicyCleanup: policyCleanup,
+			PolicyStore:   string(deletionmodel.PolicyStoreDB),
+		})
+	})
+	if err != nil {
+		t.Fatalf("Run(remove execute) returned error: %v", err)
+	}
+	if !strings.Contains(output, "status=succeeded") {
+		t.Fatalf("execute output missing success status:\n%s", output)
+	}
+	if _, err := os.Stat(filepath.Join(root, "backend", "modules", "book")); !os.IsNotExist(err) {
+		t.Fatalf("expected module dir to be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "web", "src", "views", "book")); !os.IsNotExist(err) {
+		t.Fatalf("expected frontend view dir to be removed, got err=%v", err)
+	}
+	tree, err = menuSvc.Tree(context.Background())
+	if err != nil {
+		t.Fatalf("reload menu tree: %v", err)
+	}
+	if _, ok := mustFindMenuByPathOptional(t, tree, "/books"); ok {
+		t.Fatal("expected /books menu to be removed")
+	}
+	if _, ok := mustFindMenuByPathOptional(t, tree, "/books/list"); ok {
+		t.Fatal("expected /books/list menu to be removed")
+	}
+	for _, rule := range rules {
+		var count int64
+		if err := db.Table("casbin_rule").Where("ptype = ? AND v0 = ? AND v1 = ? AND v2 = ?", "p", rule.Subject, rule.Object, rule.Action).Count(&count).Error; err != nil {
+			t.Fatalf("count policy row %v: %v", rule, err)
+		}
+		if count != 0 {
+			t.Fatalf("expected policy row removed for %v, got %d", rule, count)
+		}
 	}
 }
 
@@ -425,6 +559,38 @@ func openCLIIntegrationSQLiteDB(t *testing.T, path string) *gorm.DB {
 	return db
 }
 
+func mustFindMenuByPath(t *testing.T, items []menuModel.Menu, path string) *menuModel.Menu {
+	t.Helper()
+	menu, ok := mustFindMenuByPathOptional(t, items, path)
+	if !ok {
+		t.Fatalf("expected menu %s to exist", path)
+	}
+	return menu
+}
+
+func mustFindMenuByPathOptional(t *testing.T, items []menuModel.Menu, path string) (*menuModel.Menu, bool) {
+	t.Helper()
+	for i := range items {
+		if menu, ok := findMenuNodeByPath(items[i], path); ok {
+			return menu, true
+		}
+	}
+	return nil, false
+}
+
+func findMenuNodeByPath(menu menuModel.Menu, path string) (*menuModel.Menu, bool) {
+	if menu.Path == path {
+		clone := menu.Clone()
+		return &clone, true
+	}
+	for i := range menu.Children {
+		if found, ok := findMenuNodeByPath(menu.Children[i], path); ok {
+			return found, true
+		}
+	}
+	return nil, false
+}
+
 func captureCLIStdout(t *testing.T, fn func() error) (string, error) {
 	t.Helper()
 	original := os.Stdout
@@ -456,6 +622,30 @@ func captureCLIStdout(t *testing.T, fn func() error) (string, error) {
 	default:
 	}
 	return output, runErr
+}
+
+func testTitleFromModule(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "Module"
+	}
+	parts := strings.Split(strings.ReplaceAll(value, "-", "_"), "_")
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, "")
+}
+
+func containsDeleteItemKind(items []deletionmodel.DeleteItem, kind deletionmodel.AssetKind) bool {
+	for _, item := range items {
+		if item.Kind == kind {
+			return true
+		}
+	}
+	return false
 }
 
 func createDeleteModuleFixture(t *testing.T, root, module string, includeManifest, includeUnknown bool) {
@@ -562,21 +752,6 @@ func mustMkdirAll(t *testing.T, path string) {
 	if err := os.MkdirAll(path, 0o755); err != nil {
 		t.Fatalf("mkdir %s: %v", path, err)
 	}
-}
-
-func testTitleFromModule(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "Module"
-	}
-	parts := strings.Split(strings.ReplaceAll(value, "-", "_"), "_")
-	for i, part := range parts {
-		if part == "" {
-			continue
-		}
-		parts[i] = strings.ToUpper(part[:1]) + part[1:]
-	}
-	return strings.Join(parts, "")
 }
 
 func testPluralize(value string) string {

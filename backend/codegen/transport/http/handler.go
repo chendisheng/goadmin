@@ -96,9 +96,19 @@ func NewHandler(deps Dependencies) *Handler {
 	if deps.MenuService != nil {
 		installer = installapp.NewService(installapp.Dependencies{MenuService: deps.MenuService})
 	}
-	deletionService := deletionapp.NewService(deletionapp.Dependencies{
+	var policyCleanup *deletionapp.PolicyCleanupService
+	if cleanup, err := deletionapp.NewPolicyCleanupService(deletionapp.PolicyCleanupDependencies{
 		ProjectRoot: deps.ProjectRoot,
-		PolicyStore: deps.PolicyStore,
+		Store:       deletionmodel.NormalizePolicyStoreKind(deps.PolicyStore),
+		DB:          deps.DB,
+	}); err == nil {
+		policyCleanup = cleanup
+	}
+	deletionService := deletionapp.NewService(deletionapp.Dependencies{
+		ProjectRoot:   deps.ProjectRoot,
+		PolicyStore:   deps.PolicyStore,
+		MenuService:   deps.MenuService,
+		PolicyCleanup: policyCleanup,
 	})
 	return &Handler{
 		projectRoot:     strings.TrimSpace(deps.ProjectRoot),
@@ -270,6 +280,28 @@ func (h *Handler) PreviewDelete(c coretransport.Context) {
 		return
 	}
 	c.JSON(stdhttp.StatusOK, response.Success(report, requestID(c)))
+}
+
+func (h *Handler) Delete(c coretransport.Context) {
+	if err := h.ensureProjectRoot(); err != nil {
+		h.writeError(c, err)
+		return
+	}
+	if h.deletion == nil {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "deletion execution is disabled"))
+		return
+	}
+	var req deletionmodel.DeleteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "invalid request body"))
+		return
+	}
+	result, err := h.deletion.Delete(req)
+	if err != nil {
+		h.writeError(c, err)
+		return
+	}
+	c.JSON(stdhttp.StatusOK, response.Success(result, requestID(c)))
 }
 
 func (h *Handler) generateDatabase(c coretransport.Context, dryRun bool) {

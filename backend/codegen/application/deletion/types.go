@@ -1,6 +1,7 @@
 package deletion
 
 import (
+	menuservice "goadmin/modules/menu/application/service"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -9,9 +10,11 @@ import (
 )
 
 type Dependencies struct {
-	ProjectRoot string
-	BackendRoot string
-	PolicyStore string
+	ProjectRoot   string
+	BackendRoot   string
+	PolicyStore   string
+	MenuService   *menuservice.Service
+	PolicyCleanup *PolicyCleanupService
 }
 
 type PreviewReport struct {

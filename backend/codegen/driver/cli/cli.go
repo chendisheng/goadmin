@@ -7,21 +7,39 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	legacygenerate "goadmin/cli/generate"
 	deletionapp "goadmin/codegen/application/deletion"
 	deletionmodel "goadmin/codegen/model/deletion"
 	"goadmin/codegen/planner"
 	"goadmin/codegen/schema"
+	menuservice "goadmin/modules/menu/application/service"
 )
 
+type Dependencies struct {
+	MenuService   *menuservice.Service
+	PolicyCleanup *deletionapp.PolicyCleanupService
+	PolicyStore   string
+}
+
 func Run(root string, args []string) error {
+	return RunWithDependencies(root, args, Dependencies{})
+}
+
+func RunWithDependencies(root string, args []string, deps Dependencies) error {
 	if len(args) == 0 {
 		return errors.New("generate requires a subcommand: module, crud, plugin, dsl, db, remove")
 	}
 	gen := legacygenerate.New(root)
 	plan := planner.New()
-	deleteService := deletionapp.NewService(deletionapp.Dependencies{ProjectRoot: root, BackendRoot: filepath.Join(root, "backend")})
+	deleteService := deletionapp.NewService(deletionapp.Dependencies{
+		ProjectRoot:   root,
+		BackendRoot:   filepath.Join(root, "backend"),
+		PolicyStore:   deps.PolicyStore,
+		MenuService:   deps.MenuService,
+		PolicyCleanup: deps.PolicyCleanup,
+	})
 
 	switch args[0] {
 	case "generate":
@@ -170,13 +188,48 @@ func runGenerateDSL(gen *legacygenerate.Generator, plan planner.Default, args []
 	return nil
 }
 
+func printDeletionResultReport(result deletionmodel.DeleteResult) error {
+	if _, err := fmt.Fprintln(os.Stdout, "deletion execution result"); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(os.Stdout, "module: %s status=%s started=%s finished=%s\n", result.Plan.Module, result.Status, result.StartedAt.Format(time.RFC3339), result.FinishedAt.Format(time.RFC3339)); err != nil {
+		return err
+	}
+	if len(result.Warnings) > 0 {
+		if _, err := fmt.Fprintln(os.Stdout, "warnings:"); err != nil {
+			return err
+		}
+		for _, warning := range result.Warnings {
+			if _, err := fmt.Fprintf(os.Stdout, "- %s\n", warning); err != nil {
+				return err
+			}
+		}
+	}
+	if len(result.Failures) > 0 {
+		if _, err := fmt.Fprintln(os.Stdout, "failures:"); err != nil {
+			return err
+		}
+		for _, failure := range result.Failures {
+			if _, err := fmt.Fprintf(os.Stdout, "- %s (%t)\n", failure.Reason, failure.Recoverable); err != nil {
+				return err
+			}
+		}
+	}
+	if _, err := fmt.Fprintf(os.Stdout, "summary: source=%d runtime=%d registry=%d policy=%d frontend=%d skipped=%d failed=%d total_deleted=%d elapsed_ms=%d\n", result.Summary.DeletedSourceFiles, result.Summary.DeletedRuntimeAssets, result.Summary.DeletedRegistryChanges, result.Summary.DeletedPolicyChanges, result.Summary.DeletedFrontendChanges, result.Summary.Skipped, result.Summary.Failed, result.Summary.TotalDeleted, result.Summary.ElapsedMillis); err != nil {
+		return err
+	}
+	return nil
+}
+
 func runRemove(root string, deletion *deletionapp.Service, args []string) error {
 	if len(args) == 0 {
-		return errors.New("remove requires a subcommand: preview")
+		return errors.New("remove requires a subcommand: preview, execute")
 	}
 	switch args[0] {
 	case "preview":
 		return runRemovePreview(root, deletion, args[1:])
+	case "execute":
+		return runRemoveExecute(root, deletion, args[1:])
 	default:
 		return fmt.Errorf("unknown remove subcommand %q", args[0])
 	}
@@ -217,6 +270,43 @@ func runRemovePreview(root string, deletion *deletionapp.Service, args []string)
 		return err
 	}
 	return printDeletionPreviewReport(report)
+}
+
+func runRemoveExecute(root string, deletion *deletionapp.Service, args []string) error {
+	fs := flag.NewFlagSet("remove execute", flag.ContinueOnError)
+	kind := fs.String("kind", "crud", "deletion kind (crud, module, plugin)")
+	force := fs.Bool("force", false, "confirm deletion scope in execution output")
+	withPolicy := fs.Bool("with-policy", true, "include policy cleanup candidates")
+	withRuntime := fs.Bool("with-runtime", true, "include runtime cleanup candidates")
+	withFrontend := fs.Bool("with-frontend", true, "include frontend cleanup candidates")
+	withRegistry := fs.Bool("with-registry", true, "include bootstrap registry cleanup candidates")
+	policyStore := fs.String("policy-store", "", "policy store backend (csv or db)")
+	fs.SetOutput(os.Stderr)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if fs.NArg() < 1 {
+		return errors.New("remove execute requires a module name")
+	}
+	if deletion == nil {
+		return errors.New("deletion execution service is required")
+	}
+	_ = root
+	result, err := deletion.Delete(deletionmodel.DeleteRequest{
+		Module:       fs.Arg(0),
+		Kind:         strings.TrimSpace(*kind),
+		DryRun:       false,
+		Force:        *force,
+		WithPolicy:   *withPolicy,
+		WithRuntime:  *withRuntime,
+		WithFrontend: *withFrontend,
+		WithRegistry: *withRegistry,
+		PolicyStore:  deletionmodel.NormalizePolicyStoreKind(*policyStore),
+	})
+	if err != nil {
+		return err
+	}
+	return printDeletionResultReport(result)
 }
 
 func generateFromSchemaResource(gen *legacygenerate.Generator, resource schema.Resource, cliForce bool) error {
@@ -649,6 +739,7 @@ Usage:
   goadmin-cli generate db preview --driver mysql --dsn "..." --database goadmin [--table books] [--schema public] [--generate_frontend] [--generate_policy]
   goadmin-cli generate db generate --driver mysql --dsn "..." --database goadmin [--table books] [--schema public] [--generate_frontend] [--generate_policy]
   goadmin-cli remove preview <module> [--kind crud] [--force] [--with-policy] [--with-runtime] [--with-frontend] [--with-registry] [--policy-store csv|db]
+  goadmin-cli remove execute <module> [--kind crud] [--force] [--with-policy] [--with-runtime] [--with-frontend] [--with-registry] [--policy-store csv|db]
 
 Examples:
   goadmin-cli generate module user
@@ -657,6 +748,7 @@ Examples:
   goadmin-cli generate dsl deploy/codegen/inventory.yaml
   goadmin-cli generate db preview --driver sqlite --dsn "file:./tmp/codegen.db?cache=shared&mode=rwc" --database codegen --table books --generate_frontend --generate_policy
   goadmin-cli remove preview book --with-policy --with-runtime --with-frontend --with-registry --policy-store db
+  goadmin-cli remove execute book --with-frontend --with-registry
 `))
 }
 

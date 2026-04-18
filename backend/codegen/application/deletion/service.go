@@ -1,25 +1,33 @@
 package deletion
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"go/format"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	deletionmodel "goadmin/codegen/model/deletion"
 	codegenpostprocess "goadmin/codegen/postprocess"
+	menuservice "goadmin/modules/menu/application/service"
+	menuModel "goadmin/modules/menu/domain/model"
 
 	"gopkg.in/yaml.v3"
 )
 
 type Service struct {
-	projectRoot string
-	backendRoot string
-	policyStore deletionmodel.PolicyStoreKind
+	projectRoot   string
+	backendRoot   string
+	policyStore   deletionmodel.PolicyStoreKind
+	menuService   *menuservice.Service
+	policyCleanup *PolicyCleanupService
 }
 
 func NewService(deps Dependencies) *Service {
@@ -32,9 +40,11 @@ func NewService(deps Dependencies) *Service {
 		backendRoot = resolveBackendRoot(projectRoot)
 	}
 	return &Service{
-		projectRoot: projectRoot,
-		backendRoot: backendRoot,
-		policyStore: normalizePolicyStoreSource(deps.PolicyStore),
+		projectRoot:   projectRoot,
+		backendRoot:   backendRoot,
+		policyStore:   normalizePolicyStoreSource(deps.PolicyStore),
+		menuService:   deps.MenuService,
+		policyCleanup: deps.PolicyCleanup,
 	}
 }
 
@@ -72,6 +82,64 @@ func (s *Service) Plan(req deletionmodel.DeleteRequest) (deletionmodel.DeletePla
 		return deletionmodel.DeletePlan{}, err
 	}
 	return report.Plan, nil
+}
+
+func (s *Service) Delete(req deletionmodel.DeleteRequest) (deletionmodel.DeleteResult, error) {
+	if s == nil {
+		return deletionmodel.DeleteResult{}, errors.New("deletion planner service is required")
+	}
+	normalized := req.Normalize()
+	if err := normalized.Validate(); err != nil {
+		return deletionmodel.DeleteResult{}, err
+	}
+	if strings.TrimSpace(normalized.Kind) == "" {
+		normalized.Kind = "crud"
+	}
+	report, err := s.Preview(normalized)
+	if err != nil {
+		return deletionmodel.DeleteResult{}, err
+	}
+	result := deletionmodel.DeleteResult{
+		Request:   report.Request,
+		Plan:      report.Plan,
+		Status:    deletionmodel.DeleteStatusPlanned,
+		StartedAt: nowUTC(),
+		Warnings:  append([]string(nil), report.Plan.Warnings...),
+	}
+	if normalized.DryRun {
+		result.Status = deletionmodel.DeleteStatusDryRun
+		result.FinishedAt = nowUTC()
+		result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, result.Deleted, result.Skipped, result.Failures)
+		return result, nil
+	}
+	if len(report.Plan.Conflicts) > 0 {
+		result.Status = deletionmodel.DeleteStatusFailed
+		result.FinishedAt = nowUTC()
+		result.Failures = append(result.Failures, deletionmodel.DeleteFailure{
+			Reason:      fmt.Sprintf("delete plan has %d blocking conflict(s)", len(report.Plan.Conflicts)),
+			Recoverable: false,
+		})
+		result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, result.Deleted, result.Skipped, result.Failures)
+		return result, fmt.Errorf("delete plan has %d blocking conflict(s)", len(report.Plan.Conflicts))
+	}
+	deleted, skipped, failures, warnings := s.executeDeletePlan(context.Background(), report.Plan)
+	result.Deleted = deleted
+	result.Skipped = skipped
+	result.Failures = failures
+	result.Warnings = append(result.Warnings, warnings...)
+	result.FinishedAt = nowUTC()
+	result.Summary = summarizeDeleteResult(result.StartedAt, result.FinishedAt, deleted, skipped, failures)
+	switch {
+	case len(failures) > 0 && len(deleted) > 0:
+		result.Status = deletionmodel.DeleteStatusPartial
+	case len(failures) > 0:
+		result.Status = deletionmodel.DeleteStatusFailed
+	case len(skipped) > 0:
+		result.Status = deletionmodel.DeleteStatusPartial
+	default:
+		result.Status = deletionmodel.DeleteStatusSucceeded
+	}
+	return result, nil
 }
 
 func (s *Service) resolveModule(moduleName string, req deletionmodel.DeleteRequest) (ModuleResolution, error) {
@@ -215,6 +283,10 @@ func (s *Service) buildPlan(req deletionmodel.DeleteRequest, resolution ModuleRe
 			Path:     displayPath(displayRoot, filepath.Join(moduleDir, "manifest.yaml")),
 		})
 	}
+	manifestIndex, indexErr := loadModuleManifestReferenceIndex(s.backendRoot)
+	if indexErr != nil {
+		plan.Warnings = append(plan.Warnings, fmt.Sprintf("manifest reference index unavailable: %v", indexErr))
+	}
 	ownership := deletionmodel.ModuleOwnership{
 		Module:           resolution.Module,
 		Kind:             resolution.Kind,
@@ -255,6 +327,15 @@ func (s *Service) buildPlan(req deletionmodel.DeleteRequest, resolution ModuleRe
 					"path":   path,
 				},
 			}
+			if manifestIndex != nil {
+				owners := manifestIndex.routeOwnersFor(method, path)
+				asset.Metadata["shared_with"] = append([]string(nil), owners...)
+				asset.Metadata["reference_count"] = len(owners)
+				if len(owners) > 1 {
+					asset.Origin = deletionmodel.AssetOriginShared
+					plan.Warnings = append(plan.Warnings, fmt.Sprintf("route policy %s %s is shared by modules: %s", method, path, strings.Join(owners, ", ")))
+				}
+			}
 			plan.RuntimeAssets = append(plan.RuntimeAssets, asset)
 			if resolution.PolicyStore.IsKnown() && req.WithPolicy {
 				selector := deletionmodel.PolicySelector{
@@ -265,6 +346,13 @@ func (s *Service) buildPlan(req deletionmodel.DeleteRequest, resolution ModuleRe
 					V0:        "admin",
 					V1:        path,
 					V2:        method,
+					Metadata: map[string]any{
+						"module":  resolution.Module,
+						"managed": managedByCodeGen,
+						"origin":  string(routeOrigin(managedByCodeGen)),
+						"path":    path,
+						"method":  method,
+					},
 				}
 				plan.PolicyChanges = append(plan.PolicyChanges, deletionmodel.DeleteItem{
 					Module:   resolution.Module,
@@ -285,7 +373,7 @@ func (s *Service) buildPlan(req deletionmodel.DeleteRequest, resolution ModuleRe
 			if path == "" {
 				continue
 			}
-			plan.RuntimeAssets = append(plan.RuntimeAssets, deletionmodel.DeleteItem{
+			asset := deletionmodel.DeleteItem{
 				Module:  resolution.Module,
 				Kind:    deletionmodel.AssetKindRuntimeMenu,
 				Path:    path,
@@ -297,28 +385,67 @@ func (s *Service) buildPlan(req deletionmodel.DeleteRequest, resolution ModuleRe
 					"parent_path": strings.TrimSpace(menu.ParentPath),
 					"component":   strings.TrimSpace(menu.Component),
 				},
-			})
+			}
+			if manifestIndex != nil {
+				owners := manifestIndex.menuOwnersFor(path)
+				asset.Metadata["shared_with"] = append([]string(nil), owners...)
+				asset.Metadata["reference_count"] = len(owners)
+				if len(owners) > 1 {
+					asset.Origin = deletionmodel.AssetOriginShared
+					plan.Warnings = append(plan.Warnings, fmt.Sprintf("menu %s is shared by modules: %s", path, strings.Join(owners, ", ")))
+				}
+			}
+			plan.RuntimeAssets = append(plan.RuntimeAssets, asset)
 		}
 	}
-	if req.WithRuntime && len(manifestToUse.Permissions) > 0 {
+	if req.WithPolicy && resolution.PolicyStore.IsKnown() && len(manifestToUse.Permissions) > 0 {
 		for _, permission := range manifestToUse.Permissions {
 			object := strings.TrimSpace(permission.Object)
 			action := strings.TrimSpace(permission.Action)
 			if object == "" && action == "" {
 				continue
 			}
-			plan.RuntimeAssets = append(plan.RuntimeAssets, deletionmodel.DeleteItem{
-				Module:  resolution.Module,
-				Kind:    deletionmodel.AssetKindRuntimePermission,
-				Ref:     strings.TrimSpace(object + ":" + action),
-				Origin:  routeOrigin(managedByCodeGen),
-				Managed: managedByCodeGen,
+			selector := deletionmodel.PolicySelector{
+				Store:     resolution.PolicyStore,
+				Module:    resolution.Module,
+				SourceRef: strings.TrimSpace(object + " " + action),
+				PType:     "p",
+				V0:        "admin",
+				V1:        object,
+				V2:        action,
+				Metadata: map[string]any{
+					"module":      resolution.Module,
+					"managed":     managedByCodeGen,
+					"origin":      string(routeOrigin(managedByCodeGen)),
+					"object":      object,
+					"action":      action,
+					"description": strings.TrimSpace(permission.Description),
+				},
+			}
+			asset := deletionmodel.DeleteItem{
+				Module:   resolution.Module,
+				Kind:     deletionmodel.AssetKindPolicyRule,
+				Store:    resolution.PolicyStore,
+				Ref:      strings.TrimSpace(object + ":" + action),
+				Selector: &selector,
+				Origin:   routeOrigin(managedByCodeGen),
+				Managed:  managedByCodeGen,
 				Metadata: map[string]any{
 					"object":      object,
 					"action":      action,
 					"description": strings.TrimSpace(permission.Description),
 				},
-			})
+			}
+			if manifestIndex != nil {
+				owners := manifestIndex.permissionOwnersFor(object, action)
+				asset.Metadata["shared_with"] = append([]string(nil), owners...)
+				asset.Metadata["reference_count"] = len(owners)
+				if len(owners) > 1 {
+					asset.Origin = deletionmodel.AssetOriginShared
+					plan.Warnings = append(plan.Warnings, fmt.Sprintf("permission policy %s:%s is shared by modules: %s", object, action, strings.Join(owners, ", ")))
+				}
+			}
+			plan.PolicyChanges = append(plan.PolicyChanges, asset)
 		}
 	}
 	if req.WithRegistry && resolution.PolicyStore.IsKnown() {
@@ -364,7 +491,8 @@ func (s *Service) buildPlan(req deletionmodel.DeleteRequest, resolution ModuleRe
 			V3:        item.Selector.V3,
 			V4:        item.Selector.V4,
 			V5:        item.Selector.V5,
-			Managed:   true,
+			Managed:   item.Managed,
+			Metadata:  cloneAnyMap(item.Selector.Metadata),
 		})
 	}
 	plan.Ownership.FrontendAssets = append([]deletionmodel.DeleteItem(nil), plan.FrontendChanges...)
@@ -731,4 +859,570 @@ func (s *Service) loadManifest(moduleDir string) (moduleManifest, error) {
 		return loadManifestFromPath(path)
 	}
 	return moduleManifest{}, os.ErrNotExist
+}
+
+func cloneAnyMap(src map[string]any) map[string]any {
+	if len(src) == 0 {
+		return nil
+	}
+	clone := make(map[string]any, len(src))
+	for key, value := range src {
+		clone[key] = value
+	}
+	return clone
+}
+
+func (s *Service) executeDeletePlan(ctx context.Context, plan deletionmodel.DeletePlan) ([]deletionmodel.DeleteItem, []deletionmodel.DeleteItem, []deletionmodel.DeleteFailure, []string) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	deleted := make([]deletionmodel.DeleteItem, 0, len(plan.SourceFiles)+len(plan.RegistryChanges)+len(plan.FrontendChanges))
+	skipped := make([]deletionmodel.DeleteItem, 0, len(plan.RuntimeAssets)+len(plan.PolicyChanges))
+	failures := make([]deletionmodel.DeleteFailure, 0, 4)
+	warnings := make([]string, 0, 4)
+
+	for _, item := range plan.SourceFiles {
+		if item.Kind == deletionmodel.AssetKindSourceDirectory {
+			if err := s.cleanupEmptyParents(s.resolveExecutionPath(item.Path), filepath.Join(s.backendRoot, "modules")); err != nil {
+				failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("cleanup source directory: %v", err), Recoverable: true})
+			}
+			deleted = append(deleted, item)
+			continue
+		}
+		if err := s.removeExecutionPath(item.Path); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				skipped = append(skipped, item)
+				warnings = append(warnings, fmt.Sprintf("source file already missing: %s", item.Path))
+				continue
+			}
+			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("delete source file: %v", err), Recoverable: true})
+			continue
+		}
+		deleted = append(deleted, item)
+		if err := s.cleanupGeneratedAncestors(item.Path); err != nil {
+			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("cleanup generated directories: %v", err), Recoverable: true})
+		}
+	}
+
+	if len(plan.RegistryChanges) > 0 {
+		if err := s.refreshBootstrapRegistry(); err != nil {
+			for _, item := range plan.RegistryChanges {
+				failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("refresh bootstrap registry: %v", err), Recoverable: true})
+			}
+		} else {
+			deleted = append(deleted, plan.RegistryChanges...)
+		}
+	}
+
+	for _, item := range plan.FrontendChanges {
+		if err := s.removeExecutionPath(item.Path); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				skipped = append(skipped, item)
+				warnings = append(warnings, fmt.Sprintf("frontend file already missing: %s", item.Path))
+				continue
+			}
+			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("delete frontend file: %v", err), Recoverable: true})
+			continue
+		}
+		deleted = append(deleted, item)
+		if err := s.cleanupGeneratedAncestors(item.Path); err != nil {
+			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("cleanup frontend directories: %v", err), Recoverable: true})
+		}
+	}
+
+	menuItems, runtimeItems := splitRuntimeDeleteItems(plan.RuntimeAssets)
+	if len(menuItems) > 0 {
+		if s.menuService == nil {
+			skipped = append(skipped, menuItems...)
+			warnings = append(warnings, fmt.Sprintf("menu cleanup service is not configured (%d item(s) skipped)", len(menuItems)))
+		} else {
+			deletedMenus, skippedMenus, menuFailures, menuWarnings := s.deleteRuntimeMenus(ctx, menuItems)
+			deleted = append(deleted, deletedMenus...)
+			skipped = append(skipped, skippedMenus...)
+			failures = append(failures, menuFailures...)
+			warnings = append(warnings, menuWarnings...)
+		}
+	}
+
+	policyItems := filterExecutablePolicyItems(plan.PolicyChanges)
+	if len(policyItems.executable) > 0 {
+		if s.policyCleanup == nil {
+			skipped = append(skipped, policyItems.executable...)
+			warnings = append(warnings, fmt.Sprintf("policy cleanup service is not configured (%d item(s) skipped)", len(policyItems.executable)))
+		} else {
+			cleanupReq := BuildPolicyCleanupRequest(deletionmodel.DeletePlan{
+				Module:        plan.Module,
+				PolicyStore:   plan.PolicyStore,
+				PolicyChanges: policyItems.executable,
+			})
+			cleanupResult, err := s.policyCleanup.Delete(ctx, cleanupReq)
+			if err != nil {
+				failures = append(failures, deletionmodel.DeleteFailure{
+					Reason:      fmt.Sprintf("policy cleanup: %v", err),
+					Recoverable: true,
+				})
+			}
+			deleted = append(deleted, policyCleanupDeletedItems(cleanupResult.Deleted)...)
+			skipped = append(skipped, policyCleanupSkippedItems(cleanupResult.Skipped)...)
+			if len(cleanupResult.Failures) > 0 {
+				failures = append(failures, cleanupResult.Failures...)
+			}
+			warnings = append(warnings, cleanupResult.Warnings...)
+		}
+	}
+	if len(policyItems.skipped) > 0 {
+		skipped = append(skipped, policyItems.skipped...)
+	}
+	if len(policyItems.deferred) > 0 {
+		skipped = append(skipped, policyItems.deferred...)
+		warnings = append(warnings, fmt.Sprintf("policy cleanup is deferred for %d shared item(s)", len(policyItems.deferred)))
+	}
+	if len(runtimeItems) > 0 {
+		logicalDeleted, logicalSkipped, logicalFailures, logicalWarnings := s.cleanupLogicalRuntimeAssets(plan, runtimeItems, deleted, failures)
+		deleted = append(deleted, logicalDeleted...)
+		skipped = append(skipped, logicalSkipped...)
+		failures = append(failures, logicalFailures...)
+		warnings = append(warnings, logicalWarnings...)
+	}
+	if err := s.validateMenuCleanup(ctx, deleted); err != nil {
+		failures = append(failures, deletionmodel.DeleteFailure{Reason: fmt.Sprintf("validate menu tree: %v", err), Recoverable: true})
+	}
+	return deleted, skipped, failures, warnings
+}
+
+type policyExecutionItems struct {
+	executable []deletionmodel.DeleteItem
+	skipped    []deletionmodel.DeleteItem
+	deferred   []deletionmodel.DeleteItem
+}
+
+func splitRuntimeDeleteItems(items []deletionmodel.DeleteItem) ([]deletionmodel.DeleteItem, []deletionmodel.DeleteItem) {
+	menus := make([]deletionmodel.DeleteItem, 0, len(items))
+	deferred := make([]deletionmodel.DeleteItem, 0)
+	for _, item := range items {
+		if item.Kind == deletionmodel.AssetKindRuntimeMenu {
+			menus = append(menus, item)
+			continue
+		}
+		deferred = append(deferred, item)
+	}
+	sort.SliceStable(menus, func(i, j int) bool {
+		iDepth := strings.Count(normalizeRuntimePath(menus[i].Path), "/")
+		jDepth := strings.Count(normalizeRuntimePath(menus[j].Path), "/")
+		if iDepth == jDepth {
+			return menus[i].Path > menus[j].Path
+		}
+		return iDepth > jDepth
+	})
+	return menus, deferred
+}
+
+func (s *Service) cleanupLogicalRuntimeAssets(plan deletionmodel.DeletePlan, items []deletionmodel.DeleteItem, deleted []deletionmodel.DeleteItem, failures []deletionmodel.DeleteFailure) ([]deletionmodel.DeleteItem, []deletionmodel.DeleteItem, []deletionmodel.DeleteFailure, []string) {
+	logicalDeleted := make([]deletionmodel.DeleteItem, 0, len(items))
+	logicalSkipped := make([]deletionmodel.DeleteItem, 0)
+	logicalFailures := make([]deletionmodel.DeleteFailure, 0)
+	warnings := make([]string, 0)
+
+	sourceReady := len(plan.SourceFiles) > 0 && !hasDeleteFailureKind(failures, deletionmodel.AssetKindSourceFile, deletionmodel.AssetKindSourceDirectory)
+	registryReady := len(plan.RegistryChanges) == 0 || (hasDeletedKind(deleted, deletionmodel.AssetKindRuntimeRegistry) && !hasDeleteFailureKind(failures, deletionmodel.AssetKindRuntimeRegistry))
+	frontendReady := len(plan.FrontendChanges) > 0 && !hasDeleteFailureKind(failures, deletionmodel.AssetKindFrontendFile)
+	policyReady := s != nil && s.policyCleanup != nil && len(plan.PolicyChanges) > 0 && hasDeletedKind(deleted, deletionmodel.AssetKindPolicyRule) && !hasDeleteFailureKind(failures, deletionmodel.AssetKindPolicyRule)
+
+	for _, item := range items {
+		if metadataInt(item.Metadata, "reference_count") > 1 || item.Origin == deletionmodel.AssetOriginShared {
+			logicalSkipped = append(logicalSkipped, item)
+			warnings = append(warnings, fmt.Sprintf("shared runtime asset %s is referenced by multiple modules; skipped", item.Path))
+			continue
+		}
+		switch item.Kind {
+		case deletionmodel.AssetKindRuntimeRoute:
+			if sourceReady && registryReady {
+				logicalDeleted = append(logicalDeleted, item)
+				continue
+			}
+			logicalSkipped = append(logicalSkipped, item)
+			warnings = append(warnings, fmt.Sprintf("route cleanup deferred until generated source files and registry refresh complete: %s", item.Path))
+		case deletionmodel.AssetKindRuntimePermission:
+			if policyReady {
+				logicalDeleted = append(logicalDeleted, item)
+				continue
+			}
+			logicalSkipped = append(logicalSkipped, item)
+			warnings = append(warnings, fmt.Sprintf("permission cleanup deferred until policy cleanup completes: %s", item.Path))
+		case deletionmodel.AssetKindRuntimePage:
+			if frontendReady {
+				logicalDeleted = append(logicalDeleted, item)
+				continue
+			}
+			logicalSkipped = append(logicalSkipped, item)
+			warnings = append(warnings, fmt.Sprintf("page cleanup deferred until frontend cleanup completes: %s", item.Path))
+		default:
+			logicalSkipped = append(logicalSkipped, item)
+			warnings = append(warnings, fmt.Sprintf("unsupported runtime cleanup asset kind %s for %s", item.Kind, item.Path))
+		}
+	}
+
+	return logicalDeleted, logicalSkipped, logicalFailures, warnings
+}
+
+func hasDeletedKind(items []deletionmodel.DeleteItem, kinds ...deletionmodel.AssetKind) bool {
+	if len(items) == 0 || len(kinds) == 0 {
+		return false
+	}
+	wanted := make(map[deletionmodel.AssetKind]struct{}, len(kinds))
+	for _, kind := range kinds {
+		w := kind
+		wanted[w] = struct{}{}
+	}
+	for _, item := range items {
+		if _, ok := wanted[item.Kind]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func hasDeleteFailureKind(failures []deletionmodel.DeleteFailure, kinds ...deletionmodel.AssetKind) bool {
+	if len(failures) == 0 || len(kinds) == 0 {
+		return false
+	}
+	wanted := make(map[deletionmodel.AssetKind]struct{}, len(kinds))
+	for _, kind := range kinds {
+		w := kind
+		wanted[w] = struct{}{}
+	}
+	for _, failure := range failures {
+		if _, ok := wanted[failure.Item.Kind]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func filterExecutablePolicyItems(items []deletionmodel.DeleteItem) policyExecutionItems {
+	result := policyExecutionItems{executable: make([]deletionmodel.DeleteItem, 0, len(items))}
+	for _, item := range items {
+		count := metadataInt(item.Metadata, "reference_count")
+		if count > 1 || item.Origin == deletionmodel.AssetOriginShared {
+			result.deferred = append(result.deferred, item)
+			continue
+		}
+		if item.Selector == nil {
+			result.skipped = append(result.skipped, item)
+			continue
+		}
+		result.executable = append(result.executable, item)
+	}
+	return result
+}
+
+func (s *Service) deleteRuntimeMenus(ctx context.Context, items []deletionmodel.DeleteItem) ([]deletionmodel.DeleteItem, []deletionmodel.DeleteItem, []deletionmodel.DeleteFailure, []string) {
+	deleted := make([]deletionmodel.DeleteItem, 0, len(items))
+	skipped := make([]deletionmodel.DeleteItem, 0)
+	failures := make([]deletionmodel.DeleteFailure, 0)
+	warnings := make([]string, 0)
+	tree, err := s.menuService.Tree(ctx)
+	if err != nil {
+		for _, item := range items {
+			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("load menu tree: %v", err), Recoverable: true})
+		}
+		return deleted, skipped, failures, warnings
+	}
+	menusByPath := flattenMenusByPath(tree)
+	for _, item := range items {
+		if metadataInt(item.Metadata, "reference_count") > 1 || item.Origin == deletionmodel.AssetOriginShared {
+			skipped = append(skipped, item)
+			warnings = append(warnings, fmt.Sprintf("shared menu %s is referenced by multiple modules; skipped", item.Path))
+			continue
+		}
+		menu := menusByPath[normalizeRuntimePath(item.Path)]
+		if menu == nil {
+			skipped = append(skipped, item)
+			warnings = append(warnings, fmt.Sprintf("menu already missing: %s", item.Path))
+			continue
+		}
+		if err := s.menuService.Delete(ctx, menu.ID); err != nil {
+			failures = append(failures, deletionmodel.DeleteFailure{Item: item, Reason: fmt.Sprintf("delete menu %s: %v", item.Path, err), Recoverable: true})
+			continue
+		}
+		deleted = append(deleted, item)
+		delete(menusByPath, normalizeRuntimePath(item.Path))
+	}
+	return deleted, skipped, failures, warnings
+}
+
+func (s *Service) validateMenuCleanup(ctx context.Context, deleted []deletionmodel.DeleteItem) error {
+	if s == nil || s.menuService == nil || len(deleted) == 0 {
+		return nil
+	}
+	tree, err := s.menuService.Tree(ctx)
+	if err != nil {
+		return err
+	}
+	menusByPath := flattenMenusByPath(tree)
+	for _, item := range deleted {
+		if item.Kind != deletionmodel.AssetKindRuntimeMenu {
+			continue
+		}
+		if _, ok := menusByPath[normalizeRuntimePath(item.Path)]; ok {
+			return fmt.Errorf("menu %s still exists after deletion", item.Path)
+		}
+	}
+	return nil
+}
+
+func flattenMenusByPath(items []menuModel.Menu) map[string]*menuModel.Menu {
+	result := make(map[string]*menuModel.Menu)
+	var walk func([]menuModel.Menu)
+	walk = func(list []menuModel.Menu) {
+		for _, item := range list {
+			clone := item.Clone()
+			result[normalizeRuntimePath(clone.Path)] = &clone
+			if len(clone.Children) > 0 {
+				walk(clone.Children)
+			}
+		}
+	}
+	walk(items)
+	return result
+}
+
+func policyCleanupDeletedItems(items []PolicyCleanupItem) []deletionmodel.DeleteItem {
+	result := make([]deletionmodel.DeleteItem, 0, len(items))
+	for _, item := range items {
+		if item.Decision != "delete" {
+			continue
+		}
+		result = append(result, policyCleanupItemToDeleteItem(item))
+	}
+	return result
+}
+
+func policyCleanupSkippedItems(items []PolicyCleanupItem) []deletionmodel.DeleteItem {
+	result := make([]deletionmodel.DeleteItem, 0, len(items))
+	for _, item := range items {
+		if item.Decision == "delete" {
+			continue
+		}
+		result = append(result, policyCleanupItemToDeleteItem(item))
+	}
+	return result
+}
+
+func policyCleanupItemToDeleteItem(item PolicyCleanupItem) deletionmodel.DeleteItem {
+	converted := deletionmodel.DeleteItem{
+		Module:   item.Selector.Module,
+		Kind:     deletionmodel.AssetKindPolicyRule,
+		Store:    item.Selector.Store,
+		Ref:      strings.TrimSpace(item.Rule.SourceRef),
+		Selector: clonePolicySelector(item.Selector),
+		Origin:   deletionmodel.AssetOriginGenerated,
+		Managed:  selectorManaged(item.Selector),
+		Metadata: cloneAnyMap(item.Selector.Metadata),
+	}
+	if converted.Metadata == nil {
+		converted.Metadata = map[string]any{}
+	}
+	converted.Metadata["reason"] = item.Reason
+	converted.Metadata["decision"] = item.Decision
+	converted.Metadata["match_count"] = item.MatchCount
+	return converted
+}
+
+func clonePolicySelector(selector deletionmodel.PolicySelector) *deletionmodel.PolicySelector {
+	copySelector := selector
+	copySelector.Metadata = cloneAnyMap(selector.Metadata)
+	return &copySelector
+}
+
+func metadataInt(metadata map[string]any, key string) int {
+	if len(metadata) == 0 {
+		return 0
+	}
+	value, ok := metadata[key]
+	if !ok {
+		return 0
+	}
+	switch typed := value.(type) {
+	case int:
+		return typed
+	case int64:
+		return int(typed)
+	case float64:
+		return int(typed)
+	case string:
+		if n, err := strconv.Atoi(strings.TrimSpace(typed)); err == nil {
+			return n
+		}
+	}
+	return 0
+}
+
+func summarizeDeleteResult(startedAt, finishedAt time.Time, deleted, skipped []deletionmodel.DeleteItem, failures []deletionmodel.DeleteFailure) deletionmodel.DeleteResultSummary {
+	summary := deletionmodel.DeleteResultSummary{
+		Skipped: len(skipped),
+		Failed:  len(failures),
+	}
+	for _, item := range deleted {
+		switch item.Kind {
+		case deletionmodel.AssetKindSourceFile, deletionmodel.AssetKindSourceDirectory:
+			summary.DeletedSourceFiles++
+		case deletionmodel.AssetKindRuntimeRegistry:
+			summary.DeletedRegistryChanges++
+		case deletionmodel.AssetKindPolicyRule:
+			summary.DeletedPolicyChanges++
+		case deletionmodel.AssetKindFrontendFile:
+			summary.DeletedFrontendChanges++
+		case deletionmodel.AssetKindRuntimeRoute, deletionmodel.AssetKindRuntimeMenu, deletionmodel.AssetKindRuntimePermission, deletionmodel.AssetKindRuntimePage:
+			summary.DeletedRuntimeAssets++
+		}
+	}
+	summary.TotalDeleted = summary.DeletedSourceFiles + summary.DeletedRuntimeAssets + summary.DeletedRegistryChanges + summary.DeletedPolicyChanges + summary.DeletedFrontendChanges
+	if !startedAt.IsZero() && !finishedAt.IsZero() && finishedAt.After(startedAt) {
+		summary.ElapsedMillis = finishedAt.Sub(startedAt).Milliseconds()
+	}
+	return summary
+}
+
+func (s *Service) removeExecutionPath(displayPathValue string) error {
+	absolute := s.resolveExecutionPath(displayPathValue)
+	if absolute == "" {
+		return os.ErrNotExist
+	}
+	if err := os.Remove(absolute); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) cleanupGeneratedAncestors(displayPathValue string) error {
+	absolute := s.resolveExecutionPath(displayPathValue)
+	if absolute == "" {
+		return nil
+	}
+	stopAt := filepath.Join(s.backendRoot, "modules")
+	if strings.HasPrefix(filepath.ToSlash(absolute), filepath.ToSlash(filepath.Join(s.displayRoot(), "web", "src", "views"))) {
+		stopAt = filepath.Join(s.displayRoot(), "web", "src", "views")
+	} else if strings.HasPrefix(filepath.ToSlash(absolute), filepath.ToSlash(filepath.Join(s.displayRoot(), "web", "src", "router", "modules"))) {
+		stopAt = filepath.Join(s.displayRoot(), "web", "src", "router", "modules")
+	} else if strings.HasPrefix(filepath.ToSlash(absolute), filepath.ToSlash(filepath.Join(s.displayRoot(), "web", "src", "api"))) {
+		stopAt = filepath.Join(s.displayRoot(), "web", "src", "api")
+	}
+	return s.cleanupEmptyParents(filepath.Dir(absolute), stopAt)
+}
+
+func (s *Service) cleanupEmptyParents(start, stopAt string) error {
+	current := filepath.Clean(start)
+	stopAt = filepath.Clean(stopAt)
+	for {
+		if current == "" || current == "." {
+			return nil
+		}
+		if current == stopAt {
+			return nil
+		}
+		entries, err := os.ReadDir(current)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		if len(entries) > 0 {
+			return nil
+		}
+		if err := os.Remove(current); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return nil
+		}
+		current = parent
+	}
+}
+
+func (s *Service) resolveExecutionPath(displayPathValue string) string {
+	target := filepath.Clean(strings.TrimSpace(displayPathValue))
+	if target == "" {
+		return ""
+	}
+	if filepath.IsAbs(target) {
+		return target
+	}
+	root := s.displayRoot()
+	if strings.TrimSpace(root) == "" {
+		return target
+	}
+	return filepath.Join(root, target)
+}
+
+func (s *Service) refreshBootstrapRegistry() error {
+	if s == nil {
+		return errors.New("deletion planner service is required")
+	}
+	modulesDir := filepath.Join(s.backendRoot, "modules")
+	entries, err := os.ReadDir(modulesDir)
+	if err != nil {
+		return fmt.Errorf("scan modules dir: %w", err)
+	}
+	moduleNames := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		bootstrapPath := filepath.Join(modulesDir, name, "bootstrap.go")
+		content, err := os.ReadFile(bootstrapPath)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return fmt.Errorf("read %s: %w", bootstrapPath, err)
+		}
+		if codegenpostprocess.HasGeneratedMarkers(bootstrapPath, content) {
+			moduleNames = append(moduleNames, name)
+		}
+	}
+	sort.Strings(moduleNames)
+	var builder strings.Builder
+	builder.WriteString("package bootstrap\n\n")
+	if len(moduleNames) > 0 {
+		builder.WriteString("import (\n")
+		for _, name := range moduleNames {
+			builder.WriteString("\t\"")
+			builder.WriteString("goadmin/modules/")
+			builder.WriteString(name)
+			builder.WriteString("\"\n")
+		}
+		builder.WriteString(")\n\n")
+	}
+	builder.WriteString("func generatedModules() []Module {\n")
+	if len(moduleNames) == 0 {
+		builder.WriteString("\treturn nil\n")
+	} else {
+		builder.WriteString("\treturn []Module{\n")
+		for _, name := range moduleNames {
+			builder.WriteString("\t\t")
+			builder.WriteString(name)
+			builder.WriteString(".NewBootstrap(),\n")
+		}
+		builder.WriteString("\t}\n")
+	}
+	builder.WriteString("}\n")
+	formatted, err := format.Source([]byte(builder.String()))
+	if err != nil {
+		return fmt.Errorf("format generated bootstrap registry: %w\nsource:\n%s", err, builder.String())
+	}
+	registryPath := filepath.Join(s.backendRoot, "core", "bootstrap", "modules_gen.go")
+	if err := os.MkdirAll(filepath.Dir(registryPath), 0o755); err != nil {
+		return fmt.Errorf("create registry directory: %w", err)
+	}
+	if err := os.WriteFile(registryPath, formatted, 0o644); err != nil {
+		return fmt.Errorf("write registry file: %w", err)
+	}
+	return nil
 }

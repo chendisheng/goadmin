@@ -78,7 +78,7 @@ func NewPermissionService(cfg Config) (*PermissionService, error) {
 		if err := seedDBModel(store, modelPath); err != nil {
 			return nil, err
 		}
-		if err := seedDBPolicies(store, policyPath); err != nil {
+		if err := syncDBPolicies(store, policyPath); err != nil {
 			return nil, err
 		}
 		modelContent, err := store.LoadModel(context.Background(), filepath.Base(modelPath))
@@ -138,29 +138,90 @@ func seedDBModel(store *casbinadapter.GormCasbinStore, modelPath string) error {
 	return nil
 }
 
-func seedDBPolicies(store casbinadapter.GormPolicyStore, policyPath string) error {
+func syncDBPolicies(store casbinadapter.GormPolicyStore, policyPath string) error {
 	if store == nil {
 		return fmt.Errorf("casbin policy store is required")
-	}
-	rules, err := store.LoadPolicies(context.Background())
-	if err != nil {
-		return err
-	}
-	if len(rules) > 0 {
-		return nil
 	}
 	fileAdapter, err := casbinadapter.NewFileAdapter(policyPath)
 	if err != nil {
 		return err
 	}
-	rules, err = fileAdapter.LoadRules()
+	fileRules, err := fileAdapter.LoadRules()
 	if err != nil {
 		return err
 	}
-	if len(rules) == 0 {
+	existingRules, err := store.LoadPolicies(context.Background())
+	if err != nil {
+		return err
+	}
+	mergedRules := mergePolicyRules(fileRules, existingRules)
+	if samePolicyRules(existingRules, mergedRules) {
 		return nil
 	}
-	return store.SavePolicies(context.Background(), rules)
+	return store.SavePolicies(context.Background(), mergedRules)
+}
+
+func mergePolicyRules(primary, fallback []casbinadapter.Rule) []casbinadapter.Rule {
+	seen := make(map[string]struct{}, len(primary)+len(fallback))
+	merged := make([]casbinadapter.Rule, 0, len(primary)+len(fallback))
+	appendRule := func(rule casbinadapter.Rule) {
+		key := policyRuleKey(rule)
+		if key == "" {
+			return
+		}
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		merged = append(merged, rule)
+	}
+	for _, rule := range primary {
+		appendRule(rule)
+	}
+	for _, rule := range fallback {
+		appendRule(rule)
+	}
+	return merged
+}
+
+func samePolicyRules(left, right []casbinadapter.Rule) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	counts := make(map[string]int, len(left))
+	for _, rule := range left {
+		key := policyRuleKey(rule)
+		if key == "" {
+			return false
+		}
+		counts[key]++
+	}
+	for _, rule := range right {
+		key := policyRuleKey(rule)
+		if key == "" {
+			return false
+		}
+		if counts[key] == 0 {
+			return false
+		}
+		counts[key]--
+	}
+	for _, remaining := range counts {
+		if remaining != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func policyRuleKey(rule casbinadapter.Rule) string {
+	subject := strings.TrimSpace(rule.Subject)
+	object := strings.TrimSpace(rule.Object)
+	action := strings.TrimSpace(rule.Action)
+	if subject == "" || object == "" || action == "" {
+		return ""
+	}
+	return subject + "\x1f" + object + "\x1f" + action
 }
 
 func writeTempModel(content string) (string, error) {

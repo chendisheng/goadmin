@@ -1361,6 +1361,34 @@ async function handleGenerateAndInstall() {
   }
 }
 
+async function handleDeletePreview() {
+  const validationError = validateDeleteInputs();
+  if (validationError) {
+    ElMessage.warning(validationError);
+    return;
+  }
+  previewLoading.value = true;
+  operationStatus.value = '';
+  lastRunSuccess.value = false;
+  try {
+    const request = buildDeleteRequest(true);
+    const report = await previewCodegenDelete(request);
+    deletePreviewReport.value = report;
+    deleteRequestCache.value = report.request ?? request;
+    deleteResult.value = null;
+    lastRunSuccess.value = true;
+    operationStatus.value = deletePlanStatusMessage.value;
+    ElMessage.success('删除预览完成');
+  } catch (error) {
+    deletePreviewReport.value = null;
+    deleteRequestCache.value = null;
+    deleteResult.value = null;
+    ElMessage.error(error instanceof Error ? error.message : '删除预览失败');
+  } finally {
+    previewLoading.value = false;
+  }
+}
+
 async function handleGenerateDownload() {
   const isDbMode = activeMode.value === 'db';
   if (isDbMode) {

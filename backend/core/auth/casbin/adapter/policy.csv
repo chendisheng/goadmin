@@ -32,6 +32,8 @@ p, admin, /api/v1/codegen/db/generate, POST
 p, admin, /api/v1/codegen/db/generate-download, POST
 p, admin, /api/v1/codegen/install/manifest, POST
 p, admin, /api/v1/codegen/artifacts/:taskID, GET
+p, admin, /api/v1/codegen/delete/preview, POST
+p, admin, /api/v1/codegen/delete/execute, POST
 p, admin, /api/v1/books, GET
 p, admin, /api/v1/books/:id, GET
 p, admin, /api/v1/books, POST

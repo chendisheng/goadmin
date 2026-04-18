@@ -9,9 +9,11 @@ import (
 	"testing"
 	"time"
 
+	deletionapp "goadmin/codegen/application/deletion"
 	downloadapp "goadmin/codegen/application/download"
 	installapp "goadmin/codegen/application/install"
 	cli "goadmin/codegen/driver/cli"
+	deletionmodel "goadmin/codegen/model/deletion"
 	"goadmin/core/response"
 	menuservice "goadmin/modules/menu/application/service"
 	menumodel "goadmin/modules/menu/domain/model"
@@ -32,6 +34,185 @@ type fakeContext struct {
 	attachmentName string
 	headers        map[string]string
 	values         map[string]any
+}
+
+func TestHandlerPreviewDelete(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	createDeleteModuleFixture(t, root, "book", true, true)
+	handler := NewHandler(Dependencies{ProjectRoot: root, PolicyStore: "db"})
+	ctx := &fakeContext{payload: deletionmodel.DeleteRequest{
+		Module:       "book",
+		Kind:         "crud",
+		DryRun:       true,
+		WithPolicy:   true,
+		WithRuntime:  true,
+		WithFrontend: true,
+		WithRegistry: true,
+	}}
+
+	handler.PreviewDelete(ctx)
+	if ctx.status != 200 {
+		t.Fatalf("PreviewDelete status = %d, want 200, body=%#v", ctx.status, ctx.jsonBody)
+	}
+	envelope, ok := ctx.jsonBody.(response.Envelope)
+	if !ok {
+		t.Fatalf("PreviewDelete body type = %T, want response.Envelope", ctx.jsonBody)
+	}
+	report, ok := envelope.Data.(deletionapp.PreviewReport)
+	if !ok {
+		t.Fatalf("PreviewDelete data type = %T, want deletion.PreviewReport", envelope.Data)
+	}
+	if report.Plan.Module != "book" {
+		t.Fatalf("expected preview module book, got %q", report.Plan.Module)
+	}
+	if len(report.Plan.SourceFiles) == 0 {
+		t.Fatal("expected source file candidates")
+	}
+	if len(report.Plan.RegistryChanges) == 0 {
+		t.Fatal("expected registry candidates")
+	}
+	if len(report.Plan.PolicyChanges) == 0 {
+		t.Fatal("expected policy candidates")
+	}
+	if len(report.Plan.FrontendChanges) == 0 {
+		t.Fatal("expected frontend candidates")
+	}
+}
+
+func createDeleteModuleFixture(t *testing.T, root, module string, includeManifest, includeUnknown bool) {
+	t.Helper()
+	moduleDir := filepath.Join(root, "backend", "modules", module)
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "application", "command"))
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "application", "query"))
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "application", "service"))
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "domain", "model"))
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "domain", "repository"))
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "infrastructure", "repo"))
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "transport", "http", "handler"))
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "transport", "http", "request"))
+	mustMkdirAllHTTP(t, filepath.Join(moduleDir, "transport", "http", "response"))
+	mustMkdirAllHTTP(t, filepath.Join(root, "backend", "core", "bootstrap"))
+	mustMkdirAllHTTP(t, filepath.Join(root, "web", "src", "api"))
+	mustMkdirAllHTTP(t, filepath.Join(root, "web", "src", "router", "modules"))
+	mustMkdirAllHTTP(t, filepath.Join(root, "web", "src", "views", module))
+
+	moduleTitle := testTitleFromModuleHTTP(module)
+	modulePlural := testPluralizeHTTP(module)
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "module.go"), "package "+module+"\n\nconst Name = \""+module+"\"\nconst ManifestPath = \"modules/"+module+"/manifest.yaml\"\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "bootstrap.go"), "// codegen:begin\npackage "+module+"\n\nfunc init() {}\n// codegen:end\n")
+	if includeManifest {
+		writeFixtureHTTP(t, filepath.Join(moduleDir, "manifest.yaml"), strings.TrimSpace(`
+# codegen:begin
+name: `+module+`
+version: v1
+kind: crud
+module: `+module+`
+routes:
+  - method: GET
+    path: /api/v1/`+modulePlural+`
+  - method: POST
+    path: /api/v1/`+modulePlural+`
+  - method: PUT
+    path: /api/v1/`+modulePlural+`/:id
+  - method: DELETE
+    path: /api/v1/`+modulePlural+`/:id
+menus:
+  - name: `+moduleTitle+`s
+    path: /`+modulePlural+`
+    component: Layout
+    permission: `+module+`:view
+    type: directory
+    enabled: true
+    visible: true
+  - name: List
+    path: /`+modulePlural+`/list
+    parent_path: /`+modulePlural+`
+    component: view/`+module+`/index
+    permission: `+module+`:list
+    type: menu
+    enabled: true
+    visible: true
+permissions:
+  - object: `+module+`
+    action: list
+  - object: `+module+`
+    action: view
+  - object: `+module+`
+    action: create
+  - object: `+module+`
+    action: update
+  - object: `+module+`
+    action: delete
+# codegen:end
+`))
+	}
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "schema.sql"), "-- Database: goadmin\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "application", "command", module+".go"), "package command\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "application", "query", module+".go"), "package query\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "application", "service", "service.go"), "package service\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "domain", "model", module+".go"), "package model\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "domain", "repository", "repository.go"), "package repository\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "infrastructure", "repo", "gorm.go"), "package repo\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "transport", "http", "handler", "handler.go"), "package handler\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "transport", "http", "request", module+".go"), "package request\n")
+	writeFixtureHTTP(t, filepath.Join(moduleDir, "transport", "http", "response", module+".go"), "package response\n")
+	if includeUnknown {
+		writeFixtureHTTP(t, filepath.Join(moduleDir, "notes.txt"), "manual note")
+	}
+	writeFixtureHTTP(t, filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go"), "package bootstrap\n\nimport (\n\t\"goadmin/modules/"+module+"\"\n)\n\nfunc generatedModules() []Module {\n\treturn []Module{\n\t\t"+module+".NewBootstrap(),\n\t}\n}\n")
+	writeFixtureHTTP(t, filepath.Join(root, "backend", "core", "bootstrap", "modules_builtin.go"), "package bootstrap\n\nimport ()\n\nfunc builtinModules() []Module {\n\treturn []Module{}\n}\n")
+	writeFixtureHTTP(t, filepath.Join(root, "web", "src", "api", module+".ts"), "export {}\n")
+	writeFixtureHTTP(t, filepath.Join(root, "web", "src", "router", "modules", module+".ts"), "export {}\n")
+	writeFixtureHTTP(t, filepath.Join(root, "web", "src", "views", module, "index.vue"), "<template></template>\n")
+}
+
+func writeFixtureHTTP(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+func mustMkdirAllHTTP(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+}
+
+func testTitleFromModuleHTTP(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "Module"
+	}
+	parts := strings.Split(strings.ReplaceAll(value, "-", "_"), "_")
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, "")
+}
+
+func testPluralizeHTTP(value string) string {
+	value = strings.TrimSpace(strings.ReplaceAll(value, "-", "_"))
+	if value == "" {
+		return ""
+	}
+	switch {
+	case strings.HasSuffix(value, "ch"), strings.HasSuffix(value, "sh"), strings.HasSuffix(value, "s"), strings.HasSuffix(value, "x"), strings.HasSuffix(value, "z"):
+		return value + "es"
+	case strings.HasSuffix(value, "y") && len(value) > 1:
+		return value[:len(value)-1] + "ies"
+	default:
+		return value + "s"
+	}
 }
 
 func (c *fakeContext) RequestContext() context.Context {

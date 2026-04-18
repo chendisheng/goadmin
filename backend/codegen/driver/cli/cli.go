@@ -5,23 +5,29 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	legacygenerate "goadmin/cli/generate"
+	deletionapp "goadmin/codegen/application/deletion"
+	deletionmodel "goadmin/codegen/model/deletion"
 	"goadmin/codegen/planner"
 	"goadmin/codegen/schema"
 )
 
 func Run(root string, args []string) error {
 	if len(args) == 0 {
-		return errors.New("generate requires a subcommand: module, crud, plugin, dsl, db")
+		return errors.New("generate requires a subcommand: module, crud, plugin, dsl, db, remove")
 	}
 	gen := legacygenerate.New(root)
 	plan := planner.New()
+	deleteService := deletionapp.NewService(deletionapp.Dependencies{ProjectRoot: root, BackendRoot: filepath.Join(root, "backend")})
 
 	switch args[0] {
 	case "generate":
 		return runGenerate(root, gen, plan, args[1:])
+	case "remove":
+		return runRemove(root, deleteService, args[1:])
 	case "help", "-h", "--help":
 		usage()
 		return nil
@@ -162,6 +168,55 @@ func runGenerateDSL(gen *legacygenerate.Generator, plan planner.Default, args []
 		return err
 	}
 	return nil
+}
+
+func runRemove(root string, deletion *deletionapp.Service, args []string) error {
+	if len(args) == 0 {
+		return errors.New("remove requires a subcommand: preview")
+	}
+	switch args[0] {
+	case "preview":
+		return runRemovePreview(root, deletion, args[1:])
+	default:
+		return fmt.Errorf("unknown remove subcommand %q", args[0])
+	}
+}
+
+func runRemovePreview(root string, deletion *deletionapp.Service, args []string) error {
+	fs := flag.NewFlagSet("remove preview", flag.ContinueOnError)
+	kind := fs.String("kind", "crud", "deletion kind (crud, module, plugin)")
+	force := fs.Bool("force", false, "confirm deletion scope in preview output")
+	withPolicy := fs.Bool("with-policy", true, "include policy cleanup candidates")
+	withRuntime := fs.Bool("with-runtime", true, "include runtime cleanup candidates")
+	withFrontend := fs.Bool("with-frontend", true, "include frontend cleanup candidates")
+	withRegistry := fs.Bool("with-registry", true, "include bootstrap registry cleanup candidates")
+	policyStore := fs.String("policy-store", "", "policy store backend (csv or db)")
+	fs.SetOutput(os.Stderr)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if fs.NArg() < 1 {
+		return errors.New("remove preview requires a module name")
+	}
+	if deletion == nil {
+		return errors.New("deletion preview service is required")
+	}
+	_ = root
+	report, err := deletion.Preview(deletionmodel.DeleteRequest{
+		Module:       fs.Arg(0),
+		Kind:         strings.TrimSpace(*kind),
+		DryRun:       true,
+		Force:        *force,
+		WithPolicy:   *withPolicy,
+		WithRuntime:  *withRuntime,
+		WithFrontend: *withFrontend,
+		WithRegistry: *withRegistry,
+		PolicyStore:  deletionmodel.NormalizePolicyStoreKind(*policyStore),
+	})
+	if err != nil {
+		return err
+	}
+	return printDeletionPreviewReport(report)
 }
 
 func generateFromSchemaResource(gen *legacygenerate.Generator, resource schema.Resource, cliForce bool) error {
@@ -593,6 +648,7 @@ Usage:
   goadmin-cli generate dsl <dsl.yaml> [--force]
   goadmin-cli generate db preview --driver mysql --dsn "..." --database goadmin [--table books] [--schema public] [--generate_frontend] [--generate_policy]
   goadmin-cli generate db generate --driver mysql --dsn "..." --database goadmin [--table books] [--schema public] [--generate_frontend] [--generate_policy]
+  goadmin-cli remove preview <module> [--kind crud] [--force] [--with-policy] [--with-runtime] [--with-frontend] [--with-registry] [--policy-store csv|db]
 
 Examples:
   goadmin-cli generate module user
@@ -600,7 +656,88 @@ Examples:
   goadmin-cli generate plugin demo
   goadmin-cli generate dsl deploy/codegen/inventory.yaml
   goadmin-cli generate db preview --driver sqlite --dsn "file:./tmp/codegen.db?cache=shared&mode=rwc" --database codegen --table books --generate_frontend --generate_policy
+  goadmin-cli remove preview book --with-policy --with-runtime --with-frontend --with-registry --policy-store db
 `))
+}
+
+func printDeletionPreviewReport(report deletionapp.PreviewReport) error {
+	if _, err := fmt.Fprintln(os.Stdout, "deletion preview report"); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(os.Stdout, "module: %s kind=%s dry-run=%t force=%t policy-store=%s\n", report.Plan.Module, report.Resolution.Kind, report.Plan.DryRun, report.Plan.Force, report.Plan.PolicyStore); err != nil {
+		return err
+	}
+	if report.Resolution.ManifestPath != "" {
+		if _, err := fmt.Fprintf(os.Stdout, "manifest: %s\n", report.Resolution.ManifestPath); err != nil {
+			return err
+		}
+	}
+	if len(report.Plan.Warnings) > 0 {
+		if _, err := fmt.Fprintln(os.Stdout, "warnings:"); err != nil {
+			return err
+		}
+		for _, warning := range report.Plan.Warnings {
+			if _, err := fmt.Fprintf(os.Stdout, "- %s\n", warning); err != nil {
+				return err
+			}
+		}
+	}
+	if len(report.Plan.Conflicts) > 0 {
+		if _, err := fmt.Fprintln(os.Stdout, "conflicts:"); err != nil {
+			return err
+		}
+		for _, conflict := range report.Plan.Conflicts {
+			if _, err := fmt.Fprintf(os.Stdout, "- %s [%s] %s\n", conflict.Path, conflict.Severity, conflict.Message); err != nil {
+				return err
+			}
+		}
+	}
+	printItems := func(title string, items []deletionmodel.DeleteItem) error {
+		if len(items) == 0 {
+			return nil
+		}
+		if _, err := fmt.Fprintf(os.Stdout, "%s:\n", title); err != nil {
+			return err
+		}
+		for _, item := range items {
+			if _, err := fmt.Fprintf(os.Stdout, "- %s [%s] origin=%s managed=%t", item.Path, item.Kind, item.Origin, item.Managed); err != nil {
+				return err
+			}
+			if item.Ref != "" {
+				if _, err := fmt.Fprintf(os.Stdout, " ref=%s", item.Ref); err != nil {
+					return err
+				}
+			}
+			if item.Store != "" {
+				if _, err := fmt.Fprintf(os.Stdout, " store=%s", item.Store); err != nil {
+					return err
+				}
+			}
+			if _, err := fmt.Fprintln(os.Stdout); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if err := printItems("source files", report.Plan.SourceFiles); err != nil {
+		return err
+	}
+	if err := printItems("runtime assets", report.Plan.RuntimeAssets); err != nil {
+		return err
+	}
+	if err := printItems("registry changes", report.Plan.RegistryChanges); err != nil {
+		return err
+	}
+	if err := printItems("policy changes", report.Plan.PolicyChanges); err != nil {
+		return err
+	}
+	if err := printItems("frontend changes", report.Plan.FrontendChanges); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(os.Stdout, "summary: source=%d runtime=%d registry=%d policy=%d frontend=%d warnings=%d conflicts=%d total=%d\n", report.Plan.Summary.SourceFiles, report.Plan.Summary.RuntimeAssets, report.Plan.Summary.RegistryChanges, report.Plan.Summary.PolicyChanges, report.Plan.Summary.FrontendChanges, report.Plan.Summary.Warnings, report.Plan.Summary.Conflicts, report.Plan.Summary.Total); err != nil {
+		return err
+	}
+	return nil
 }
 
 func shouldSkipManifest(resource schema.Resource) bool {

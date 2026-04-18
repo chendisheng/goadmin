@@ -78,6 +78,7 @@ func Register(engine *gin.Engine, deps Dependencies) {
 		}
 		codegenhttp.Register(protected, codegenhttp.Dependencies{
 			ProjectRoot:     deps.ProjectRoot,
+			PolicyStore:     deps.Config.Auth.Casbin.Source,
 			DB:              deps.DB,
 			ArtifactEnabled: artifactEnabled,
 			ArtifactBaseDir: artifactBaseDir,

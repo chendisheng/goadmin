@@ -7,10 +7,12 @@ import (
 	"strings"
 	"time"
 
+	deletionapp "goadmin/codegen/application/deletion"
 	downloadapp "goadmin/codegen/application/download"
 	installapp "goadmin/codegen/application/install"
 	irbuilderapp "goadmin/codegen/application/irbuilder"
 	codegencli "goadmin/codegen/driver/cli"
+	deletionmodel "goadmin/codegen/model/deletion"
 	apperrors "goadmin/core/errors"
 	"goadmin/core/response"
 	coretransport "goadmin/core/transport"
@@ -21,6 +23,7 @@ import (
 
 type Dependencies struct {
 	ProjectRoot     string
+	PolicyStore     string
 	DB              *gorm.DB
 	ArtifactEnabled bool
 	ArtifactBaseDir string
@@ -35,6 +38,7 @@ type Handler struct {
 	downloads       *downloadapp.Service
 	dbgen           *irbuilderapp.Service
 	installer       *installapp.Service
+	deletion        *deletionapp.Service
 }
 
 type DSLRequest struct {
@@ -92,6 +96,10 @@ func NewHandler(deps Dependencies) *Handler {
 	if deps.MenuService != nil {
 		installer = installapp.NewService(installapp.Dependencies{MenuService: deps.MenuService})
 	}
+	deletionService := deletionapp.NewService(deletionapp.Dependencies{
+		ProjectRoot: deps.ProjectRoot,
+		PolicyStore: deps.PolicyStore,
+	})
 	return &Handler{
 		projectRoot:     strings.TrimSpace(deps.ProjectRoot),
 		db:              deps.DB,
@@ -99,6 +107,7 @@ func NewHandler(deps Dependencies) *Handler {
 		downloads:       downloads,
 		dbgen:           irbuilderapp.NewService(irbuilderapp.Dependencies{}),
 		installer:       installer,
+		deletion:        deletionService,
 	}
 }
 
@@ -239,6 +248,28 @@ func (h *Handler) PreviewDatabase(c coretransport.Context) {
 
 func (h *Handler) GenerateDatabase(c coretransport.Context) {
 	h.generateDatabase(c, false)
+}
+
+func (h *Handler) PreviewDelete(c coretransport.Context) {
+	if err := h.ensureProjectRoot(); err != nil {
+		h.writeError(c, err)
+		return
+	}
+	if h.deletion == nil {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "deletion preview is disabled"))
+		return
+	}
+	var req deletionmodel.DeleteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.writeError(c, apperrors.New(apperrors.CodeBadRequest, "invalid request body"))
+		return
+	}
+	report, err := h.deletion.Preview(req)
+	if err != nil {
+		h.writeError(c, err)
+		return
+	}
+	c.JSON(stdhttp.StatusOK, response.Success(report, requestID(c)))
 }
 
 func (h *Handler) generateDatabase(c coretransport.Context, dryRun bool) {

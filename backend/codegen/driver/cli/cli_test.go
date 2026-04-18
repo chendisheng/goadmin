@@ -59,10 +59,51 @@ permissions:
 	assertFileContains(t, modulePath, "package inventory")
 	assertFileContains(t, modulePath, `const Name = "inventory"`)
 	assertFileContains(t, crudModelPath, "type Item struct")
-	assertFileContains(t, crudModelPath, `gorm:"column:name"`)
+	assertFileContains(t, crudModelPath, `gorm:"column:name;type:varchar(255);size:255"`)
 	assertFileExists(t, frontendViewPath)
 	assertFileContains(t, policyPath, "p, admin, /api/v1/items, GET")
 	assertFileContains(t, policyPath, "p, admin, /api/v1/items/:id, DELETE")
+}
+
+func TestRunRemovePreview(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	deletionRoot := filepath.Join(root, "backend")
+	createDeleteModuleFixture(t, root, "book", true, true)
+	output, err := captureCLIStdout(t, func() error {
+		return Run(root, []string{"remove", "preview", "book", "--kind", "crud", "--policy-store", "db"})
+	})
+	if err != nil {
+		t.Fatalf("Run(remove preview) returned error: %v", err)
+	}
+	if !strings.Contains(output, "deletion preview report") {
+		t.Fatalf("preview output missing report header:\n%s", output)
+	}
+	if !strings.Contains(output, "module: book") {
+		t.Fatalf("preview output missing module summary:\n%s", output)
+	}
+	if !strings.Contains(output, "conflicts:") {
+		t.Fatalf("preview output missing conflicts section:\n%s", output)
+	}
+	if !strings.Contains(output, "source files:") {
+		t.Fatalf("preview output missing source files section:\n%s", output)
+	}
+	if !strings.Contains(output, "summary:") {
+		t.Fatalf("preview output missing summary section:\n%s", output)
+	}
+	if _, err := os.Stat(filepath.Join(deletionRoot, "modules", "book", "module.go")); err != nil {
+		t.Fatalf("fixture not created: %v", err)
+	}
+}
+
+func TestRunRemovePreviewValidation(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	if err := Run(root, []string{"remove", "preview"}); err == nil || !strings.Contains(err.Error(), "remove preview requires a module name") {
+		t.Fatalf("Run(remove preview) validation error = %v, want module name required", err)
+	}
 }
 
 func TestExecuteDSLDocumentDryRun(t *testing.T) {
@@ -415,4 +456,140 @@ func captureCLIStdout(t *testing.T, fn func() error) (string, error) {
 	default:
 	}
 	return output, runErr
+}
+
+func createDeleteModuleFixture(t *testing.T, root, module string, includeManifest, includeUnknown bool) {
+	t.Helper()
+	moduleDir := filepath.Join(root, "backend", "modules", module)
+	mustMkdirAll(t, filepath.Join(moduleDir, "application", "command"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "application", "query"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "application", "service"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "domain", "model"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "domain", "repository"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "infrastructure", "repo"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "transport", "http", "handler"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "transport", "http", "request"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "transport", "http", "response"))
+	mustMkdirAll(t, filepath.Join(root, "backend", "core", "bootstrap"))
+	mustMkdirAll(t, filepath.Join(root, "web", "src", "api"))
+	mustMkdirAll(t, filepath.Join(root, "web", "src", "router", "modules"))
+	mustMkdirAll(t, filepath.Join(root, "web", "src", "views", module))
+
+	moduleTitle := testTitleFromModule(module)
+	modulePlural := testPluralize(module)
+	writeFixture(t, filepath.Join(moduleDir, "module.go"), "package "+module+"\n\nconst Name = \""+module+"\"\nconst ManifestPath = \"modules/"+module+"/manifest.yaml\"\n")
+	writeFixture(t, filepath.Join(moduleDir, "bootstrap.go"), "// codegen:begin\npackage "+module+"\n\nfunc init() {}\n// codegen:end\n")
+	if includeManifest {
+		writeFixture(t, filepath.Join(moduleDir, "manifest.yaml"), strings.TrimSpace(`
+# codegen:begin
+name: `+module+`
+version: v1
+kind: crud
+module: `+module+`
+routes:
+  - method: GET
+    path: /api/v1/`+modulePlural+`
+  - method: POST
+    path: /api/v1/`+modulePlural+`
+  - method: PUT
+    path: /api/v1/`+modulePlural+`/:id
+  - method: DELETE
+    path: /api/v1/`+modulePlural+`/:id
+  - method: GET
+    path: /api/v1/`+modulePlural+`/:id
+menus:
+  - name: `+moduleTitle+`s
+    path: /`+modulePlural+`
+    component: Layout
+    permission: `+module+`:view
+    type: directory
+    enabled: true
+    visible: true
+  - name: List
+    path: /`+modulePlural+`/list
+    parent_path: /`+modulePlural+`
+    component: view/`+module+`/index
+    permission: `+module+`:list
+    type: menu
+    enabled: true
+    visible: true
+permissions:
+  - object: `+module+`
+    action: list
+  - object: `+module+`
+    action: view
+  - object: `+module+`
+    action: create
+  - object: `+module+`
+    action: update
+  - object: `+module+`
+    action: delete
+# codegen:end
+`))
+	}
+	writeFixture(t, filepath.Join(moduleDir, "schema.sql"), "-- Database: goadmin\n")
+	writeFixture(t, filepath.Join(moduleDir, "application", "command", module+".go"), "package command\n")
+	writeFixture(t, filepath.Join(moduleDir, "application", "query", module+".go"), "package query\n")
+	writeFixture(t, filepath.Join(moduleDir, "application", "service", "service.go"), "package service\n")
+	writeFixture(t, filepath.Join(moduleDir, "domain", "model", module+".go"), "package model\n")
+	writeFixture(t, filepath.Join(moduleDir, "domain", "repository", "repository.go"), "package repository\n")
+	writeFixture(t, filepath.Join(moduleDir, "infrastructure", "repo", "gorm.go"), "package repo\n")
+	writeFixture(t, filepath.Join(moduleDir, "transport", "http", "handler", "handler.go"), "package handler\n")
+	writeFixture(t, filepath.Join(moduleDir, "transport", "http", "request", module+".go"), "package request\n")
+	writeFixture(t, filepath.Join(moduleDir, "transport", "http", "response", module+".go"), "package response\n")
+	if includeUnknown {
+		writeFixture(t, filepath.Join(moduleDir, "notes.txt"), "manual note")
+	}
+	writeFixture(t, filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go"), "package bootstrap\n\nimport (\n\t\"goadmin/modules/"+module+"\"\n)\n\nfunc generatedModules() []Module {\n\treturn []Module{\n\t\t"+module+".NewBootstrap(),\n\t}\n}\n")
+	writeFixture(t, filepath.Join(root, "backend", "core", "bootstrap", "modules_builtin.go"), "package bootstrap\n\nimport ()\n\nfunc builtinModules() []Module {\n\treturn []Module{}\n}\n")
+	writeFixture(t, filepath.Join(root, "web", "src", "api", module+".ts"), "export {}\n")
+	writeFixture(t, filepath.Join(root, "web", "src", "router", "modules", module+".ts"), "export {}\n")
+	writeFixture(t, filepath.Join(root, "web", "src", "views", module, "index.vue"), "<template></template>\n")
+}
+
+func writeFixture(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+func mustMkdirAll(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+}
+
+func testTitleFromModule(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "Module"
+	}
+	parts := strings.Split(strings.ReplaceAll(value, "-", "_"), "_")
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, "")
+}
+
+func testPluralize(value string) string {
+	value = strings.TrimSpace(strings.ReplaceAll(value, "-", "_"))
+	if value == "" {
+		return ""
+	}
+	switch {
+	case strings.HasSuffix(value, "ch"), strings.HasSuffix(value, "sh"), strings.HasSuffix(value, "s"), strings.HasSuffix(value, "x"), strings.HasSuffix(value, "z"):
+		return value + "es"
+	case strings.HasSuffix(value, "y") && len(value) > 1:
+		return value[:len(value)-1] + "ies"
+	default:
+		return value + "s"
+	}
 }

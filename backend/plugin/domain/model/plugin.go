@@ -15,3 +15,7 @@ type Plugin struct {
 	CreatedAt   time.Time                `json:"created_at"`
 	UpdatedAt   time.Time                `json:"updated_at"`
 }
+
+func (Plugin) TableName() string {
+	return "plugin"
+}

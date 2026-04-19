@@ -23,6 +23,10 @@ type User struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+func (User) TableName() string {
+	return "user"
+}
+
 func (u User) Clone() User {
 	clone := u
 	if u.RoleCodes != nil {

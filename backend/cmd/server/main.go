@@ -143,9 +143,11 @@ func main() {
 		DB:             dbConn,
 		// Generated modules use the shared bootstrap registry and only need DB/logger/event bus.
 		BootstrapDeps: corebootstrap.Dependencies{
-			DB:       dbConn,
-			Logger:   logger,
-			EventBus: eventBus,
+			DB:                   dbConn,
+			Logger:               logger,
+			EventBus:             eventBus,
+			Config:               cfg,
+			AuthorizationRuntime: authBundle.AuthorizationRuntime,
 		},
 		JWT:         authBundle.JWT,
 		Authorizer:  authBundle.Authorizer,

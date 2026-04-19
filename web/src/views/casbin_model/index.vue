@@ -158,13 +158,13 @@ onMounted(() => {
 <template>
   <div class="admin-page">
     <AdminTable
-      title="CasbinModel管理"
-      description="由 goadmin-cli 生成的 CRUD 页面，可直接用于列表、编辑和删除。"
+      title="模型管理"
+      description="授权模型配置的列表、编辑和删除入口。"
       :loading="tableLoading"
     >
       <template #actions>
         <el-button :loading="tableLoading" @click="loadItems">刷新</el-button>
-        <el-button v-permission="'casbin_model:create'" type="primary" @click="openCreate">新增CasbinModel</el-button>
+        <el-button v-permission="'casbin_model:create'" type="primary" @click="openCreate">新增模型</el-button>
       </template>
 
       <template #filters>
@@ -231,7 +231,7 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑CasbinModel' : '新增CasbinModel'"
+      :title="editingId ? '编辑模型' : '新增模型'"
       :loading="dialogLoading"
       @confirm="submitForm"
     >

@@ -21,6 +21,10 @@ type Role struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (Role) TableName() string {
+	return "role"
+}
+
 func (r Role) Clone() Role {
 	clone := r
 	if r.MenuIDs != nil {

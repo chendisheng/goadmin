@@ -12,6 +12,10 @@ type CodegenConsole struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (CodegenConsole) TableName() string {
+	return "codegen_console"
+}
+
 func (m CodegenConsole) Clone() CodegenConsole {
 	clone := m
 	return clone

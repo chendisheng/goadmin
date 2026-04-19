@@ -39,17 +39,17 @@ The backend exposes a runtime tenant toggle in `backend/config/*.yaml`:
 - `tenant.enabled: true` enables multi-tenant behavior
 - `tenant.enabled: false` degrades the system to single-tenant mode
 
-When tenant is disabled, create/update operations ignore `tenant_id`, query paths stop injecting tenant filters, and Casbin authorization falls back to role-only evaluation.
+When tenant is disabled, create/update operations ignore `tenant_id`, query paths stop injecting tenant filters, and the authorization runtime falls back to role-only evaluation.
 
-### Casbin configuration
+### Authorization runtime configuration
 
-The authorization layer supports a configurable policy source in `backend/config/*.yaml` and `deploy/docker-compose/.env.example`:
+The authorization layer supports a configurable policy source in `backend/config/*.yaml` and `deploy/docker-compose/.env.example`. The current implementation is Casbin-backed, but the module boundary is intentionally replaceable:
 
-- `auth.casbin.source: file` loads Casbin model and policy from the local files under `core/auth/casbin/`
-- `auth.casbin.source: db` loads Casbin policy from the database, auto-migrates the Casbin tables, and seeds the initial model/policy from the configured file paths on first boot
+- `auth.casbin.source: file` loads the authorization model and policy from the local files under `core/auth/casbin/`
+- `auth.casbin.source: db` loads authorization policy from the database, auto-migrates the authorization tables, and seeds the initial model/policy from the configured file paths on first boot
 - Supported values for `auth.casbin.source` are `file` and `db`
 
-For DB mode, the server must be started with the shared database connection so auth bootstrap can initialize Casbin against the same store used by the rest of the backend.
+For DB mode, the server must be started with the shared database connection so auth bootstrap can initialize the authorization runtime against the same store used by the rest of the backend.
 
 ### Available endpoints
 

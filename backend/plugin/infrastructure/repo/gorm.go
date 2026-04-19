@@ -27,7 +27,7 @@ type pluginRecord struct {
 	UpdatedAt      time.Time `gorm:"column:updated_at"`
 }
 
-func (pluginRecord) TableName() string { return "plugins" }
+func (pluginRecord) TableName() string { return "plugin" }
 
 func NewGormRepository(db *gorm.DB) (*GormRepository, error) {
 	if db == nil {

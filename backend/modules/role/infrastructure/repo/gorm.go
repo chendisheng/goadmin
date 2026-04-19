@@ -29,7 +29,7 @@ type roleRecord struct {
 	UpdatedAt  time.Time `gorm:"column:updated_at"`
 }
 
-func (roleRecord) TableName() string { return "roles" }
+func (roleRecord) TableName() string { return "role" }
 
 func NewGormRepository(db *gorm.DB) (*GormRepository, error) {
 	if db == nil {
@@ -43,8 +43,8 @@ func Migrate(db *gorm.DB) error {
 		return fmt.Errorf("role migrate requires db")
 	}
 	if db.Dialector.Name() == "mysql" && db.Migrator().HasTable(&roleRecord{}) {
-		if err := db.Exec("ALTER TABLE roles MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
-			return fmt.Errorf("ensure roles.tenant_id column: %w", err)
+		if err := db.Exec("ALTER TABLE `role` MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
+			return fmt.Errorf("ensure role.tenant_id column: %w", err)
 		}
 	}
 	return db.AutoMigrate(&roleRecord{})

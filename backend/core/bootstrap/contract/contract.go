@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"goadmin/core/config"
 	"goadmin/core/event"
 	coretransport "goadmin/core/transport"
 
@@ -8,10 +9,20 @@ import (
 	"gorm.io/gorm"
 )
 
+type AuthorizationRuntime interface {
+	Reload() error
+	SeedDefaultPolicy() error
+	String() string
+}
+
+type CasbinRuntime = AuthorizationRuntime
+
 type Dependencies struct {
-	DB       *gorm.DB
-	Logger   *zap.Logger
-	EventBus event.Bus
+	DB                   *gorm.DB
+	Logger               *zap.Logger
+	EventBus             event.Bus
+	Config               *config.Config
+	AuthorizationRuntime AuthorizationRuntime
 }
 
 type Module interface {

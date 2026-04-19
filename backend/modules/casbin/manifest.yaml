@@ -1,0 +1,124 @@
+# codegen:begin
+name: authorization
+version: v1
+kind: core-module
+module: casbin
+dependencies:
+  - core/auth/bootstrap
+  - core/auth/casbin
+  - modules/casbin_model
+  - modules/casbin_rule
+routes:
+  - method: GET
+    path: /api/v1/casbin/status
+  - method: POST
+    path: /api/v1/casbin/reload
+  - method: POST
+    path: /api/v1/casbin/seed
+  - method: GET
+    path: /api/v1/casbin_models
+  - method: GET
+    path: /api/v1/casbin_models/:id
+  - method: POST
+    path: /api/v1/casbin_models
+  - method: PUT
+    path: /api/v1/casbin_models/:id
+  - method: DELETE
+    path: /api/v1/casbin_models/:id
+  - method: GET
+    path: /api/v1/casbin_rules
+  - method: GET
+    path: /api/v1/casbin_rules/:id
+  - method: POST
+    path: /api/v1/casbin_rules
+  - method: PUT
+    path: /api/v1/casbin_rules/:id
+  - method: DELETE
+    path: /api/v1/casbin_rules/:id
+menus:
+  - name: 授权治理
+    path: /system/casbin
+    component: Layout
+    icon: menu
+    permission: system:view
+    type: directory
+    redirect: /system/casbin/overview
+    visible: true
+    enabled: true
+    sort: 7
+  - name: 总览
+    path: /system/casbin/overview
+    parent_path: /system/casbin
+    component: view/system/casbin/index
+    icon: menu
+    permission: casbin:view
+    type: menu
+    visible: true
+    enabled: true
+    sort: 1
+  - name: 模型管理
+    path: /system/casbin/models
+    parent_path: /system/casbin
+    component: view/casbin_model/index
+    icon: menu
+    permission: casbin_model:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 2
+  - name: 策略管理
+    path: /system/casbin/rules
+    parent_path: /system/casbin
+    component: view/casbin_rule/index
+    icon: menu
+    permission: casbin_rule:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 3
+permissions:
+  - object: casbin
+    action: view
+    description: 查看授权总览
+  - object: casbin
+    action: reload
+    description: 重载授权运行时
+  - object: casbin
+    action: seed
+    description: 补齐默认授权策略
+  - object: casbin_model
+    action: list
+    description: 查看授权模型列表
+  - object: casbin_model
+    action: view
+    description: 查看授权模型详情
+  - object: casbin_model
+    action: create
+    description: 创建授权模型
+  - object: casbin_model
+    action: update
+    description: 更新授权模型
+  - object: casbin_model
+    action: delete
+    description: 删除授权模型
+  - object: casbin_rule
+    action: list
+    description: 查看授权策略列表
+  - object: casbin_rule
+    action: view
+    description: 查看授权策略详情
+  - object: casbin_rule
+    action: create
+    description: 创建授权策略
+  - object: casbin_rule
+    action: update
+    description: 更新授权策略
+  - object: casbin_rule
+    action: delete
+    description: 删除授权策略
+capabilities:
+  - basic-crud
+  - policy-generated
+  - frontend-generated
+  - module-governance
+# codegen:end

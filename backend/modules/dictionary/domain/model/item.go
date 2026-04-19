@@ -18,6 +18,10 @@ type Item struct {
 	UpdatedAt  time.Time `json:"updated_at" gorm:"column:updated_at"`
 }
 
+func (Item) TableName() string {
+	return "dictionary_item"
+}
+
 func (i Item) Clone() Item {
 	return i
 }

@@ -46,6 +46,10 @@ type {{.Entity}} struct {
 	UpdatedAt time.Time ` + "`json:\"updated_at\"`" + `
 }
 
+func ({{.Entity}}) TableName() string {
+	return "{{.EntityLower}}"
+}
+
 func (m {{.Entity}}) Clone() {{.Entity}} {
 	clone := m
 {{.CloneBlock}}	return clone

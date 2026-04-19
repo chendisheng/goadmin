@@ -200,6 +200,8 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 
 	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;type:varchar(64);size:64"`)
 	assertFileContains(t, modelPath, `gorm:"column:name;type:varchar(255);size:255"`)
+	assertFileContains(t, modelPath, "func (Article) TableName() string")
+	assertFileContains(t, modelPath, "return \"article\"")
 	assertFileContains(t, modelPath, "PublishAt time.Time")
 	assertFileContains(t, modelPath, "Tags")
 	assertFileContains(t, modelPath, "[]string")
@@ -207,7 +209,7 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	assertFileContains(t, modelPath, `gorm:"column:id;primaryKey;type:varchar(64);size:64"`)
 	assertFileContains(t, bootstrapPath, "func NewBootstrap() corebootstrapcontract.Module")
 	assertFileContains(t, bootstrapPath, "func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error")
-	assertFileContains(t, schemaPath, "CREATE TABLE IF NOT EXISTS `articles`")
+	assertFileContains(t, schemaPath, "CREATE TABLE IF NOT EXISTS `article`")
 	assertFileContains(t, schemaPath, "`id` varchar(64) NOT NULL")
 	assertFileContains(t, schemaPath, "PRIMARY KEY (`id`)")
 	assertFileContains(t, schemaPath, "`name` varchar(255) NOT NULL")
@@ -280,7 +282,7 @@ func TestGenerateCRUDSchemaSQLIncludesCommentsAndLocation(t *testing.T) {
 	}
 
 	schemaPath := filepath.Join(root, "backend", "modules", "article", "schema.sql")
-	assertFileContains(t, schemaPath, "-- Auto-generated schema for articles")
+	assertFileContains(t, schemaPath, "-- Auto-generated schema for article")
 	assertFileContains(t, schemaPath, "-- Database: goadmin")
 	assertFileContains(t, schemaPath, "-- Schema: public")
 	assertFileContains(t, schemaPath, "-- Table Comment: 文章表")

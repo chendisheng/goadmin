@@ -182,13 +182,13 @@ onMounted(() => {
 <template>
   <div class="admin-page">
     <AdminTable
-      title="CasbinRule管理"
-      description="由 goadmin-cli 生成的 CRUD 页面，可直接用于列表、编辑和删除。"
+      title="策略管理"
+      description="授权策略规则的列表、编辑和删除入口。"
       :loading="tableLoading"
     >
       <template #actions>
         <el-button :loading="tableLoading" @click="loadItems">刷新</el-button>
-        <el-button v-permission="'casbin_rule:create'" type="primary" @click="openCreate">新增CasbinRule</el-button>
+        <el-button v-permission="'casbin_rule:create'" type="primary" @click="openCreate">新增策略</el-button>
       </template>
 
       <template #filters>
@@ -311,7 +311,7 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑CasbinRule' : '新增CasbinRule'"
+      :title="editingId ? '编辑策略' : '新增策略'"
       :loading="dialogLoading"
       @confirm="submitForm"
     >

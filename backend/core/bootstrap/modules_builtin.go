@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"goadmin/modules/casbin"
 	"goadmin/modules/codegen_console"
 	"goadmin/modules/dictionary"
 	"goadmin/modules/menu"
@@ -10,6 +11,7 @@ import (
 
 func builtinModules() []Module {
 	return []Module{
+		casbin.NewBootstrap(),
 		codegen_console.NewBootstrap(),
 		dictionary.NewBootstrap(),
 		menu.NewBootstrap(),

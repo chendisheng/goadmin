@@ -33,7 +33,7 @@ type userRecord struct {
 	UpdatedAt    time.Time `gorm:"column:updated_at"`
 }
 
-func (userRecord) TableName() string { return "users" }
+func (userRecord) TableName() string { return "user" }
 
 func NewGormRepository(db *gorm.DB) (*GormRepository, error) {
 	if db == nil {
@@ -46,9 +46,14 @@ func Migrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("user migrate requires db")
 	}
+	if db.Migrator().HasTable("users") && !db.Migrator().HasTable(&userRecord{}) {
+		if err := db.Migrator().RenameTable("users", &userRecord{}); err != nil {
+			return fmt.Errorf("rename legacy users table: %w", err)
+		}
+	}
 	if db.Dialector.Name() == "mysql" && db.Migrator().HasTable(&userRecord{}) {
-		if err := db.Exec("ALTER TABLE users MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
-			return fmt.Errorf("ensure users.tenant_id column: %w", err)
+		if err := db.Exec("ALTER TABLE `user` MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
+			return fmt.Errorf("ensure user.tenant_id column: %w", err)
 		}
 	}
 	return db.AutoMigrate(&userRecord{})

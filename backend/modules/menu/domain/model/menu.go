@@ -36,6 +36,10 @@ type Menu struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+func (Menu) TableName() string {
+	return "menu"
+}
+
 func (m Menu) Clone() Menu {
 	clone := m
 	if m.Children != nil {

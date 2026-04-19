@@ -14,7 +14,7 @@ func TestModulesIncludesBuiltinAndGenerated(t *testing.T) {
 		got[module.Name()] = struct{}{}
 	}
 
-	for _, want := range []string{"codegen_console", "menu", "role", "user", "book", "order"} {
+	for _, want := range []string{"casbin", "codegen_console", "menu", "role", "user", "book", "order"} {
 		if _, ok := got[want]; !ok {
 			t.Fatalf("Modules() missing %q; got=%v", want, got)
 		}

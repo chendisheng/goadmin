@@ -14,6 +14,10 @@ type Category struct {
 	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at"`
 }
 
+func (Category) TableName() string {
+	return "dictionary_category"
+}
+
 func (c Category) Clone() Category {
 	return c
 }

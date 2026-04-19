@@ -7,6 +7,7 @@ import (
 
 	coreauthcasbinservice "goadmin/core/auth/casbin/service"
 	coreauthjwt "goadmin/core/auth/jwt"
+	corebootstrapcontract "goadmin/core/bootstrap/contract"
 	"goadmin/core/config"
 
 	"gorm.io/gorm"
@@ -22,8 +23,10 @@ type RevocationStore interface {
 }
 
 type Bundle struct {
-	JWT        *coreauthjwt.Manager
-	Authorizer Authorizer
+	JWT                  *coreauthjwt.Manager
+	Authorizer           Authorizer
+	AuthorizationRuntime corebootstrapcontract.AuthorizationRuntime
+	Casbin               corebootstrapcontract.CasbinRuntime
 }
 
 func New(cfg *config.Config, db *gorm.DB) (*Bundle, error) {
@@ -47,7 +50,7 @@ func New(cfg *config.Config, db *gorm.DB) (*Bundle, error) {
 		return nil, err
 	}
 
-	authorizer, err := coreauthcasbinservice.NewPermissionService(coreauthcasbinservice.Config{
+	casbinRuntime, err := coreauthcasbinservice.NewPermissionService(coreauthcasbinservice.Config{
 		Enabled:    cfg.Auth.Casbin.Enabled,
 		Source:     cfg.Auth.Casbin.Source,
 		DB:         db,
@@ -58,5 +61,5 @@ func New(cfg *config.Config, db *gorm.DB) (*Bundle, error) {
 		return nil, err
 	}
 
-	return &Bundle{JWT: jwtManager, Authorizer: authorizer}, nil
+	return &Bundle{JWT: jwtManager, Authorizer: casbinRuntime, AuthorizationRuntime: casbinRuntime, Casbin: casbinRuntime}, nil
 }

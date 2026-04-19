@@ -551,13 +551,13 @@ func (d scaffoldData) PolicyLines() []string {
 }
 
 func (d scaffoldData) SQLTableName() string {
-	if strings.TrimSpace(d.EntityPlural) != "" {
-		return d.EntityPlural
-	}
 	if strings.TrimSpace(d.EntityLower) != "" {
-		return d.EntityLower + "s"
+		return d.EntityLower
 	}
-	return "entities"
+	if strings.TrimSpace(d.Entity) != "" {
+		return ToSnake(d.Entity)
+	}
+	return "entity"
 }
 
 func (d scaffoldData) SQLSchema() string {

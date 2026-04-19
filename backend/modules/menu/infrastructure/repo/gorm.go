@@ -34,7 +34,7 @@ type menuRecord struct {
 	UpdatedAt   time.Time `gorm:"column:updated_at"`
 }
 
-func (menuRecord) TableName() string { return "menus" }
+func (menuRecord) TableName() string { return "menu" }
 
 func NewGormRepository(db *gorm.DB) (*GormRepository, error) {
 	if db == nil {
@@ -60,6 +60,10 @@ func SeedDefaults(db *gorm.DB) error {
 			"/casbin_models/list",
 			"/casbin_rules",
 			"/casbin_rules/list",
+			"/system/casbin",
+			"/system/casbin/overview",
+			"/system/casbin/models",
+			"/system/casbin/rules",
 		}); err != nil {
 			return err
 		}

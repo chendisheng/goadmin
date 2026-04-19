@@ -30,7 +30,7 @@ type categoryRecord struct {
 }
 
 func (categoryRecord) TableName() string {
-	return "dictionary_categories"
+	return "dictionary_category"
 }
 
 type itemRecord struct {
@@ -50,7 +50,7 @@ type itemRecord struct {
 }
 
 func (itemRecord) TableName() string {
-	return "dictionary_items"
+	return "dictionary_item"
 }
 
 func NewGormRepository(db *gorm.DB) (*GormRepository, error) {
@@ -67,30 +67,30 @@ func Migrate(db *gorm.DB) error {
 	if db.Dialector.Name() == "mysql" {
 		if db.Migrator().HasTable(&categoryRecord{}) {
 			stmts := []string{
-				"ALTER TABLE dictionary_categories MODIFY COLUMN id VARCHAR(64) NOT NULL",
-				"ALTER TABLE dictionary_categories MODIFY COLUMN code VARCHAR(64) NOT NULL",
-				"ALTER TABLE dictionary_categories MODIFY COLUMN name VARCHAR(128) NOT NULL",
-				"ALTER TABLE dictionary_categories MODIFY COLUMN status VARCHAR(32) NOT NULL",
-				"ALTER TABLE dictionary_categories MODIFY COLUMN remark VARCHAR(512)",
+				"ALTER TABLE dictionary_category MODIFY COLUMN id VARCHAR(64) NOT NULL",
+				"ALTER TABLE dictionary_category MODIFY COLUMN code VARCHAR(64) NOT NULL",
+				"ALTER TABLE dictionary_category MODIFY COLUMN name VARCHAR(128) NOT NULL",
+				"ALTER TABLE dictionary_category MODIFY COLUMN status VARCHAR(32) NOT NULL",
+				"ALTER TABLE dictionary_category MODIFY COLUMN remark VARCHAR(512)",
 			}
 			for _, stmt := range stmts {
 				if err := db.Exec(stmt).Error; err != nil {
-					return fmt.Errorf("ensure dictionary_categories schema: %w", err)
+					return fmt.Errorf("ensure dictionary_category schema: %w", err)
 				}
 			}
 		}
 		if db.Migrator().HasTable(&itemRecord{}) {
 			stmts := []string{
-				"ALTER TABLE dictionary_items MODIFY COLUMN id VARCHAR(64) NOT NULL",
-				"ALTER TABLE dictionary_items MODIFY COLUMN category_id VARCHAR(64) NOT NULL",
-				"ALTER TABLE dictionary_items MODIFY COLUMN value VARCHAR(128) NOT NULL",
-				"ALTER TABLE dictionary_items MODIFY COLUMN label VARCHAR(128) NOT NULL",
-				"ALTER TABLE dictionary_items MODIFY COLUMN status VARCHAR(32) NOT NULL",
-				"ALTER TABLE dictionary_items MODIFY COLUMN remark VARCHAR(512)",
+				"ALTER TABLE dictionary_item MODIFY COLUMN id VARCHAR(64) NOT NULL",
+				"ALTER TABLE dictionary_item MODIFY COLUMN category_id VARCHAR(64) NOT NULL",
+				"ALTER TABLE dictionary_item MODIFY COLUMN value VARCHAR(128) NOT NULL",
+				"ALTER TABLE dictionary_item MODIFY COLUMN label VARCHAR(128) NOT NULL",
+				"ALTER TABLE dictionary_item MODIFY COLUMN status VARCHAR(32) NOT NULL",
+				"ALTER TABLE dictionary_item MODIFY COLUMN remark VARCHAR(512)",
 			}
 			for _, stmt := range stmts {
 				if err := db.Exec(stmt).Error; err != nil {
-					return fmt.Errorf("ensure dictionary_items schema: %w", err)
+					return fmt.Errorf("ensure dictionary_item schema: %w", err)
 				}
 			}
 		}
@@ -220,19 +220,19 @@ func (r *GormRepository) ListItems(ctx context.Context, filter dictrepo.ItemList
 	if r == nil || r.db == nil {
 		return nil, 0, fmt.Errorf("dictionary gorm repository is not configured")
 	}
-	base := r.db.WithContext(ctx).Model(&itemRecord{}).Joins("JOIN dictionary_categories ON dictionary_categories.id = dictionary_items.category_id")
+	base := r.db.WithContext(ctx).Model(&itemRecord{}).Joins("JOIN dictionary_category ON dictionary_category.id = dictionary_item.category_id")
 	if categoryID := strings.TrimSpace(filter.CategoryID); categoryID != "" {
-		base = base.Where("dictionary_items.category_id = ?", categoryID)
+		base = base.Where("dictionary_item.category_id = ?", categoryID)
 	}
 	if categoryCode := strings.TrimSpace(filter.CategoryCode); categoryCode != "" {
-		base = base.Where("dictionary_categories.code = ?", categoryCode)
+		base = base.Where("dictionary_category.code = ?", categoryCode)
 	}
 	if kw := strings.TrimSpace(strings.ToLower(filter.Keyword)); kw != "" {
 		like := "%" + kw + "%"
-		base = base.Where("LOWER(dictionary_items.value) LIKE ? OR LOWER(dictionary_items.label) LIKE ? OR LOWER(COALESCE(dictionary_items.tag_type, '')) LIKE ? OR LOWER(COALESCE(dictionary_items.tag_color, '')) LIKE ? OR LOWER(COALESCE(dictionary_items.extra, '')) LIKE ? OR LOWER(COALESCE(dictionary_items.remark, '')) LIKE ? OR LOWER(dictionary_categories.code) LIKE ? OR LOWER(dictionary_categories.name) LIKE ?", like, like, like, like, like, like, like, like)
+		base = base.Where("LOWER(dictionary_item.value) LIKE ? OR LOWER(dictionary_item.label) LIKE ? OR LOWER(COALESCE(dictionary_item.tag_type, '')) LIKE ? OR LOWER(COALESCE(dictionary_item.tag_color, '')) LIKE ? OR LOWER(COALESCE(dictionary_item.extra, '')) LIKE ? OR LOWER(COALESCE(dictionary_item.remark, '')) LIKE ? OR LOWER(dictionary_category.code) LIKE ? OR LOWER(dictionary_category.name) LIKE ?", like, like, like, like, like, like, like, like)
 	}
 	if status := strings.TrimSpace(filter.Status); status != "" {
-		base = base.Where("dictionary_items.status = ?", status)
+		base = base.Where("dictionary_item.status = ?", status)
 	}
 	var total int64
 	if err := base.Count(&total).Error; err != nil {
@@ -240,7 +240,7 @@ func (r *GormRepository) ListItems(ctx context.Context, filter dictrepo.ItemList
 	}
 	page, pageSize := normalizePage(filter.Page, filter.PageSize)
 	var rows []itemRecord
-	if err := base.Order("dictionary_items.sort ASC, dictionary_items.updated_at DESC, dictionary_items.created_at DESC, dictionary_items.id ASC").Limit(pageSize).Offset((page - 1) * pageSize).Find(&rows).Error; err != nil {
+	if err := base.Order("dictionary_item.sort ASC, dictionary_item.updated_at DESC, dictionary_item.created_at DESC, dictionary_item.id ASC").Limit(pageSize).Offset((page - 1) * pageSize).Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
 	items := make([]dictmodel.Item, 0, len(rows))
@@ -347,9 +347,9 @@ func (r *GormRepository) ListByCategoryCode(ctx context.Context, categoryCode st
 	var rows []itemRecord
 	if err := r.db.WithContext(ctx).
 		Model(&itemRecord{}).
-		Joins("JOIN dictionary_categories ON dictionary_categories.id = dictionary_items.category_id").
-		Where("dictionary_categories.code = ?", strings.TrimSpace(categoryCode)).
-		Order("dictionary_items.sort ASC, dictionary_items.value ASC, dictionary_items.id ASC").
+		Joins("JOIN dictionary_category ON dictionary_category.id = dictionary_item.category_id").
+		Where("dictionary_category.code = ?", strings.TrimSpace(categoryCode)).
+		Order("dictionary_item.sort ASC, dictionary_item.value ASC, dictionary_item.id ASC").
 		Find(&rows).Error; err != nil {
 		return nil, mapItemRepoError(err)
 	}
@@ -371,8 +371,8 @@ func (r *GormRepository) GetByCategoryCodeAndValue(ctx context.Context, category
 	var row itemRecord
 	if err := r.db.WithContext(ctx).
 		Model(&itemRecord{}).
-		Joins("JOIN dictionary_categories ON dictionary_categories.id = dictionary_items.category_id").
-		Where("dictionary_categories.code = ? AND dictionary_items.value = ?", strings.TrimSpace(categoryCode), strings.TrimSpace(value)).
+		Joins("JOIN dictionary_category ON dictionary_category.id = dictionary_item.category_id").
+		Where("dictionary_category.code = ? AND dictionary_item.value = ?", strings.TrimSpace(categoryCode), strings.TrimSpace(value)).
 		First(&row).Error; err != nil {
 		return nil, mapItemRepoError(err)
 	}

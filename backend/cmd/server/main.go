@@ -70,7 +70,8 @@ func main() {
 		logger.Fatal("init auth bundle", zap.Error(err))
 	}
 
-	credentials := authrepo.NewBootstrapStore(cfg.Auth.Bootstrap.Users)
+	bootstrapCredentials := authrepo.NewBootstrapStore(cfg.Auth.Bootstrap.Users)
+	credentials := authrepo.NewUserTableStore(dbConn, bootstrapCredentials)
 	revocations := authservice.NewMemoryRevocationStore()
 	authSvc, err := authservice.New(authBundle.JWT, authBundle.Authorizer, credentials, revocations)
 	if err != nil {

@@ -4,10 +4,12 @@ import type { Router } from 'vue-router';
 
 import { fetchMenuRoutes } from '@/api/menu';
 import { fetchPluginMenus } from '@/api/plugins';
-import { buildMenusOnly, mapPluginMenusToBackendRoutes, registerBackendRoutes } from '@/router/navigation';
+import { buildMenusOnly, filterMenuRoutesByPermission, mapPluginMenusToBackendRoutes, registerBackendRoutes } from '@/router/navigation';
 import type { BackendMenuRoute, SidebarMenuNode } from '@/types/menu';
+import { useSessionStore } from '@/store/session';
 
 export const useMenuStore = defineStore('menu', () => {
+  const sessionStore = useSessionStore();
   const menuRoutes = ref<BackendMenuRoute[]>([]);
   const sidebarMenus = ref<SidebarMenuNode[]>([]);
   const routeNames = ref<string[]>([]);
@@ -33,9 +35,11 @@ export const useMenuStore = defineStore('menu', () => {
       const items = menuResult.status === 'fulfilled' ? menuResult.value.items ?? [] : [];
       const pluginItems = pluginResult.status === 'fulfilled' ? mapPluginMenusToBackendRoutes(pluginResult.value.items ?? []) : [];
       const mergedItems = [...items, ...pluginItems];
-      menuRoutes.value = mergedItems;
-      sidebarMenus.value = buildMenusOnly(mergedItems);
-      routeNames.value = registerBackendRoutes(router, mergedItems);
+      const canAccessMenu = (permission: string) => sessionStore.hasPermission(permission);
+
+      menuRoutes.value = filterMenuRoutesByPermission(mergedItems, canAccessMenu);
+      sidebarMenus.value = buildMenusOnly(mergedItems, canAccessMenu);
+      routeNames.value = registerBackendRoutes(router, mergedItems, canAccessMenu);
       loaded.value = true;
     })();
 

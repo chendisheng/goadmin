@@ -8,6 +8,7 @@ import type { BackendMenuRoute, SidebarMenuNode } from '@/types/menu';
 import type { PluginMenu } from '@/types/plugin';
 
 type ViewModuleLoader = AsyncComponentLoader<Component>;
+type PermissionChecker = (permission: string) => boolean;
 
 const viewModules = import.meta.glob('../views/**/*.vue') as Record<string, ViewModuleLoader>;
 
@@ -76,6 +77,36 @@ function relativePath(value: string, parentPath: string): string {
     return current.slice(prefix.length);
   }
   return current.replace(/^\//, '');
+}
+
+function canAccessMenu(permission: string | undefined, canAccess: PermissionChecker): boolean {
+  const normalized = (permission || '').trim();
+  if (normalized === '') {
+    return true;
+  }
+  return canAccess(normalized);
+}
+
+export function filterMenuRoutesByPermission(nodes: BackendMenuRoute[], canAccess: PermissionChecker): BackendMenuRoute[] {
+  const result: BackendMenuRoute[] =[];
+
+  for (const node of normalizeMenuRoots(nodes)) {
+    const children = filterMenuRoutesByPermission(node.children ?? [], canAccess);
+    const allowed = canAccessMenu(node.meta.permission, canAccess);
+    const hidden = node.hidden || !allowed;
+
+    if (!allowed && children.length === 0) {
+      continue;
+    }
+
+    result.push({
+      ...node,
+      hidden,
+      children,
+    });
+  }
+
+  return result;
 }
 
 function buildSidebarNodes(nodes: BackendMenuRoute[]): SidebarMenuNode[] {
@@ -149,8 +180,8 @@ function buildRouteRecord(node: BackendMenuRoute, parentPath = '/'): RouteRecord
   return record;
 }
 
-export function registerBackendRoutes(router: Router, nodes: BackendMenuRoute[]): string[] {
-  const roots = normalizeMenuRoots(nodes);
+export function registerBackendRoutes(router: Router, nodes: BackendMenuRoute[], canAccess: PermissionChecker = () => true): string[] {
+  const roots = filterMenuRoutesByPermission(nodes, canAccess);
   const routeNames: string[] = [];
 
   for (const item of roots) {
@@ -165,8 +196,8 @@ export function registerBackendRoutes(router: Router, nodes: BackendMenuRoute[])
   return routeNames;
 }
 
-export function buildMenusOnly(items: BackendMenuRoute[]): SidebarMenuNode[] {
-  return buildSidebarNodes(items);
+export function buildMenusOnly(items: BackendMenuRoute[], canAccess: PermissionChecker = () => true): SidebarMenuNode[] {
+  return buildSidebarNodes(filterMenuRoutesByPermission(items, canAccess));
 }
 
 export function mapPluginMenusToBackendRoutes(items: PluginMenu[]): BackendMenuRoute[] {

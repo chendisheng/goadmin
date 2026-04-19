@@ -9,6 +9,7 @@ import { logout as logoutApi } from '@/api/auth';
 import { useAppStore } from '@/store/app';
 import { useMenuStore } from '@/store/menu';
 import { useSessionStore } from '@/store/session';
+import { useTabsStore } from '@/store/tabs';
 
 const appTitle = import.meta.env.VITE_APP_TITLE || 'GoAdmin';
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
@@ -16,6 +17,7 @@ const buildMode = import.meta.env.MODE;
 const appStore = useAppStore();
 const menuStore = useMenuStore();
 const sessionStore = useSessionStore();
+const tabsStore = useTabsStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -59,6 +61,7 @@ async function onLogout() {
     // 退出时即使后端已失效也继续清理本地会话
   } finally {
     menuStore.clear(router);
+    tabsStore.clearTabs();
     sessionStore.clearSession();
     ElMessage.success('已退出登录');
     await router.push({ path: '/login' });

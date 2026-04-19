@@ -5,3 +5,4 @@ const pinia = createPinia();
 export default pinia;
 export * from './app';
 export * from './session';
+export * from './tabs';

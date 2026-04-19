@@ -3,6 +3,7 @@ import type { RouteLocationNormalized } from 'vue-router';
 
 import { appRoutes } from './routes';
 import { useMenuStore } from '@/store/menu';
+import { useTabsStore } from '@/store/tabs';
 import { useSessionStore } from '@/store/session';
 
 const appTitle = import.meta.env.VITE_APP_TITLE || 'GoAdmin';
@@ -36,6 +37,7 @@ router.beforeEach(async (to: RouteLocationNormalized) => {
       await menuStore.ensureLoaded(router);
     } catch {
       menuStore.clear(router);
+      useTabsStore().clearTabs();
       sessionStore.clearSession();
       return {
         path: '/login',
@@ -50,6 +52,11 @@ router.beforeEach(async (to: RouteLocationNormalized) => {
     const redirect = typeof to.query.redirect === 'string' && to.query.redirect.trim() !== '' ? to.query.redirect : '/dashboard';
     return redirect;
   }
+});
+
+router.afterEach((to: RouteLocationNormalized) => {
+  const tabsStore = useTabsStore();
+  tabsStore.resolveTabsFromRoute(to);
 });
 
 export default router;

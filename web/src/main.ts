@@ -12,6 +12,7 @@ import pinia from './store';
 import { useAppStore } from './store/app';
 import { useMenuStore } from './store/menu';
 import { useSessionStore } from './store/session';
+import { useTabsStore } from './store/tabs';
 import './styles/index.css';
 
 const app = createApp(App);
@@ -22,12 +23,15 @@ app.directive('permission', permissionDirective);
 const sessionStore = useSessionStore(pinia);
 const appStore = useAppStore(pinia);
 const menuStore = useMenuStore(pinia);
+const tabsStore = useTabsStore(pinia);
 
 sessionStore.hydrate();
 appStore.hydrate();
+tabsStore.hydrate();
 
 setUnauthorizedHandler(() => {
   menuStore.clear(router);
+  tabsStore.clearTabs();
   sessionStore.clearSession();
   const currentPath = router.currentRoute.value.fullPath;
   if (router.currentRoute.value.path !== '/login') {
@@ -44,8 +48,10 @@ if (sessionStore.isAuthenticated) {
   try {
     await restoreAuthenticatedSession();
     await menuStore.ensureLoaded(router);
+    tabsStore.reconcilePersistedTabs(router);
   } catch {
     menuStore.clear(router);
+    tabsStore.clearTabs();
     sessionStore.clearSession();
   }
 }

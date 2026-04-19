@@ -1,4 +1,4 @@
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent, defineComponent, h } from 'vue';
 import type { AsyncComponentLoader, Component } from 'vue';
 import type { RouteRecordRaw, Router } from 'vue-router';
 
@@ -10,6 +10,24 @@ import type { PluginMenu } from '@/types/plugin';
 type ViewModuleLoader = AsyncComponentLoader<Component>;
 
 const viewModules = import.meta.glob('../views/**/*.vue') as Record<string, ViewModuleLoader>;
+
+function normalizeComponentKey(componentName: string): string {
+  const normalized = componentName.trim();
+  const safeName = normalized
+    .replace(/[^A-Za-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[-_]+|[-_]+$/g, '');
+  return safeName === '' ? 'route-view' : safeName;
+}
+
+function createNamedView(name: string, component: Component): Component {
+  return defineComponent({
+    name,
+    setup() {
+      return () => h(component);
+    },
+  });
+}
 
 export function normalizeMenuRoots(nodes: BackendMenuRoute[]): BackendMenuRoute[] {
   return nodes;
@@ -87,16 +105,17 @@ function buildSidebarNodes(nodes: BackendMenuRoute[]): SidebarMenuNode[] {
 function resolveLeafComponent(componentName: string | undefined): Component {
   const normalized = (componentName || '').trim();
   if (normalized === '') {
-    return RoutePlaceholderView;
+    return createNamedView('route-view', RoutePlaceholderView);
   }
   if (normalized === 'Layout') {
     return RouteGroupView;
   }
   const modulePath = componentNameToModulePath(normalized);
   if (modulePath && viewModules[modulePath]) {
-    return defineAsyncComponent(viewModules[modulePath]);
+    const loadedComponent = defineAsyncComponent(viewModules[modulePath]);
+    return createNamedView(normalizeComponentKey(normalized), loadedComponent);
   }
-  return RoutePlaceholderView;
+  return createNamedView(normalizeComponentKey(normalized), RoutePlaceholderView);
 }
 
 function buildRouteRecord(node: BackendMenuRoute, parentPath = '/'): RouteRecordRaw {

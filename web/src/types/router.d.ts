@@ -7,6 +7,9 @@ declare module 'vue-router' {
     icon?: string;
     componentName?: string;
     alwaysShow?: boolean;
+    affix?: boolean;
+    keepAlive?: boolean;
+    restorable?: boolean;
     permission?: string;
     link?: string;
     inMenu?: boolean;

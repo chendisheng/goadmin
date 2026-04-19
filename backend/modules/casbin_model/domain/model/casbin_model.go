@@ -9,6 +9,10 @@ type CasbinModel struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (CasbinModel) TableName() string {
+	return "casbin_model"
+}
+
 func (m CasbinModel) Clone() CasbinModel {
 	clone := m
 	return clone

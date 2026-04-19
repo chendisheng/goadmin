@@ -51,6 +51,7 @@ config:
   logOutput: stdout
   databaseDriver: mysql
   databaseAutoMigrate: true
+  databaseLogSql: false
   tenantEnabled: true
   corsAllowOrigins: "*"
   jwtIssuer: GoAdmin

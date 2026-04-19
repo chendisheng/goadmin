@@ -15,6 +15,10 @@ type CasbinRule struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (CasbinRule) TableName() string {
+	return "casbin_rule"
+}
+
 func (m CasbinRule) Clone() CasbinRule {
 	clone := m
 	return clone

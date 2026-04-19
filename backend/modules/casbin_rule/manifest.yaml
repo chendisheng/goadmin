@@ -18,26 +18,16 @@ routes:
   - method: DELETE
     path: /api/v1/casbin_rules/:id
 menus:
-  - name: CasbinRules
-    path: /casbin_rules
-    component: Layout
-    icon: menu
-    permission: casbin_rule:view
-    type: directory
-    redirect: /casbin_rules/list
-    visible: true
-    enabled: true
-    sort: 1
-  - name: List
-    path: /casbin_rules/list
-    parent_path: /casbin_rules
+  - name: Rules
+    path: /system/casbin/rules
+    parent_path: /system/casbin
     component: view/casbin_rule/index
     icon: menu
     permission: casbin_rule:list
     type: menu
     visible: true
     enabled: true
-    sort: 2
+    sort: 1
 permissions:
   - object: casbin_rule
     action: list

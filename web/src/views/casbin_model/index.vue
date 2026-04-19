@@ -8,7 +8,8 @@ import { createCasbinModel, deleteCasbinModel, listcasbin_models, updateCasbinMo
 import { formatDateTime } from '@/utils/admin';
 
 type CasbinModelItem = {
-  id: string;
+  id?: string;
+  name?: string;
   content?: string;
   created_at?: string;
   updated_at?: string;
@@ -36,6 +37,10 @@ const defaultForm = (): CasbinModelFormState => ({
 });
 
 const form = reactive<CasbinModelFormState>(defaultForm());
+
+function getRowKey(row: CasbinModelItem) {
+  return row.id || row.name || '';
+}
 
 type EnumOption = {
   value: string;
@@ -80,7 +85,7 @@ function openCreate() {
 }
 
 function openEdit(row: CasbinModelItem) {
-  editingId.value = row.id;
+  editingId.value = getRowKey(row);
   Object.assign(form, {
     content: row.content ?? '',
   });
@@ -112,12 +117,13 @@ async function submitForm() {
 }
 
 async function removeRow(row: CasbinModelItem) {
-  await ElMessageBox.confirm('确认删除 CasbinModel ' + row.id + ' 吗？', '删除CasbinModel', {
+  const rowKey = getRowKey(row);
+  await ElMessageBox.confirm('确认删除 CasbinModel ' + rowKey + ' 吗？', '删除CasbinModel', {
     type: 'warning',
     confirmButtonText: '删除',
     cancelButtonText: '取消',
   });
-  await deleteCasbinModel(row.id);
+  await deleteCasbinModel(rowKey);
   ElMessage.success('CasbinModel 已删除');
   await loadItems();
 }
@@ -173,8 +179,12 @@ onMounted(() => {
         </el-form>
       </template>
 
-      <el-table :data="rows" border row-key="id" v-loading="tableLoading">
-        <el-table-column prop="id" label="ID" min-width="160" />
+      <el-table :data="rows" border :row-key="getRowKey" v-loading="tableLoading">
+        <el-table-column label="ID" min-width="160">
+          <template #default="{ row }">
+            {{ getRowKey(row) || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column
           prop="content"
           label="Content"

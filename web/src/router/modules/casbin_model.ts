@@ -1,9 +1,9 @@
 const route = {
-  path: '/casbin_models',
-  name: 'CasbinModel',
+  path: '/system/casbin/models',
+  name: 'CasbinModels',
   component: () => import('@/views/casbin_model/index.vue'),
   meta: {
-    title: 'CasbinModel',
+    title: 'models',
     icon: 'menu',
   },
 }

@@ -18,26 +18,16 @@ routes:
   - method: DELETE
     path: /api/v1/casbin_models/:id
 menus:
-  - name: CasbinModels
-    path: /casbin_models
-    component: Layout
-    icon: menu
-    permission: casbin_model:view
-    type: directory
-    redirect: /casbin_models/list
-    visible: true
-    enabled: true
-    sort: 1
-  - name: List
-    path: /casbin_models/list
-    parent_path: /casbin_models
+  - name: Models
+    path: /system/casbin/models
+    parent_path: /system/casbin
     component: view/casbin_model/index
     icon: menu
     permission: casbin_model:list
     type: menu
     visible: true
     enabled: true
-    sort: 2
+    sort: 1
 permissions:
   - object: casbin_model
     action: list

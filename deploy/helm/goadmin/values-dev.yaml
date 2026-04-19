@@ -15,6 +15,7 @@ config:
   logLevel: debug
   logFormat: console
   databaseAutoMigrate: true
+  databaseLogSql: true
   tenantEnabled: true
 
 ingress:

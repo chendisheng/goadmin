@@ -22,6 +22,7 @@ database:
   driver: mysql
   dsn: goadmin:goadmin@tcp(127.0.0.1:3306)/goadmin?charset=utf8mb4&parseTime=True&loc=Local
   auto_migrate: true
+  log_sql: true
 
 codegen:
   generated_modules_auto_migrate: false

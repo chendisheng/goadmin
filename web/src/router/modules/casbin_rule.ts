@@ -1,9 +1,9 @@
 const route = {
-  path: '/casbin_rules',
-  name: 'CasbinRule',
+  path: '/system/casbin/rules',
+  name: 'CasbinRules',
   component: () => import('@/views/casbin_rule/index.vue'),
   meta: {
-    title: 'CasbinRule',
+    title: 'rules',
     icon: 'menu',
   },
 }

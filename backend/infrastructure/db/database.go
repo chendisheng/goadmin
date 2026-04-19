@@ -15,6 +15,13 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 )
 
+func sqlLogMode(enabled bool) gormlogger.LogLevel {
+	if enabled {
+		return gormlogger.Info
+	}
+	return gormlogger.Silent
+}
+
 func Open(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	switch strings.ToLower(strings.TrimSpace(cfg.Driver)) {
 	case "", "mysql":
@@ -22,13 +29,13 @@ func Open(cfg config.DatabaseConfig) (*gorm.DB, error) {
 		if dsn == "" {
 			return nil, fmt.Errorf("database.dsn is required")
 		}
-		return gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: gormlogger.Default.LogMode(gormlogger.Silent)})
+		return gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: gormlogger.Default.LogMode(sqlLogMode(cfg.LogSQL))})
 	case "postgres", "postgresql":
 		dsn := strings.TrimSpace(cfg.DSN)
 		if dsn == "" {
 			return nil, fmt.Errorf("database.dsn is required")
 		}
-		return gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: gormlogger.Default.LogMode(gormlogger.Silent)})
+		return gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: gormlogger.Default.LogMode(sqlLogMode(cfg.LogSQL))})
 	case "sqlite":
 		dsn := strings.TrimSpace(cfg.DSN)
 		if dsn == "" {
@@ -37,7 +44,7 @@ func Open(cfg config.DatabaseConfig) (*gorm.DB, error) {
 		if err := ensureSQLiteDir(dsn); err != nil {
 			return nil, err
 		}
-		return gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: gormlogger.Default.LogMode(gormlogger.Silent)})
+		return gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: gormlogger.Default.LogMode(sqlLogMode(cfg.LogSQL))})
 	default:
 		return nil, fmt.Errorf("unsupported database driver %q", cfg.Driver)
 	}

@@ -60,6 +60,7 @@ type DatabaseConfig struct {
 	Driver      string `mapstructure:"driver"`
 	DSN         string `mapstructure:"dsn"`
 	AutoMigrate bool   `mapstructure:"auto_migrate"`
+	LogSQL      bool   `mapstructure:"log_sql"`
 }
 
 type CodeGenConfig struct {
@@ -139,6 +140,7 @@ func Default() Config {
 			Driver:      "mysql",
 			DSN:         "goadmin:goadmin@tcp(127.0.0.1:3306)/goadmin?charset=utf8mb4&parseTime=True&loc=Local",
 			AutoMigrate: true,
+			LogSQL:      false,
 		},
 		CodeGen: CodeGenConfig{
 			GeneratedModulesAutoMigrate: true,
@@ -218,6 +220,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.Database.DSN == "" {
 		cfg.Database.DSN = "goadmin:goadmin@tcp(127.0.0.1:3306)/goadmin?charset=utf8mb4&parseTime=True&loc=Local"
+	}
+	if !cfg.Database.LogSQL {
+		cfg.Database.LogSQL = false
 	}
 	if strings.TrimSpace(cfg.CodeGen.Artifact.BaseDir) == "" {
 		cfg.CodeGen.Artifact.BaseDir = filepath.Join(os.TempDir(), "goadmin", "codegen")
@@ -367,8 +372,9 @@ func (c Config) Public() map[string]any {
 			"development": c.Logger.Development,
 		},
 		"database": map[string]any{
-			"driver": c.Database.Driver,
-			"name":   databaseNameFromDSN(c.Database.Driver, c.Database.DSN),
+			"driver":  c.Database.Driver,
+			"name":    databaseNameFromDSN(c.Database.Driver, c.Database.DSN),
+			"log_sql": c.Database.LogSQL,
 		},
 		"codegen": map[string]any{
 			"artifact": map[string]any{
@@ -523,6 +529,7 @@ func applyDefaults(v *viper.Viper, cfg Config) {
 	v.SetDefault("database.driver", cfg.Database.Driver)
 	v.SetDefault("database.dsn", cfg.Database.DSN)
 	v.SetDefault("database.auto_migrate", cfg.Database.AutoMigrate)
+	v.SetDefault("database.log_sql", cfg.Database.LogSQL)
 	v.SetDefault("codegen.artifact.enabled", cfg.CodeGen.Artifact.Enabled)
 	v.SetDefault("codegen.artifact.base_dir", cfg.CodeGen.Artifact.BaseDir)
 	v.SetDefault("codegen.artifact.ttl", cfg.CodeGen.Artifact.TTL)

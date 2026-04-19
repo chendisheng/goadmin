@@ -16,6 +16,7 @@ data:
   GOADMIN_LOGGER_OUTPUT: {{ .Values.config.logOutput | quote }}
   GOADMIN_DATABASE_DRIVER: {{ .Values.config.databaseDriver | quote }}
   GOADMIN_DATABASE_AUTO_MIGRATE: {{ .Values.config.databaseAutoMigrate | quote }}
+  GOADMIN_DATABASE_LOG_SQL: {{ .Values.config.databaseLogSql | quote }}
   GOADMIN_TENANT_ENABLED: {{ .Values.config.tenantEnabled | quote }}
   GOADMIN_AUTH_JWT_ISSUER: {{ .Values.config.jwtIssuer | quote }}
   GOADMIN_AUTH_JWT_AUDIENCE: {{ .Values.config.jwtAudience | quote }}

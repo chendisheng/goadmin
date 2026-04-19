@@ -15,6 +15,7 @@ config:
   logLevel: info
   logFormat: json
   databaseAutoMigrate: true
+  databaseLogSql: false
   tenantEnabled: true
 
 ingress:

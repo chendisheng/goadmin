@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"go.uber.org/zap"
 	coreerrors "goadmin/core/errors"
 	coremiddleware "goadmin/core/middleware"
 	"goadmin/core/response"
@@ -14,6 +13,8 @@ import (
 	"goadmin/modules/casbin_model/domain/model"
 	casbin_modelreq "goadmin/modules/casbin_model/transport/http/request"
 	casbin_modelresp "goadmin/modules/casbin_model/transport/http/response"
+
+	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -113,8 +114,10 @@ func requestID(c coretransport.Context) string {
 
 func mapItem(item model.CasbinModel) casbin_modelresp.Item {
 	return casbin_modelresp.Item{
-		Name:    item.Name,
-		Content: item.Content,
+		Name:      item.Name,
+		Content:   item.Content,
+		CreatedAt: item.CreatedAt,
+		UpdatedAt: item.UpdatedAt,
 	}
 }
 

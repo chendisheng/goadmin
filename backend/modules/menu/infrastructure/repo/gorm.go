@@ -55,6 +55,14 @@ func SeedDefaults(db *gorm.DB) error {
 		return fmt.Errorf("menu seed requires db")
 	}
 	return db.Transaction(func(tx *gorm.DB) error {
+		if err := cleanupLegacyMenuPaths(tx, []string{
+			"/casbin_models",
+			"/casbin_models/list",
+			"/casbin_rules",
+			"/casbin_rules/list",
+		}); err != nil {
+			return err
+		}
 		now := time.Now().UTC()
 		seedIDMap := make(map[string]string, len(defaultMenus()))
 		for _, menu := range defaultMenus() {
@@ -400,6 +408,22 @@ func mapMenuRepoError(err error) error {
 	default:
 		return err
 	}
+}
+
+func cleanupLegacyMenuPaths(tx *gorm.DB, paths []string) error {
+	if tx == nil || len(paths) == 0 {
+		return nil
+	}
+	for _, pathValue := range paths {
+		pathValue = strings.TrimSpace(pathValue)
+		if pathValue == "" {
+			continue
+		}
+		if err := tx.Where("path = ?", pathValue).Delete(&menuRecord{}).Error; err != nil {
+			return mapMenuRepoError(err)
+		}
+	}
+	return nil
 }
 
 func nextRecordID(prefix string) string {

@@ -10,6 +10,10 @@ import type { PluginMenu } from '@/types/plugin';
 type ViewModuleLoader = AsyncComponentLoader<Component>;
 type PermissionChecker = (permission: string) => boolean;
 
+function isButtonMenu(node: Pick<BackendMenuRoute, 'type' | 'meta'> | Pick<PluginMenu, 'type' | 'visible' | 'enabled'>): boolean {
+  return String(node.type || '').trim() === 'button';
+}
+
 const viewModules = import.meta.glob('../views/**/*.vue') as Record<string, ViewModuleLoader>;
 
 function normalizeComponentKey(componentName: string): string {
@@ -91,6 +95,9 @@ export function filterMenuRoutesByPermission(nodes: BackendMenuRoute[], canAcces
   const result: BackendMenuRoute[] =[];
 
   for (const node of normalizeMenuRoots(nodes)) {
+    if (isButtonMenu(node)) {
+      continue;
+    }
     const children = filterMenuRoutesByPermission(node.children ?? [], canAccess);
     const allowed = canAccessMenu(node.meta.permission, canAccess);
     const hidden = node.hidden || !allowed;
@@ -113,6 +120,9 @@ function buildSidebarNodes(nodes: BackendMenuRoute[]): SidebarMenuNode[] {
   const roots = normalizeMenuRoots(nodes);
   const result: SidebarMenuNode[] = [];
   for (const node of roots) {
+    if (isButtonMenu(node)) {
+      continue;
+    }
     const children = buildSidebarNodes(node.children ?? []);
     if (node.hidden) {
       result.push(...children);
@@ -207,6 +217,7 @@ export function mapPluginMenusToBackendRoutes(items: PluginMenu[]): BackendMenuR
     component: item.component,
     redirect: item.redirect,
     hidden: !item.visible || !item.enabled,
+    type: item.type as BackendMenuRoute['type'],
     alwaysShow: item.type === 'directory',
     meta: {
       title: item.name,

@@ -8,6 +8,8 @@ export interface BackendMenuRouteMeta {
   link?: string;
 }
 
+export type BackendMenuRouteType = 'directory' | 'menu' | 'button';
+
 export interface BackendMenuRoute {
   name: string;
   path: string;
@@ -15,6 +17,7 @@ export interface BackendMenuRoute {
   redirect?: string;
   hidden: boolean;
   alwaysShow?: boolean;
+  type?: BackendMenuRouteType;
   meta: BackendMenuRouteMeta;
   children?: BackendMenuRoute[];
 }

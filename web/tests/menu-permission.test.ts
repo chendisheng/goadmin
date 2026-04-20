@@ -66,6 +66,20 @@ const menuTree: BackendMenuRoute[] = [
         },
       }),
       createMenuRoute({
+        name: 'system-user-create-btn',
+        path: '/system/user/create',
+        component: '',
+        type: 'button',
+        meta: {
+          title: '新增用户',
+          permission: 'user:create',
+          hidden: false,
+          noCache: true,
+          affix: false,
+          link: '',
+        },
+      }),
+      createMenuRoute({
         name: 'system-role',
         path: '/system/role',
         component: 'view/system/role/index',
@@ -112,5 +126,17 @@ describe('menu permission filtering', () => {
 
     expect(sidebarMenus.map((item) => item.path)).toEqual(['/dashboard', '/system/user']);
     expect(sidebarMenus.map((item) => item.title)).toEqual(['工作台', '用户管理']);
+  });
+
+  it('ignores button-type menu children when building page routes', () => {
+    const canAccess = () => true;
+
+    const filtered = filterMenuRoutesByPermission(menuTree, canAccess);
+    const systemRoute = filtered.find((item) => item.name === 'system');
+    const childNames = systemRoute?.children.map((child: BackendMenuRoute) => child.name) ?? [];
+
+    expect(systemRoute).toBeDefined();
+    expect(childNames).toEqual(['system-user', 'system-role']);
+    expect(systemRoute?.children.some((child: BackendMenuRoute) => child.type === 'button')).toBe(false);
   });
 });

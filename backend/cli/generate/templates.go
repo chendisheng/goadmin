@@ -559,7 +559,7 @@ export default route
 `
 
 const frontendViewTemplate = `<script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { onActivated, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
@@ -732,6 +732,10 @@ function handleSizeChange(pageSize: number) {
 }
 
 onMounted(() => {
+  void loadItems();
+});
+
+onActivated(() => {
   void loadItems();
 });
 </script>

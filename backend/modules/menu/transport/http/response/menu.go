@@ -47,6 +47,7 @@ type Route struct {
 	Redirect   string    `json:"redirect,omitempty"`
 	Hidden     bool      `json:"hidden"`
 	AlwaysShow bool      `json:"alwaysShow,omitempty"`
+	Type       string    `json:"type"`
 	Meta       RouteMeta `json:"meta"`
 	Children   []Route   `json:"children,omitempty"`
 }

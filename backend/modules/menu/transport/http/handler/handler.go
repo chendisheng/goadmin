@@ -198,6 +198,7 @@ func mapRoutes(items []model.Menu) []menuresp.Route {
 			Redirect:   item.Redirect,
 			Hidden:     !item.Visible,
 			AlwaysShow: alwaysShow,
+			Type:       string(item.Type),
 			Meta: menuresp.RouteMeta{
 				Title:      item.Name,
 				Icon:       item.Icon,

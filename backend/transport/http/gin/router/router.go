@@ -17,6 +17,7 @@ import (
 	authservice "goadmin/modules/auth/application/service"
 	authhttp "goadmin/modules/auth/transport/http"
 	menuservice "goadmin/modules/menu/application/service"
+	menuhttp "goadmin/modules/menu/transport/http"
 	pluginservice "goadmin/plugin/application/service"
 	pluginiface "goadmin/plugin/interface"
 	pluginregistry "goadmin/plugin/registry"
@@ -63,7 +64,6 @@ func Register(engine *gin.Engine, deps Dependencies) {
 			Service:     deps.AuthService,
 			Logger:      deps.Logger,
 			JWT:         deps.JWT,
-			Authorizer:  deps.Authorizer,
 			Revocations: deps.Revocations,
 		})
 
@@ -88,7 +88,20 @@ func Register(engine *gin.Engine, deps Dependencies) {
 		if err := corebootstrap.RegisterAll(protected, deps.BootstrapDeps, corebootstrap.Modules()); err != nil {
 			panic(err)
 		}
-		pluginhttp.Register(protected, pluginhttp.Dependencies{Service: deps.PluginService, Logger: deps.Logger})
+		menuhttp.Register(api, menuhttp.Dependencies{
+			Service:     deps.MenuService,
+			Logger:      deps.Logger,
+			JWT:         deps.JWT,
+			Authorizer:  deps.Authorizer,
+			Revocations: deps.Revocations,
+		})
+		pluginhttp.Register(api, pluginhttp.Dependencies{
+			Service:     deps.PluginService,
+			Logger:      deps.Logger,
+			JWT:         deps.JWT,
+			Authorizer:  deps.Authorizer,
+			Revocations: deps.Revocations,
+		})
 		registerPluginRoutes(api, protected, deps.PluginRegistry)
 	}
 

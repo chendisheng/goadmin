@@ -1,5 +1,3 @@
-p, admin, /api/v1/auth/me, GET
-p, admin, /api/v1/auth/logout, POST
 p, admin, /api/v1/dictionaries/categories, GET
 p, admin, /api/v1/dictionaries/categories/:id, GET
 p, admin, /api/v1/dictionaries/categories, POST
@@ -12,8 +10,6 @@ p, admin, /api/v1/dictionaries/items/:id, PUT
 p, admin, /api/v1/dictionaries/items/:id, DELETE
 p, admin, /api/v1/dictionaries/lookup/:code, GET
 p, admin, /api/v1/dictionaries/lookup/:code/:value, GET
-p, user, /api/v1/auth/me, GET
-p, user, /api/v1/auth/logout, POST
 p, admin, /api/v1/users, GET
 p, admin, /api/v1/users/:id, GET
 p, admin, /api/v1/users, POST
@@ -27,7 +23,6 @@ p, admin, /api/v1/roles/:id, DELETE
 p, admin, /api/v1/menus, GET
 p, admin, /api/v1/menus/:id, GET
 p, admin, /api/v1/menus/tree, GET
-p, admin, /api/v1/menus/routes, GET
 p, admin, /api/v1/menus, POST
 p, admin, /api/v1/menus/:id, PUT
 p, admin, /api/v1/menus/:id, DELETE
@@ -51,7 +46,6 @@ p, admin, /api/v1/books/:id, GET
 p, admin, /api/v1/books, POST
 p, admin, /api/v1/books/:id, PUT
 p, admin, /api/v1/books/:id, DELETE
-p, admin, /system/codegen, GET
 p, admin, /api/v1/orders, GET
 p, admin, /api/v1/orders/:id, GET
 p, admin, /api/v1/orders, POST

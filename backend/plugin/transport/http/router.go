@@ -1,26 +1,35 @@
 package http
 
 import (
+	coreauthbootstrap "goadmin/core/auth/bootstrap"
+	coreauthjwt "goadmin/core/auth/jwt"
 	coretransport "goadmin/core/transport"
 	pluginservice "goadmin/plugin/application/service"
 	"goadmin/plugin/transport/http/handler"
+	ginmiddleware "goadmin/transport/http/gin/middleware"
 
 	"go.uber.org/zap"
 )
 
 type Dependencies struct {
-	Service *pluginservice.Service
-	Logger  *zap.Logger
+	Service     *pluginservice.Service
+	Logger      *zap.Logger
+	JWT         *coreauthjwt.Manager
+	Authorizer  coreauthbootstrap.Authorizer
+	Revocations coreauthbootstrap.RevocationStore
 }
 
 func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 	h := handler.New(deps.Service, deps.Logger)
 	root := group.Group("/plugins")
-	root.GET("", h.List)
-	root.GET("/:name", h.Get)
-	root.POST("", h.Create)
-	root.PUT("/:name", h.Update)
-	root.DELETE("/:name", h.Delete)
-	root.GET("/menus", h.Menus)
-	root.GET("/permissions", h.Permissions)
+	read := root.Group("", ginmiddleware.JWTAuth(deps.JWT, deps.Revocations))
+	read.GET("/menus", h.Menus)
+	read.GET("/permissions", h.Permissions)
+
+	protected := root.Group("", ginmiddleware.JWTAuth(deps.JWT, deps.Revocations), ginmiddleware.RequirePermission(deps.Authorizer))
+	protected.GET("", h.List)
+	protected.GET("/:name", h.Get)
+	protected.POST("", h.Create)
+	protected.PUT("/:name", h.Update)
+	protected.DELETE("/:name", h.Delete)
 }

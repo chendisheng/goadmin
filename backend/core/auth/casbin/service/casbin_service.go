@@ -127,8 +127,6 @@ func candidateSubjects(tenantID, username, role string) []string {
 
 func defaultRules() []casbinadapter.Rule {
 	return []casbinadapter.Rule{
-		{Subject: "admin", Object: "/api/v1/auth/me", Action: "GET"},
-		{Subject: "admin", Object: "/api/v1/auth/logout", Action: "POST"},
 		{Subject: "admin", Object: "/api/v1/casbin/status", Action: "GET"},
 		{Subject: "admin", Object: "/api/v1/casbin/reload", Action: "POST"},
 		{Subject: "admin", Object: "/api/v1/casbin/seed", Action: "POST"},
@@ -148,8 +146,6 @@ func defaultRules() []casbinadapter.Rule {
 		{Subject: "admin", Object: "/api/v1/dictionaries/items/:id", Action: "DELETE"},
 		{Subject: "admin", Object: "/api/v1/dictionaries/lookup/:code", Action: "GET"},
 		{Subject: "admin", Object: "/api/v1/dictionaries/lookup/:code/:value", Action: "GET"},
-		{Subject: "user", Object: "/api/v1/auth/me", Action: "GET"},
-		{Subject: "user", Object: "/api/v1/auth/logout", Action: "POST"},
 	}
 }
 

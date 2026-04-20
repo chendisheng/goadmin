@@ -5,9 +5,7 @@ import (
 
 	corebootstrapcontract "goadmin/core/bootstrap/contract"
 	coretransport "goadmin/core/transport"
-	menuservice "goadmin/modules/menu/application/service"
 	menurepo "goadmin/modules/menu/infrastructure/repo"
-	menuhttp "goadmin/modules/menu/transport/http"
 
 	"gorm.io/gorm"
 )
@@ -37,14 +35,5 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 	if deps.DB == nil {
 		return fmt.Errorf("menu bootstrap requires db")
 	}
-	repo, err := menurepo.NewGormRepository(deps.DB)
-	if err != nil {
-		return err
-	}
-	service, err := menuservice.New(repo)
-	if err != nil {
-		return err
-	}
-	menuhttp.Register(group, menuhttp.Dependencies{Service: service, Logger: deps.Logger})
 	return nil
 }

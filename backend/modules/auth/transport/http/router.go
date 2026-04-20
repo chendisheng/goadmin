@@ -16,7 +16,6 @@ type Dependencies struct {
 	Service     *service.Service
 	Logger      *zap.Logger
 	JWT         *coreauthjwt.Manager
-	Authorizer  coreauthbootstrap.Authorizer
 	Revocations coreauthbootstrap.RevocationStore
 }
 
@@ -25,7 +24,7 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 	root := group.Group("/auth")
 	root.POST("/login", h.Login)
 
-	protected := root.Group("", ginmiddleware.JWTAuth(deps.JWT, deps.Revocations), ginmiddleware.RequirePermission(deps.Authorizer))
+	protected := root.Group("", ginmiddleware.JWTAuth(deps.JWT, deps.Revocations))
 	protected.POST("/logout", h.Logout)
 	protected.GET("/me", h.Me)
 }

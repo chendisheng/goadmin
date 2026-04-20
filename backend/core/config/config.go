@@ -26,6 +26,7 @@ type Config struct {
 	CodeGen    CodeGenConfig  `mapstructure:"codegen"`
 	Tenant     TenantConfig   `mapstructure:"tenant"`
 	Auth       AuthConfig     `mapstructure:"auth"`
+	Upload     UploadConfig   `mapstructure:"upload"`
 	LoadedAt   string         `mapstructure:"-"`
 	LoadedFrom string         `mapstructure:"-"`
 }
@@ -169,6 +170,7 @@ func Default() Config {
 			},
 			Bootstrap: BootstrapConfig{},
 		},
+		Upload: DefaultUploadConfig(),
 	}
 }
 
@@ -332,6 +334,9 @@ func (c Config) Validate() error {
 			return fmt.Errorf("auth.casbin.source must be file or db")
 		}
 	}
+	if err := c.Upload.Validate(); err != nil {
+		return err
+	}
 	if c.CodeGen.Artifact.Enabled {
 		if strings.TrimSpace(c.CodeGen.Artifact.BaseDir) == "" {
 			return fmt.Errorf("codegen.artifact.base_dir is required")
@@ -399,6 +404,56 @@ func (c Config) Public() map[string]any {
 			},
 			"bootstrap": map[string]any{
 				"users": len(c.Auth.Bootstrap.Users),
+			},
+		},
+		"upload": map[string]any{
+			"storage": map[string]any{
+				"driver": c.Upload.Storage.Driver,
+				"local": map[string]any{
+					"base_dir":           c.Upload.Storage.Local.BaseDir,
+					"public_base_url":    c.Upload.Storage.Local.PublicBaseURL,
+					"use_proxy_download": c.Upload.Storage.Local.UseProxyDownload,
+				},
+				"s3_compatible": map[string]any{
+					"endpoint":          c.Upload.Storage.S3Compatible.Endpoint,
+					"region":            c.Upload.Storage.S3Compatible.Region,
+					"bucket":            c.Upload.Storage.S3Compatible.Bucket,
+					"access_key_id":     c.Upload.Storage.S3Compatible.AccessKeyID,
+					"access_key_secret": c.Upload.Storage.S3Compatible.AccessKeySecret,
+					"use_ssl":           c.Upload.Storage.S3Compatible.UseSSL,
+					"path_style":        c.Upload.Storage.S3Compatible.PathStyle,
+					"public_base_url":   c.Upload.Storage.S3Compatible.PublicBaseURL,
+				},
+				"oss": map[string]any{
+					"endpoint":          c.Upload.Storage.OSS.Endpoint,
+					"bucket":            c.Upload.Storage.OSS.Bucket,
+					"access_key_id":     c.Upload.Storage.OSS.AccessKeyID,
+					"access_key_secret": c.Upload.Storage.OSS.AccessKeySecret,
+					"public_base_url":   c.Upload.Storage.OSS.PublicBaseURL,
+				},
+				"cos": map[string]any{
+					"region":          c.Upload.Storage.COS.Region,
+					"bucket":          c.Upload.Storage.COS.Bucket,
+					"secret_id":       c.Upload.Storage.COS.SecretID,
+					"secret_key":      c.Upload.Storage.COS.SecretKey,
+					"public_base_url": c.Upload.Storage.COS.PublicBaseURL,
+				},
+				"minio": map[string]any{
+					"endpoint":          c.Upload.Storage.MinIO.Endpoint,
+					"bucket":            c.Upload.Storage.MinIO.Bucket,
+					"access_key_id":     c.Upload.Storage.MinIO.AccessKeyID,
+					"access_key_secret": c.Upload.Storage.MinIO.AccessKeySecret,
+					"use_ssl":           c.Upload.Storage.MinIO.UseSSL,
+					"path_style":        c.Upload.Storage.MinIO.PathStyle,
+					"public_base_url":   c.Upload.Storage.MinIO.PublicBaseURL,
+				},
+				"policy": map[string]any{
+					"max_upload_size":    c.Upload.Storage.Policy.MaxUploadSize,
+					"allowed_extensions": c.Upload.Storage.Policy.AllowedExtensions,
+					"allowed_mime_types": c.Upload.Storage.Policy.AllowedMIMETypes,
+					"visibility_default": c.Upload.Storage.Policy.VisibilityDefault,
+					"path_prefix":        c.Upload.Storage.Policy.PathPrefix,
+				},
 			},
 		},
 		"loaded_at":   c.LoadedAt,
@@ -544,6 +599,40 @@ func applyDefaults(v *viper.Viper, cfg Config) {
 	v.SetDefault("auth.casbin.source", cfg.Auth.Casbin.Source)
 	v.SetDefault("auth.casbin.model_path", cfg.Auth.Casbin.ModelPath)
 	v.SetDefault("auth.casbin.policy_path", cfg.Auth.Casbin.PolicyPath)
+	v.SetDefault("upload.storage.driver", cfg.Upload.Storage.Driver)
+	v.SetDefault("upload.storage.local.base_dir", cfg.Upload.Storage.Local.BaseDir)
+	v.SetDefault("upload.storage.local.public_base_url", cfg.Upload.Storage.Local.PublicBaseURL)
+	v.SetDefault("upload.storage.local.use_proxy_download", cfg.Upload.Storage.Local.UseProxyDownload)
+	v.SetDefault("upload.storage.s3_compatible.endpoint", cfg.Upload.Storage.S3Compatible.Endpoint)
+	v.SetDefault("upload.storage.s3_compatible.region", cfg.Upload.Storage.S3Compatible.Region)
+	v.SetDefault("upload.storage.s3_compatible.bucket", cfg.Upload.Storage.S3Compatible.Bucket)
+	v.SetDefault("upload.storage.s3_compatible.access_key_id", cfg.Upload.Storage.S3Compatible.AccessKeyID)
+	v.SetDefault("upload.storage.s3_compatible.access_key_secret", cfg.Upload.Storage.S3Compatible.AccessKeySecret)
+	v.SetDefault("upload.storage.s3_compatible.use_ssl", cfg.Upload.Storage.S3Compatible.UseSSL)
+	v.SetDefault("upload.storage.s3_compatible.path_style", cfg.Upload.Storage.S3Compatible.PathStyle)
+	v.SetDefault("upload.storage.s3_compatible.public_base_url", cfg.Upload.Storage.S3Compatible.PublicBaseURL)
+	v.SetDefault("upload.storage.oss.endpoint", cfg.Upload.Storage.OSS.Endpoint)
+	v.SetDefault("upload.storage.oss.bucket", cfg.Upload.Storage.OSS.Bucket)
+	v.SetDefault("upload.storage.oss.access_key_id", cfg.Upload.Storage.OSS.AccessKeyID)
+	v.SetDefault("upload.storage.oss.access_key_secret", cfg.Upload.Storage.OSS.AccessKeySecret)
+	v.SetDefault("upload.storage.oss.public_base_url", cfg.Upload.Storage.OSS.PublicBaseURL)
+	v.SetDefault("upload.storage.cos.region", cfg.Upload.Storage.COS.Region)
+	v.SetDefault("upload.storage.cos.bucket", cfg.Upload.Storage.COS.Bucket)
+	v.SetDefault("upload.storage.cos.secret_id", cfg.Upload.Storage.COS.SecretID)
+	v.SetDefault("upload.storage.cos.secret_key", cfg.Upload.Storage.COS.SecretKey)
+	v.SetDefault("upload.storage.cos.public_base_url", cfg.Upload.Storage.COS.PublicBaseURL)
+	v.SetDefault("upload.storage.minio.endpoint", cfg.Upload.Storage.MinIO.Endpoint)
+	v.SetDefault("upload.storage.minio.bucket", cfg.Upload.Storage.MinIO.Bucket)
+	v.SetDefault("upload.storage.minio.access_key_id", cfg.Upload.Storage.MinIO.AccessKeyID)
+	v.SetDefault("upload.storage.minio.access_key_secret", cfg.Upload.Storage.MinIO.AccessKeySecret)
+	v.SetDefault("upload.storage.minio.use_ssl", cfg.Upload.Storage.MinIO.UseSSL)
+	v.SetDefault("upload.storage.minio.path_style", cfg.Upload.Storage.MinIO.PathStyle)
+	v.SetDefault("upload.storage.minio.public_base_url", cfg.Upload.Storage.MinIO.PublicBaseURL)
+	v.SetDefault("upload.storage.policy.max_upload_size", cfg.Upload.Storage.Policy.MaxUploadSize)
+	v.SetDefault("upload.storage.policy.allowed_extensions", cfg.Upload.Storage.Policy.AllowedExtensions)
+	v.SetDefault("upload.storage.policy.allowed_mime_types", cfg.Upload.Storage.Policy.AllowedMIMETypes)
+	v.SetDefault("upload.storage.policy.visibility_default", cfg.Upload.Storage.Policy.VisibilityDefault)
+	v.SetDefault("upload.storage.policy.path_prefix", cfg.Upload.Storage.Policy.PathPrefix)
 }
 
 func mergeFileIfExists(v *viper.Viper, path string) error {

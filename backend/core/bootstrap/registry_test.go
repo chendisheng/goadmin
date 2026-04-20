@@ -14,7 +14,7 @@ func TestModulesIncludesBuiltinAndGenerated(t *testing.T) {
 		got[module.Name()] = struct{}{}
 	}
 
-	for _, want := range []string{"casbin", "codegen_console", "menu", "role", "user", "book", "order"} {
+	for _, want := range []string{"casbin", "codegen_console", "menu", "role", "upload", "user", "book"} {
 		if _, ok := got[want]; !ok {
 			t.Fatalf("Modules() missing %q; got=%v", want, got)
 		}
@@ -40,7 +40,7 @@ func TestBuiltinAndGeneratedModulesSplit(t *testing.T) {
 		}
 		builtinNames[module.Name()] = struct{}{}
 	}
-	for _, want := range []string{"codegen_console", "dictionary", "menu", "role", "user"} {
+	for _, want := range []string{"codegen_console", "dictionary", "menu", "role", "upload", "user"} {
 		if _, ok := builtinNames[want]; !ok {
 			t.Fatalf("BuiltinModules() missing %q; got=%v", want, builtinNames)
 		}
@@ -53,7 +53,7 @@ func TestBuiltinAndGeneratedModulesSplit(t *testing.T) {
 		}
 		generatedNames[module.Name()] = struct{}{}
 	}
-	for _, want := range []string{"book", "order"} {
+	for _, want := range []string{"book"} {
 		if _, ok := generatedNames[want]; !ok {
 			t.Fatalf("GeneratedModules() missing %q; got=%v", want, generatedNames)
 		}

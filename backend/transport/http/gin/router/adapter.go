@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"mime/multipart"
 
 	coretransport "goadmin/core/transport"
 
@@ -164,6 +165,13 @@ func (c *ginContextAdapter) Set(key string, value any) {
 	c.Context.Set(key, value)
 }
 
+func (c *ginContextAdapter) ShouldBind(v any) error {
+	if c == nil || c.Context == nil {
+		return context.Canceled
+	}
+	return c.Context.ShouldBind(v)
+}
+
 func (c *ginContextAdapter) Get(key string) (any, bool) {
 	if c == nil || c.Context == nil {
 		return nil, false
@@ -183,6 +191,13 @@ func (c *ginContextAdapter) ShouldBindQuery(v any) error {
 		return context.Canceled
 	}
 	return c.Context.ShouldBindQuery(v)
+}
+
+func (c *ginContextAdapter) FormFile(name string) (*multipart.FileHeader, error) {
+	if c == nil || c.Context == nil {
+		return nil, context.Canceled
+	}
+	return c.Context.FormFile(name)
 }
 
 func (c *ginContextAdapter) BindJSON(v any) error {

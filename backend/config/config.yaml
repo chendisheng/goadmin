@@ -31,6 +31,60 @@ codegen:
     base_dir: /tmp/goadmin/codegen
     ttl: 24h
 
+upload:
+  storage:
+    driver: local
+    local:
+      base_dir: /tmp/goadmin/uploads
+      public_base_url: /api/v1/uploads/files
+      use_proxy_download: true
+    s3_compatible:
+      endpoint: http://127.0.0.1:9000
+      region: us-east-1
+      bucket: goadmin-upload
+      access_key_id: minioadmin
+      access_key_secret: minioadmin
+      use_ssl: false
+      path_style: true
+      public_base_url: https://cdn.example.com/uploads
+    oss:
+      endpoint: https://oss-cn-hangzhou.aliyuncs.com
+      bucket: goadmin-upload
+      access_key_id: xxx
+      access_key_secret: xxx
+      public_base_url: https://cdn.example.com/uploads
+    cos:
+      region: ap-guangzhou
+      bucket: goadmin-upload-1250000000
+      secret_id: xxx
+      secret_key: xxx
+      public_base_url: https://cdn.example.com/uploads
+    minio:
+      endpoint: http://127.0.0.1:9000
+      bucket: goadmin-upload
+      access_key_id: minioadmin
+      access_key_secret: minioadmin
+      use_ssl: false
+      path_style: true
+      public_base_url: http://127.0.0.1:9000/goadmin-upload
+    policy:
+      max_upload_size: 20mb
+      allowed_extensions:
+        - .png
+        - .jpg
+        - .jpeg
+        - .webp
+        - .pdf
+        - .txt
+      allowed_mime_types:
+        - image/png
+        - image/jpeg
+        - image/webp
+        - application/pdf
+        - text/plain
+      visibility_default: private
+      path_prefix: uploads
+
 # tenant.enabled controls whether multi-tenant behavior is enabled.
 tenant:
   enabled: true

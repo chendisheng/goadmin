@@ -23,6 +23,31 @@ codegen:
     base_dir: /tmp/goadmin/codegen
     ttl: 24h
 
+upload:
+  storage:
+    driver: local
+    local:
+      base_dir: /tmp/goadmin/uploads
+      public_base_url: /api/v1/uploads/files
+      use_proxy_download: true
+    policy:
+      max_upload_size: 20mb
+      allowed_extensions:
+        - .png
+        - .jpg
+        - .jpeg
+        - .webp
+        - .pdf
+        - .txt
+      allowed_mime_types:
+        - image/png
+        - image/jpeg
+        - image/webp
+        - application/pdf
+        - text/plain
+      visibility_default: private
+      path_prefix: uploads
+
 # tenant.enabled controls whether multi-tenant behavior is enabled.
 tenant:
   enabled: true

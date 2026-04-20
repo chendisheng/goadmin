@@ -1,0 +1,84 @@
+# upload:begin
+name: upload
+version: v1
+kind: core-module
+module: upload
+dependencies:
+  - core/bootstrap
+  - core/auth/bootstrap
+  - core/auth/casbin
+  - menu
+  - user
+routes:
+  - method: GET
+    path: /api/v1/uploads/files
+  - method: GET
+    path: /api/v1/uploads/files/:id
+  - method: POST
+    path: /api/v1/uploads/files
+  - method: DELETE
+    path: /api/v1/uploads/files/:id
+  - method: GET
+    path: /api/v1/uploads/files/:id/download
+  - method: GET
+    path: /api/v1/uploads/files/:id/preview
+  - method: POST
+    path: /api/v1/uploads/files/:id/bind
+  - method: DELETE
+    path: /api/v1/uploads/files/:id/bind
+menus:
+  - name: 文件管理
+    path: /system/upload
+    component: system/upload/index
+    icon: upload
+    permission: upload:file:list
+    type: directory
+    redirect: /system/upload/files
+    visible: true
+    enabled: true
+    sort: 10
+  - name: 文件列表
+    path: /system/upload/files
+    parent_path: /system/upload
+    component: system/upload/index
+    icon: upload
+    permission: upload:file:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 11
+permissions:
+  - object: upload-file
+    action: list
+    description: List upload files
+  - object: upload-file
+    action: create
+    description: Upload a file
+  - object: upload-file
+    action: read
+    description: Read upload file metadata
+  - object: upload-file
+    action: download
+    description: Download an upload file
+  - object: upload-file
+    action: preview
+    description: Preview an upload file
+  - object: upload-file
+    action: delete
+    description: Delete an upload file
+  - object: upload-file
+    action: bind
+    description: Bind an upload file to a business object
+  - object: upload-file
+    action: unbind
+    description: Unbind an upload file from a business object
+capabilities:
+  - file-upload
+  - file-preview
+  - file-download
+  - file-delete
+  - storage-abstraction
+  - metadata-tracking
+  - permission-governed
+  - menu-governed
+# upload:end

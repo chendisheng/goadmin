@@ -148,6 +148,14 @@ func defaultRules() []casbinadapter.Rule {
 		{Subject: "admin", Object: "/api/v1/plugins*", Action: "DELETE"},
 		{Subject: "admin", Object: "/api/v1/codegen/delete/preview", Action: "POST"},
 		{Subject: "admin", Object: "/api/v1/codegen/delete/execute", Action: "POST"},
+		{Subject: "admin", Object: "/api/v1/uploads/files", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/uploads/files/:id", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/uploads/files", Action: "POST"},
+		{Subject: "admin", Object: "/api/v1/uploads/files/:id", Action: "DELETE"},
+		{Subject: "admin", Object: "/api/v1/uploads/files/:id/download", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/uploads/files/:id/preview", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/uploads/files/:id/bind", Action: "POST"},
+		{Subject: "admin", Object: "/api/v1/uploads/files/:id/bind", Action: "DELETE"},
 	}
 }
 

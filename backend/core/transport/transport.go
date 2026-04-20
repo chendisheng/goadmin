@@ -1,6 +1,9 @@
 package transport
 
-import "context"
+import (
+	"context"
+	"mime/multipart"
+)
 
 type HandlerFunc func(Context)
 
@@ -32,9 +35,11 @@ type Context interface {
 	Query(string) string
 	Set(string, any)
 	Get(string) (any, bool)
+	ShouldBind(any) error
 	ShouldBindJSON(any) error
 	ShouldBindQuery(any) error
 	BindJSON(any) error
+	FormFile(string) (*multipart.FileHeader, error)
 	JSON(int, any)
 	FileAttachment(string, string)
 	AbortWithStatusJSON(int, any)

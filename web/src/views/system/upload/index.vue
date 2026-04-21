@@ -54,12 +54,31 @@ const bindTarget = ref<UploadFileItem | null>(null);
 
 const storageDriverOptions = [
   { value: 'local', label: '本地存储' },
+  { value: 'db', label: '数据库存储' },
   { value: 's3-compatible', label: 'S3 兼容' },
   { value: 'oss', label: '阿里云 OSS' },
   { value: 'cos', label: '腾讯云 COS' },
   { value: 'qiniu', label: '七牛云' },
   { value: 'minio', label: 'MinIO' },
 ];
+
+const normalizeStorageDriver = (driver: string | null | undefined): string => {
+  const normalized = (driver ?? '').trim().toLowerCase();
+  switch (normalized) {
+    case 'database':
+      return 'db';
+    case 'local':
+    case 'db':
+    case 's3-compatible':
+    case 'oss':
+    case 'cos':
+    case 'qiniu':
+    case 'minio':
+      return normalized;
+    default:
+      return 'local';
+  }
+};
 
 const defaultStorageSettingForm = (): UploadStorageSettingFormState => ({
   driver: 'local',
@@ -185,7 +204,7 @@ async function loadStorageSetting() {
   storageSettingLoading.value = true;
   try {
     const response = await fetchUploadStorageSetting();
-    storageSetting.driver = response.driver || 'local';
+    storageSetting.driver = normalizeStorageDriver(response.driver);
   } catch {
     storageSetting.driver = 'local';
   } finally {
@@ -194,11 +213,12 @@ async function loadStorageSetting() {
 }
 
 async function submitStorageSetting() {
-  const driver = storageSetting.driver.trim() || 'local';
+  const driver = normalizeStorageDriver(storageSetting.driver);
+  storageSetting.driver = driver;
   storageSettingSaving.value = true;
   try {
     const response = await updateUploadStorageSetting({ driver });
-    storageSetting.driver = response.driver || driver;
+    storageSetting.driver = normalizeStorageDriver(response.driver || driver);
     ElMessage.success('默认存储驱动已保存');
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '保存失败');
@@ -441,7 +461,7 @@ onActivated(() => {
       <div class="upload-setting-card">
         <div class="upload-setting-content">
           <div class="upload-setting-title">默认存储驱动</div>
-          <el-text type="info">新上传文件将默认使用当前选择的存储实现，设置会持久化到数据库。</el-text>
+          <el-text type="info">新上传文件将默认使用当前选择的存储实现，设置会持久化到数据库；数据库存储会把文件内容与元数据一并写入数据库。</el-text>
         </div>
         <el-space wrap>
           <el-select v-model="storageSetting.driver" :loading="storageSettingLoading" :disabled="storageSettingSaving" style="width: 220px">

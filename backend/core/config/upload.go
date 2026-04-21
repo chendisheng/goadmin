@@ -221,8 +221,11 @@ func (c UploadConfig) validate() error {
 		if strings.TrimSpace(c.Storage.Qiniu.PublicBaseURL) == "" {
 			return fmt.Errorf("upload.storage.qiniu.public_base_url is required when upload.storage.driver=qiniu")
 		}
+	case "db", "database":
+		// Database-backed storage uses the shared upload DB connection and does not
+		// require an extra storage-specific configuration block.
 	default:
-		return fmt.Errorf("upload.storage.driver must be local, s3-compatible, oss, cos, qiniu, or minio")
+		return fmt.Errorf("upload.storage.driver must be local, db, database, s3-compatible, oss, cos, qiniu, or minio")
 	}
 	return nil
 }

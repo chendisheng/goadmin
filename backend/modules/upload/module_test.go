@@ -117,14 +117,16 @@ func TestUploadRouterRegistersExpectedRoutes(t *testing.T) {
 	uploadhttp.Register(recorder, uploadhttp.Dependencies{})
 
 	want := map[routeCall]struct{}{
-		{method: "GET", path: "/uploads/files"}:              {},
-		{method: "GET", path: "/uploads/files/:id"}:          {},
-		{method: "POST", path: "/uploads/files"}:             {},
-		{method: "DELETE", path: "/uploads/files/:id"}:       {},
-		{method: "GET", path: "/uploads/files/:id/download"}: {},
-		{method: "GET", path: "/uploads/files/:id/preview"}:  {},
-		{method: "POST", path: "/uploads/files/:id/bind"}:    {},
-		{method: "DELETE", path: "/uploads/files/:id/bind"}:  {},
+		{method: "GET", path: "/uploads/files/storage/default"}: {},
+		{method: "PUT", path: "/uploads/files/storage/default"}: {},
+		{method: "GET", path: "/uploads/files"}:                 {},
+		{method: "GET", path: "/uploads/files/:id"}:             {},
+		{method: "POST", path: "/uploads/files"}:                {},
+		{method: "DELETE", path: "/uploads/files/:id"}:          {},
+		{method: "GET", path: "/uploads/files/:id/download"}:    {},
+		{method: "GET", path: "/uploads/files/:id/preview"}:     {},
+		{method: "POST", path: "/uploads/files/:id/bind"}:       {},
+		{method: "DELETE", path: "/uploads/files/:id/bind"}:     {},
 	}
 	got := make(map[routeCall]struct{}, len(*recorder.calls))
 	for _, call := range *recorder.calls {

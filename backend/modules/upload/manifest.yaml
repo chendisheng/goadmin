@@ -52,6 +52,9 @@ permissions:
     action: list
     description: List upload files
   - object: upload-file
+    action: storage-setting
+    description: Read or update the default upload storage driver
+  - object: upload-file
     action: create
     description: Upload a file
   - object: upload-file

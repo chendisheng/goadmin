@@ -232,7 +232,7 @@ func (s *Service) SetDefaultStorageDriver(ctx context.Context, driver string) er
 		return fmt.Errorf("default storage driver is required")
 	}
 	switch driver {
-	case "local", "s3-compatible", "oss", "cos", "qiniu", "minio":
+	case "local", "db", "database", "s3-compatible", "oss", "cos", "qiniu", "minio":
 		return s.repo.SetDefaultStorageDriver(ctx, driver)
 	default:
 		return fmt.Errorf("unsupported upload storage driver %q", driver)

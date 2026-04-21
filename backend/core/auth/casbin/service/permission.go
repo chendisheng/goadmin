@@ -78,7 +78,8 @@ func NewPermissionService(cfg Config) (*PermissionService, error) {
 		if err := seedDBModel(store, modelPath); err != nil {
 			return nil, err
 		}
-		if err := syncDBPolicies(store, policyPath); err != nil {
+		policyAdapter, err := newMergedPolicyAdapter(store, policyPath)
+		if err != nil {
 			return nil, err
 		}
 		modelContent, err := store.LoadModel(context.Background(), filepath.Base(modelPath))
@@ -92,10 +93,6 @@ func NewPermissionService(cfg Config) (*PermissionService, error) {
 		defer func() {
 			_ = os.Remove(tempModelPath)
 		}()
-		policyAdapter, err := casbinadapter.NewGormAdapter(store)
-		if err != nil {
-			return nil, err
-		}
 		enforcer, err := casbinenforcer.New(casbinenforcer.Config{
 			ModelPath: tempModelPath,
 			Adapter:   policyAdapter,
@@ -138,28 +135,44 @@ func seedDBModel(store *casbinadapter.GormCasbinStore, modelPath string) error {
 	return nil
 }
 
-func syncDBPolicies(store casbinadapter.GormPolicyStore, policyPath string) error {
+type mergedPolicyAdapter struct {
+	store      casbinadapter.GormPolicyStore
+	policyPath string
+}
+
+func newMergedPolicyAdapter(store casbinadapter.GormPolicyStore, policyPath string) (*mergedPolicyAdapter, error) {
 	if store == nil {
-		return fmt.Errorf("casbin policy store is required")
+		return nil, fmt.Errorf("casbin policy store is required")
 	}
-	fileAdapter, err := casbinadapter.NewFileAdapter(policyPath)
+	return &mergedPolicyAdapter{store: store, policyPath: policyPath}, nil
+}
+
+func (a *mergedPolicyAdapter) LoadRules() ([]casbinadapter.Rule, error) {
+	if a == nil || a.store == nil {
+		return nil, fmt.Errorf("casbin policy adapter is not configured")
+	}
+	fileAdapter, err := casbinadapter.NewFileAdapter(a.policyPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fileRules, err := fileAdapter.LoadRules()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	existingRules, err := store.LoadPolicies(context.Background())
+	existingRules, err := a.store.LoadPolicies(context.Background())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	mergedRules := mergePolicyRules(defaultRules(), fileRules)
 	mergedRules = mergePolicyRules(mergedRules, existingRules)
-	if samePolicyRules(existingRules, mergedRules) {
-		return nil
+	return mergedRules, nil
+}
+
+func (a *mergedPolicyAdapter) SaveRules(rules []casbinadapter.Rule) error {
+	if a == nil || a.store == nil {
+		return fmt.Errorf("casbin policy adapter is not configured")
 	}
-	return store.SavePolicies(context.Background(), mergedRules)
+	return a.store.SavePolicies(context.Background(), rules)
 }
 
 func mergePolicyRules(primary, fallback []casbinadapter.Rule) []casbinadapter.Rule {

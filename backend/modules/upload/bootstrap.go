@@ -52,7 +52,7 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 		return err
 	}
 	storageCfg.Driver = defaultDriver
-	driver, err := uploadstorage.NewDriver(storageCfg)
+	driver, err := uploadstorage.NewDriverWithDB(deps.DB, storageCfg)
 	if err != nil {
 		return err
 	}

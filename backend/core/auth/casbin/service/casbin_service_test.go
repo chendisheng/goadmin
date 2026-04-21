@@ -136,8 +136,8 @@ func TestPermissionServiceDBSourceSeedsAndEnforcesPolicies(t *testing.T) {
 	if err := db.Table("casbin_rule").Count(&policyCount).Error; err != nil {
 		t.Fatalf("count casbin_rule records: %v", err)
 	}
-	if policyCount == 0 {
-		t.Fatal("expected policy rows to be seeded into casbin_rule")
+	if policyCount != 0 {
+		t.Fatalf("expected startup to stay read-only, got %d policy rows", policyCount)
 	}
 
 	var modelCount int64
@@ -194,7 +194,7 @@ func TestPermissionServiceDBSourceSeedsDefaultUploadPolicies(t *testing.T) {
 				t.Fatalf("EnforceClaims returned error: %v", err)
 			}
 			if !allowed {
-				t.Fatalf("expected db-backed default policy to allow %s %s", tc.method, tc.path)
+				t.Fatal("expected db-backed default policy to allow access")
 			}
 		})
 	}
@@ -203,8 +203,8 @@ func TestPermissionServiceDBSourceSeedsDefaultUploadPolicies(t *testing.T) {
 	if err := db.Table("casbin_rule").Where("ptype = ?", "p").Count(&policyCount).Error; err != nil {
 		t.Fatalf("count casbin_rule records: %v", err)
 	}
-	if policyCount == 0 {
-		t.Fatal("expected built-in default policies to be seeded into casbin_rule")
+	if policyCount != 0 {
+		t.Fatalf("expected startup to keep built-in policies in memory only, got %d rows", policyCount)
 	}
 }
 
@@ -258,8 +258,55 @@ func TestPermissionServiceDBSourceMergesMissingPoliciesFromCSV(t *testing.T) {
 	if err := db.Table("casbin_rule").Where("ptype = ?", "p").Count(&policyCount).Error; err != nil {
 		t.Fatalf("count casbin_rule records: %v", err)
 	}
-	if policyCount < 2 {
-		t.Fatalf("expected merged policies to be written into casbin_rule, got %d", policyCount)
+	if policyCount != 1 {
+		t.Fatalf("expected startup to preserve existing policy rows only, got %d", policyCount)
+	}
+}
+
+func TestGormStoreSavePoliciesPreservesExistingRulesAndAddsMissingOnes(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "casbin.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite db: %v", err)
+	}
+
+	store, err := casbinadapter.NewGormStore(db)
+	if err != nil {
+		t.Fatalf("NewGormStore: %v", err)
+	}
+	if err := casbinadapter.Migrate(db); err != nil {
+		t.Fatalf("migrate casbin tables: %v", err)
+	}
+
+	seeded := []casbinadapter.Rule{{Subject: "admin", Object: "/api/v1/users", Action: "GET"}}
+	if err := store.SavePolicies(context.Background(), seeded); err != nil {
+		t.Fatalf("seed existing policy: %v", err)
+	}
+
+	if err := store.SavePolicies(context.Background(), []casbinadapter.Rule{
+		{Subject: "admin", Object: "/api/v1/users", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/uploads/files", Action: "GET"},
+	}); err != nil {
+		t.Fatalf("save merged policies: %v", err)
+	}
+
+	var policyCount int64
+	if err := db.Table("casbin_rule").Where("ptype = ?", "p").Count(&policyCount).Error; err != nil {
+		t.Fatalf("count casbin_rule records: %v", err)
+	}
+	if policyCount != 2 {
+		t.Fatalf("expected exactly 2 policy rows after incremental sync, got %d", policyCount)
+	}
+
+	var uploadCount int64
+	if err := db.Table("casbin_rule").Where("ptype = ? AND v1 = ?", "p", "/api/v1/uploads/files").Count(&uploadCount).Error; err != nil {
+		t.Fatalf("count upload policy records: %v", err)
+	}
+	if uploadCount != 1 {
+		t.Fatalf("expected upload policy to be inserted once, got %d", uploadCount)
 	}
 }
 

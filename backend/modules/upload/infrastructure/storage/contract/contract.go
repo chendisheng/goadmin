@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Driver interface {
@@ -14,6 +16,11 @@ type Driver interface {
 	Exists(ctx context.Context, key string) (bool, error)
 	PublicURL(ctx context.Context, key string) (string, error)
 	SignedURL(ctx context.Context, key string, opts SignedURLOptions) (string, error)
+}
+
+type DatabaseAwareDriver interface {
+	Driver
+	SetDB(db *gorm.DB) error
 }
 
 type PutObjectRequest struct {

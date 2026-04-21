@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,6 +9,9 @@ import (
 	"testing"
 
 	"goadmin/core/config"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func TestNewDriverSelectsObjectStorageImplementations(t *testing.T) {
@@ -18,6 +22,20 @@ func TestNewDriverSelectsObjectStorageImplementations(t *testing.T) {
 		cfg  config.UploadStorageConfig
 		want string
 	}{
+		{
+			name: "db",
+			cfg: config.UploadStorageConfig{
+				Driver: "db",
+			},
+			want: "db",
+		},
+		{
+			name: "database",
+			cfg: config.UploadStorageConfig{
+				Driver: "database",
+			},
+			want: "db",
+		},
 		{
 			name: "s3-compatible",
 			cfg: config.UploadStorageConfig{
@@ -93,7 +111,7 @@ func TestNewDriverSelectsObjectStorageImplementations(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			driver, err := NewDriver(tc.cfg)
+			driver, err := newTestDriver(tc.cfg)
 			if err != nil {
 				t.Fatalf("NewDriver returned error: %v", err)
 			}
@@ -102,6 +120,26 @@ func TestNewDriverSelectsObjectStorageImplementations(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newTestDriver(cfg config.UploadStorageConfig) (interface{ Name() string }, error) {
+	if strings.EqualFold(strings.TrimSpace(cfg.Driver), "db") || strings.EqualFold(strings.TrimSpace(cfg.Driver), "database") {
+		db, err := gorm.Open(sqlite.Open(testSQLiteDSN(cfg.Driver)), &gorm.Config{})
+		if err != nil {
+			return nil, err
+		}
+		return NewDriverWithDB(db, cfg)
+	}
+	return NewDriver(cfg)
+}
+
+func testSQLiteDSN(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = "default"
+	}
+	name = strings.NewReplacer(" ", "_", "/", "_", "\\", "_").Replace(name)
+	return fmt.Sprintf("file:%s-%s?mode=memory&cache=shared", name, strings.ToLower(name))
 }
 
 func minIOFactoryEndpoint(t *testing.T) string {

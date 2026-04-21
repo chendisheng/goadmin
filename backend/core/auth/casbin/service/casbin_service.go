@@ -147,6 +147,8 @@ func defaultRules() []casbinadapter.Rule {
 		{Subject: "admin", Object: "/api/v1/dictionaries/lookup/:code", Action: "GET"},
 		{Subject: "admin", Object: "/api/v1/dictionaries/lookup/:code/:value", Action: "GET"},
 		{Subject: "admin", Object: "/api/v1/uploads/files", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/uploads/files/storage/default", Action: "GET"},
+		{Subject: "admin", Object: "/api/v1/uploads/files/storage/default", Action: "PUT"},
 		{Subject: "admin", Object: "/api/v1/uploads/files/:id", Action: "GET"},
 		{Subject: "admin", Object: "/api/v1/uploads/files", Action: "POST"},
 		{Subject: "admin", Object: "/api/v1/uploads/files/:id", Action: "DELETE"},

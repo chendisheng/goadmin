@@ -2,6 +2,8 @@ package gorm
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"goadmin/modules/upload/domain/model"
@@ -13,10 +15,11 @@ import (
 func TestRepositoryDefaultStorageDriver(t *testing.T) {
 	t.Parallel()
 
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(testRepositorySQLiteDSN(t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
+
 	if err := Migrate(db); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
@@ -46,10 +49,19 @@ func TestRepositoryDefaultStorageDriver(t *testing.T) {
 	}
 }
 
+func testRepositorySQLiteDSN(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = "default"
+	}
+	name = strings.NewReplacer(" ", "_", "/", "_", "\\", "_").Replace(name)
+	return fmt.Sprintf("file:repo-%s?mode=memory&cache=shared", name)
+}
+
 func TestRepositoryMigrateCreatesStorageSettingTable(t *testing.T) {
 	t.Parallel()
 
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(testRepositorySQLiteDSN(t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}

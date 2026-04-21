@@ -122,14 +122,49 @@ func (s *GormCasbinStore) SavePolicies(ctx context.Context, rules []Rule) error 
 	if s == nil || s.db == nil {
 		return fmt.Errorf("gorm casbin store is not configured")
 	}
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("ptype = ?", "p").Delete(&casbinPolicyRecord{}).Error; err != nil {
-			return fmt.Errorf("clear casbin policies: %w", err)
+	desiredRules := normalizePolicyRules(rules)
+	existingRules, err := s.LoadPolicies(ctx)
+	if err != nil {
+		return err
+	}
+
+	desired := make(map[string]Rule, len(desiredRules))
+	for _, rule := range desiredRules {
+		desired[policyRuleKey(rule)] = rule
+	}
+
+	existing := make(map[string]Rule, len(existingRules))
+	for _, rule := range existingRules {
+		if key := policyRuleKey(rule); key != "" {
+			existing[key] = rule
 		}
-		for _, rule := range rules {
-			if strings.TrimSpace(rule.Subject) == "" || strings.TrimSpace(rule.Object) == "" || strings.TrimSpace(rule.Action) == "" {
-				continue
+	}
+
+	var toDelete []Rule
+	for _, rule := range existingRules {
+		if _, ok := desired[policyRuleKey(rule)]; !ok {
+			toDelete = append(toDelete, rule)
+		}
+	}
+
+	var toInsert []Rule
+	for _, rule := range desiredRules {
+		if _, ok := existing[policyRuleKey(rule)]; !ok {
+			toInsert = append(toInsert, rule)
+		}
+	}
+
+	if len(toDelete) == 0 && len(toInsert) == 0 {
+		return nil
+	}
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, rule := range toDelete {
+			if err := tx.Where("ptype = ? AND v0 = ? AND v1 = ? AND v2 = ?", "p", rule.Subject, rule.Object, rule.Action).Delete(&casbinPolicyRecord{}).Error; err != nil {
+				return fmt.Errorf("delete casbin policy: %w", err)
 			}
+		}
+		for _, rule := range toInsert {
 			record := casbinPolicyRecord{PType: "p", V0: rule.Subject, V1: rule.Object, V2: rule.Action}
 			if err := tx.Create(&record).Error; err != nil {
 				return fmt.Errorf("save casbin policy: %w", err)
@@ -137,6 +172,44 @@ func (s *GormCasbinStore) SavePolicies(ctx context.Context, rules []Rule) error 
 		}
 		return nil
 	})
+}
+
+func normalizePolicyRules(rules []Rule) []Rule {
+	seen := make(map[string]struct{}, len(rules))
+	normalized := make([]Rule, 0, len(rules))
+	for _, rule := range rules {
+		normalizedRule, ok := normalizePolicyRule(rule)
+		if !ok {
+			continue
+		}
+		key := policyRuleKey(normalizedRule)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		normalized = append(normalized, normalizedRule)
+	}
+	return normalized
+}
+
+func normalizePolicyRule(rule Rule) (Rule, bool) {
+	rule.Subject = strings.TrimSpace(rule.Subject)
+	rule.Object = strings.TrimSpace(rule.Object)
+	rule.Action = strings.TrimSpace(rule.Action)
+	if rule.Subject == "" || rule.Object == "" || rule.Action == "" {
+		return Rule{}, false
+	}
+	return rule, true
+}
+
+func policyRuleKey(rule Rule) string {
+	subject := strings.TrimSpace(rule.Subject)
+	object := strings.TrimSpace(rule.Object)
+	action := strings.TrimSpace(rule.Action)
+	if subject == "" || object == "" || action == "" {
+		return ""
+	}
+	return subject + "\x1f" + object + "\x1f" + action
 }
 
 type casbinModelRecord struct {

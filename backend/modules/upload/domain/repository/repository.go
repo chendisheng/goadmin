@@ -29,4 +29,6 @@ type Repository interface {
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, id string, binding model.FileBinding) (*model.FileAsset, error)
 	Unbind(ctx context.Context, id string) (*model.FileAsset, error)
+	DefaultStorageDriver(ctx context.Context, fallback string) (string, error)
+	SetDefaultStorageDriver(ctx context.Context, driver string) error
 }

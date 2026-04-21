@@ -27,3 +27,7 @@ type BindRequest struct {
 	BizId     string `json:"biz_id"`
 	BizField  string `json:"biz_field"`
 }
+
+type StorageSettingRequest struct {
+	Driver string `json:"driver" form:"driver"`
+}

@@ -8,6 +8,7 @@ import (
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
 	"goadmin/modules/upload/infrastructure/storage/local"
 	"goadmin/modules/upload/infrastructure/storage/objectstore"
+	qiniustorage "goadmin/modules/upload/infrastructure/storage/qiniu"
 )
 
 func NewDriver(cfg config.UploadStorageConfig) (storagecontract.Driver, error) {
@@ -28,6 +29,12 @@ func NewDriver(cfg config.UploadStorageConfig) (storagecontract.Driver, error) {
 		return driver, nil
 	case "cos":
 		driver, err := objectstore.NewCOSDriver(cfg.COS)
+		if err != nil {
+			return nil, err
+		}
+		return driver, nil
+	case "qiniu":
+		driver, err := qiniustorage.NewDriver(cfg.Qiniu)
 		if err != nil {
 			return nil, err
 		}

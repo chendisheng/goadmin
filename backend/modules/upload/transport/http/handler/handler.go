@@ -203,6 +203,31 @@ func (h *Handler) Unbind(c coretransport.Context) {
 	c.JSON(http.StatusOK, response.Success(mapItem(*item), requestID(c)))
 }
 
+func (h *Handler) GetDefaultStorage(c coretransport.Context) {
+	driver, err := h.service.DefaultStorageDriver(c.RequestContext())
+	if err != nil {
+		status, body := response.Failure(err, requestID(c))
+		c.JSON(status, body)
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(uploadresp.StorageSetting{Driver: driver}, requestID(c)))
+}
+
+func (h *Handler) SetDefaultStorage(c coretransport.Context) {
+	var req uploadreq.StorageSettingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		status, body := response.Failure(apperrors.Wrap(err, apperrors.CodeBadRequest, "invalid storage setting request"), requestID(c))
+		c.JSON(status, body)
+		return
+	}
+	if err := h.service.SetDefaultStorageDriver(c.RequestContext(), req.Driver); err != nil {
+		status, body := response.Failure(err, requestID(c))
+		c.JSON(status, body)
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(uploadresp.StorageSetting{Driver: strings.TrimSpace(req.Driver)}, requestID(c)))
+}
+
 func mapItems(items []uploadmodel.FileAsset) []uploadresp.FileItem {
 	result := make([]uploadresp.FileItem, 0, len(items))
 	for _, item := range items {

@@ -73,6 +73,19 @@ func TestNewDriverSelectsObjectStorageImplementations(t *testing.T) {
 			},
 			want: "minio",
 		},
+		{
+			name: "qiniu",
+			cfg: config.UploadStorageConfig{
+				Driver: "qiniu",
+				Qiniu: config.QiniuStorageConfig{
+					Bucket:          "goadmin-upload-qiniu",
+					AccessKeyID:     "ak",
+					AccessKeySecret: "sk",
+					PublicBaseURL:   "https://cdn.example.com/uploads",
+				},
+			},
+			want: "qiniu",
+		},
 	}
 
 	for _, tc := range cases {

@@ -13,7 +13,8 @@ import (
 )
 
 type memoryRepo struct {
-	items map[string]*model.FileAsset
+	items                map[string]*model.FileAsset
+	defaultStorageDriver string
 }
 
 func newMemoryRepo() *memoryRepo {
@@ -78,6 +79,18 @@ func (r *memoryRepo) Unbind(ctx context.Context, id string) (*model.FileAsset, e
 	item.BizId = ""
 	item.BizField = ""
 	return r.Update(ctx, item)
+}
+
+func (r *memoryRepo) DefaultStorageDriver(ctx context.Context, fallback string) (string, error) {
+	if r.defaultStorageDriver == "" {
+		return fallback, nil
+	}
+	return r.defaultStorageDriver, nil
+}
+
+func (r *memoryRepo) SetDefaultStorageDriver(ctx context.Context, driver string) error {
+	r.defaultStorageDriver = driver
+	return nil
 }
 
 func TestUploadAndDeleteFlow(t *testing.T) {

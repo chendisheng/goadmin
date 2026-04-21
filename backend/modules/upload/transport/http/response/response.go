@@ -32,6 +32,10 @@ type List struct {
 	Items []FileItem `json:"items"`
 }
 
+type StorageSetting struct {
+	Driver string `json:"driver"`
+}
+
 type Preview struct {
 	FileItem
 	PreviewKind      string `json:"preview_kind,omitempty"`

@@ -17,6 +17,8 @@ func Register(group coretransport.RouteRegistrar, deps Dependencies) {
 	h := handler.New(deps.Service, deps.Logger)
 	root := group.Group("/uploads/files")
 
+	root.GET("/storage/default", h.GetDefaultStorage)
+	root.PUT("/storage/default", h.SetDefaultStorage)
 	root.GET("", h.List)
 	root.GET("/:id", h.Get)
 	root.POST("", h.Upload)

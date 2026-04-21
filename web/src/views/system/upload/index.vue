@@ -23,13 +23,17 @@ import {
   deleteUploadFile,
   downloadUploadFile,
   fetchUploadFiles,
+  fetchUploadStorageSetting,
   previewUploadFile,
   unbindUploadFile,
+  updateUploadStorageSetting,
   uploadUploadFile,
 } from '@/api/upload';
-import type { UploadFileBindFormState, UploadFileFormState, UploadFileItem, UploadFilePreviewItem, UploadFileQuery } from '@/types/upload';
+import type { UploadFileBindFormState, UploadFileFormState, UploadFileItem, UploadFilePreviewItem, UploadFileQuery, UploadStorageSettingFormState } from '@/types/upload';
 
 const tableLoading = ref(false);
+const storageSettingLoading = ref(false);
+const storageSettingSaving = ref(false);
 const uploadLoading = ref(false);
 const bindLoading = ref(false);
 const previewLoading = ref(false);
@@ -47,6 +51,21 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 const previewItem = ref<UploadFilePreviewItem | null>(null);
 const previewTargetId = ref('');
 const bindTarget = ref<UploadFileItem | null>(null);
+
+const storageDriverOptions = [
+  { value: 'local', label: '本地存储' },
+  { value: 's3-compatible', label: 'S3 兼容' },
+  { value: 'oss', label: '阿里云 OSS' },
+  { value: 'cos', label: '腾讯云 COS' },
+  { value: 'qiniu', label: '七牛云' },
+  { value: 'minio', label: 'MinIO' },
+];
+
+const defaultStorageSettingForm = (): UploadStorageSettingFormState => ({
+  driver: 'local',
+});
+
+const storageSetting = reactive<UploadStorageSettingFormState>(defaultStorageSettingForm());
 
 const query = reactive<UploadFileQuery>({
   keyword: '',
@@ -159,6 +178,32 @@ async function loadFiles() {
     total.value = response.total ?? 0;
   } finally {
     tableLoading.value = false;
+  }
+}
+
+async function loadStorageSetting() {
+  storageSettingLoading.value = true;
+  try {
+    const response = await fetchUploadStorageSetting();
+    storageSetting.driver = response.driver || 'local';
+  } catch {
+    storageSetting.driver = 'local';
+  } finally {
+    storageSettingLoading.value = false;
+  }
+}
+
+async function submitStorageSetting() {
+  const driver = storageSetting.driver.trim() || 'local';
+  storageSettingSaving.value = true;
+  try {
+    const response = await updateUploadStorageSetting({ driver });
+    storageSetting.driver = response.driver || driver;
+    ElMessage.success('默认存储驱动已保存');
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '保存失败');
+  } finally {
+    storageSettingSaving.value = false;
   }
 }
 
@@ -380,16 +425,33 @@ function handleSizeChange(pageSize: number) {
 }
 
 onMounted(() => {
+  void loadStorageSetting();
   void loadFiles();
 });
 
 onActivated(() => {
+  void loadStorageSetting();
   void loadFiles();
 });
 </script>
 
 <template>
   <div class="admin-page">
+    <el-card class="mb-4" shadow="never">
+      <div class="upload-setting-card">
+        <div class="upload-setting-content">
+          <div class="upload-setting-title">默认存储驱动</div>
+          <el-text type="info">新上传文件将默认使用当前选择的存储实现，设置会持久化到数据库。</el-text>
+        </div>
+        <el-space wrap>
+          <el-select v-model="storageSetting.driver" :loading="storageSettingLoading" :disabled="storageSettingSaving" style="width: 220px">
+            <el-option v-for="option in storageDriverOptions" :key="option.value" :label="option.label" :value="option.value" />
+          </el-select>
+          <el-button type="primary" :loading="storageSettingSaving" @click="submitStorageSetting">保存设置</el-button>
+        </el-space>
+      </div>
+    </el-card>
+
     <AdminTable
       title="文件管理"
       description="管理上传文件、绑定业务对象、下载文件与查看文件元数据。"
@@ -673,6 +735,26 @@ onActivated(() => {
 
 .mb-4 {
   margin-bottom: 16px;
+}
+
+.upload-setting-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.upload-setting-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.upload-setting-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
 }
 
 .upload-preview-image-wrap {

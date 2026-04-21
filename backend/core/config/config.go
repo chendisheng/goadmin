@@ -438,6 +438,14 @@ func (c Config) Public() map[string]any {
 					"secret_key":      c.Upload.Storage.COS.SecretKey,
 					"public_base_url": c.Upload.Storage.COS.PublicBaseURL,
 				},
+				"qiniu": map[string]any{
+					"region":            c.Upload.Storage.Qiniu.Region,
+					"bucket":            c.Upload.Storage.Qiniu.Bucket,
+					"access_key_id":     c.Upload.Storage.Qiniu.AccessKeyID,
+					"access_key_secret": c.Upload.Storage.Qiniu.AccessKeySecret,
+					"upload_url":        c.Upload.Storage.Qiniu.UploadURL,
+					"public_base_url":   c.Upload.Storage.Qiniu.PublicBaseURL,
+				},
 				"minio": map[string]any{
 					"endpoint":          c.Upload.Storage.MinIO.Endpoint,
 					"bucket":            c.Upload.Storage.MinIO.Bucket,
@@ -621,6 +629,12 @@ func applyDefaults(v *viper.Viper, cfg Config) {
 	v.SetDefault("upload.storage.cos.secret_id", cfg.Upload.Storage.COS.SecretID)
 	v.SetDefault("upload.storage.cos.secret_key", cfg.Upload.Storage.COS.SecretKey)
 	v.SetDefault("upload.storage.cos.public_base_url", cfg.Upload.Storage.COS.PublicBaseURL)
+	v.SetDefault("upload.storage.qiniu.region", cfg.Upload.Storage.Qiniu.Region)
+	v.SetDefault("upload.storage.qiniu.bucket", cfg.Upload.Storage.Qiniu.Bucket)
+	v.SetDefault("upload.storage.qiniu.access_key_id", cfg.Upload.Storage.Qiniu.AccessKeyID)
+	v.SetDefault("upload.storage.qiniu.access_key_secret", cfg.Upload.Storage.Qiniu.AccessKeySecret)
+	v.SetDefault("upload.storage.qiniu.upload_url", cfg.Upload.Storage.Qiniu.UploadURL)
+	v.SetDefault("upload.storage.qiniu.public_base_url", cfg.Upload.Storage.Qiniu.PublicBaseURL)
 	v.SetDefault("upload.storage.minio.endpoint", cfg.Upload.Storage.MinIO.Endpoint)
 	v.SetDefault("upload.storage.minio.bucket", cfg.Upload.Storage.MinIO.Bucket)
 	v.SetDefault("upload.storage.minio.access_key_id", cfg.Upload.Storage.MinIO.AccessKeyID)

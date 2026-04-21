@@ -58,3 +58,11 @@ export interface UploadFileBindFormState {
   biz_id: string;
   biz_field: string;
 }
+
+export interface UploadStorageSetting {
+  driver: string;
+}
+
+export interface UploadStorageSettingFormState {
+  driver: string;
+}

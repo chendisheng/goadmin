@@ -17,6 +17,7 @@ type UploadStorageConfig struct {
 	S3Compatible S3CompatibleConfig  `mapstructure:"s3_compatible" yaml:"s3_compatible"`
 	OSS          OSSStorageConfig    `mapstructure:"oss" yaml:"oss"`
 	COS          COSStorageConfig    `mapstructure:"cos" yaml:"cos"`
+	Qiniu        QiniuStorageConfig  `mapstructure:"qiniu" yaml:"qiniu"`
 	MinIO        MinIOStorageConfig  `mapstructure:"minio" yaml:"minio"`
 	Policy       StoragePolicyConfig `mapstructure:"policy" yaml:"policy"`
 }
@@ -60,6 +61,15 @@ type COSStorageConfig struct {
 	SecretID      string `mapstructure:"secret_id" yaml:"secret_id"`
 	SecretKey     string `mapstructure:"secret_key" yaml:"secret_key"`
 	PublicBaseURL string `mapstructure:"public_base_url" yaml:"public_base_url"`
+}
+
+type QiniuStorageConfig struct {
+	Region          string `mapstructure:"region" yaml:"region"`
+	Bucket          string `mapstructure:"bucket" yaml:"bucket"`
+	AccessKeyID     string `mapstructure:"access_key_id" yaml:"access_key_id"`
+	AccessKeySecret string `mapstructure:"access_key_secret" yaml:"access_key_secret"`
+	UploadURL       string `mapstructure:"upload_url" yaml:"upload_url"`
+	PublicBaseURL   string `mapstructure:"public_base_url" yaml:"public_base_url"`
 }
 
 type MinIOStorageConfig struct {
@@ -198,8 +208,21 @@ func (c UploadConfig) validate() error {
 		if strings.TrimSpace(c.Storage.COS.SecretKey) == "" {
 			return fmt.Errorf("upload.storage.cos.secret_key is required when upload.storage.driver=cos")
 		}
+	case "qiniu":
+		if strings.TrimSpace(c.Storage.Qiniu.Bucket) == "" {
+			return fmt.Errorf("upload.storage.qiniu.bucket is required when upload.storage.driver=qiniu")
+		}
+		if strings.TrimSpace(c.Storage.Qiniu.AccessKeyID) == "" {
+			return fmt.Errorf("upload.storage.qiniu.access_key_id is required when upload.storage.driver=qiniu")
+		}
+		if strings.TrimSpace(c.Storage.Qiniu.AccessKeySecret) == "" {
+			return fmt.Errorf("upload.storage.qiniu.access_key_secret is required when upload.storage.driver=qiniu")
+		}
+		if strings.TrimSpace(c.Storage.Qiniu.PublicBaseURL) == "" {
+			return fmt.Errorf("upload.storage.qiniu.public_base_url is required when upload.storage.driver=qiniu")
+		}
 	default:
-		return fmt.Errorf("upload.storage.driver must be local, s3-compatible, oss, cos, or minio")
+		return fmt.Errorf("upload.storage.driver must be local, s3-compatible, oss, cos, qiniu, or minio")
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package upload
 
 import (
+	"context"
 	"fmt"
 
 	corebootstrapcontract "goadmin/core/bootstrap/contract"
@@ -45,7 +46,13 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 	if err != nil {
 		return err
 	}
-	driver, err := uploadstorage.NewDriver(deps.Config.Upload.Storage)
+	storageCfg := deps.Config.Upload.Storage
+	defaultDriver, err := repo.DefaultStorageDriver(context.Background(), storageCfg.Driver)
+	if err != nil {
+		return err
+	}
+	storageCfg.Driver = defaultDriver
+	driver, err := uploadstorage.NewDriver(storageCfg)
 	if err != nil {
 		return err
 	}

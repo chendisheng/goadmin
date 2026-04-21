@@ -216,6 +216,29 @@ func (s *Service) Unbind(ctx context.Context, id string) (*model.FileAsset, erro
 	return s.repo.Unbind(ctx, id)
 }
 
+func (s *Service) DefaultStorageDriver(ctx context.Context) (string, error) {
+	if s == nil || s.repo == nil || s.driver == nil {
+		return "", fmt.Errorf("upload service is not configured")
+	}
+	return s.repo.DefaultStorageDriver(ctx, s.driver.Name())
+}
+
+func (s *Service) SetDefaultStorageDriver(ctx context.Context, driver string) error {
+	if s == nil || s.repo == nil {
+		return fmt.Errorf("upload service is not configured")
+	}
+	driver = strings.ToLower(strings.TrimSpace(driver))
+	if driver == "" {
+		return fmt.Errorf("default storage driver is required")
+	}
+	switch driver {
+	case "local", "s3-compatible", "oss", "cos", "qiniu", "minio":
+		return s.repo.SetDefaultStorageDriver(ctx, driver)
+	default:
+		return fmt.Errorf("unsupported upload storage driver %q", driver)
+	}
+}
+
 func normalizePolicy(policy config.StoragePolicyConfig) config.StoragePolicyConfig {
 	if strings.TrimSpace(policy.MaxUploadSize) == "" {
 		policy.MaxUploadSize = "20mb"

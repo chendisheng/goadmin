@@ -1,12 +1,14 @@
 import { getStoredAccessToken } from '@/store/session';
 import type { ListResponse } from '@/types/admin';
-import type { UploadFileBindFormState, UploadFileFormState, UploadFileItem, UploadFilePreviewItem, UploadFileQuery } from '@/types/upload';
+import type { UploadFileBindFormState, UploadFileFormState, UploadFileItem, UploadFilePreviewItem, UploadFileQuery, UploadStorageSetting, UploadStorageSettingFormState } from '@/types/upload';
 
 import http from './http';
 import { ApiError, type ApiEnvelope } from './types';
 
 const basePath = '/uploads/files';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
+const storageSettingPath = `${basePath}/storage/default`;
 
 export function fetchUploadFiles(params: UploadFileQuery): Promise<ListResponse<UploadFileItem>> {
   return http.get<ListResponse<UploadFileItem>>(basePath, { params });
@@ -30,6 +32,14 @@ export function bindUploadFile(id: string, payload: UploadFileBindFormState): Pr
 
 export function unbindUploadFile(id: string): Promise<UploadFileItem> {
   return http.delete<UploadFileItem>(`${basePath}/${id}/bind`);
+}
+
+export function fetchUploadStorageSetting(): Promise<UploadStorageSetting> {
+  return http.get<UploadStorageSetting>(storageSettingPath);
+}
+
+export function updateUploadStorageSetting(payload: UploadStorageSettingFormState): Promise<UploadStorageSetting> {
+  return http.put<UploadStorageSetting>(storageSettingPath, payload);
 }
 
 export async function uploadUploadFile(file: File, payload: UploadFileFormState): Promise<UploadFileItem> {

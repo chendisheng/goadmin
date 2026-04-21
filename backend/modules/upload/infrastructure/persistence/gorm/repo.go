@@ -44,6 +44,8 @@ type record struct {
 
 func (record) TableName() string { return "upload_file" }
 
+const storageSettingKeyDefaultDriver = "default_storage_driver"
+
 func New(db *gorm.DB) (*Repository, error) {
 	if db == nil {
 		return nil, fmt.Errorf("upload repository requires db")
@@ -55,7 +57,7 @@ func Migrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("upload migrate requires db")
 	}
-	return db.AutoMigrate(&record{})
+	return db.AutoMigrate(&record{}, &model.StorageSetting{})
 }
 
 func (r *Repository) List(ctx context.Context, filter uploadrepo.ListFilter) ([]model.FileAsset, int64, error) {
@@ -186,6 +188,47 @@ func (r *Repository) Unbind(ctx context.Context, id string) (*model.FileAsset, e
 	item.BizId = ""
 	item.BizField = ""
 	return r.Update(ctx, item)
+}
+
+func (r *Repository) DefaultStorageDriver(ctx context.Context, fallback string) (string, error) {
+	if r == nil || r.db == nil {
+		return strings.TrimSpace(fallback), fmt.Errorf("upload repository is not configured")
+	}
+	var row model.StorageSetting
+	if err := r.db.WithContext(ctx).First(&row, "setting_key = ?", storageSettingKeyDefaultDriver).Error; err != nil {
+		if mapErr(err) == uploadrepo.ErrNotFound {
+			return strings.TrimSpace(fallback), nil
+		}
+		return strings.TrimSpace(fallback), err
+	}
+	driver := strings.TrimSpace(row.SettingValue)
+	if driver == "" {
+		driver = strings.TrimSpace(fallback)
+	}
+	if driver == "" {
+		driver = "local"
+	}
+	return driver, nil
+}
+
+func (r *Repository) SetDefaultStorageDriver(ctx context.Context, driver string) error {
+	if r == nil || r.db == nil {
+		return fmt.Errorf("upload repository is not configured")
+	}
+	driver = strings.TrimSpace(driver)
+	if driver == "" {
+		return fmt.Errorf("upload default storage driver is required")
+	}
+	row := model.StorageSetting{}
+	if err := r.db.WithContext(ctx).First(&row, "setting_key = ?", storageSettingKeyDefaultDriver).Error; err != nil {
+		if mapErr(err) != uploadrepo.ErrNotFound {
+			return err
+		}
+		row = model.StorageSetting{SettingKey: storageSettingKeyDefaultDriver, SettingValue: driver}
+		return r.db.WithContext(ctx).Create(&row).Error
+	}
+	row.SettingValue = driver
+	return r.db.WithContext(ctx).Save(&row).Error
 }
 
 func toRecord(item model.FileAsset) record {

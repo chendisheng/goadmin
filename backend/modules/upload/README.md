@@ -92,7 +92,7 @@ backend/modules/upload/
 
 ### 存储驱动
 
-当前配置层已经预留以下驱动：
+当前配置层与 factory 已实现以下驱动：
 
 - `local`
 - `s3-compatible`
@@ -100,7 +100,17 @@ backend/modules/upload/
 - `cos`
 - `minio`
 
-默认实现使用本地存储，后续可按统一契约接入对象存储。
+默认实现使用本地存储；`s3-compatible`、`oss`、`cos`、`minio` 通过 `backend/modules/upload/infrastructure/storage/objectstore/` 下的统一对象存储驱动实现，并共享同一 storage 契约。
+
+对象存储实现进一步拆分为更贴近云 SDK 的适配层：
+
+- `adapter/client.go`：云 SDK 风格的对象客户端门面，负责 Put/Get/Head/Delete/Exists/PublicURL/SignedURL
+- `adapter/key.go`：对象 key、URL、配置派生和通用校验 helpers
+- `adapter/response.go`：对象元信息、元数据文件读写和结果回填
+- `adapter/sign.go`：签名 URL 组装逻辑
+- 根目录 `client.go`：只保留仓库内部的门面转发，避免上层直接依赖适配细节
+
+这样做的目的是让后续接入真实云 SDK 时，只需要替换 `adapter/client.go` 中的 SDK 调用，不必改动上层 service、factory 和仓储契约。
 
 ## 4. HTTP 路由
 
@@ -196,6 +206,7 @@ backend/modules/upload/
 - `local` 模式要求 `base_dir` 与 `public_base_url`
 - `s3-compatible` 模式要求 endpoint、bucket、access key 等信息
 - `oss`、`cos`、`minio` 也分别有必填项校验
+- 对象存储驱动会额外对路径键、公开访问 URL 和签名 URL 做统一处理
 
 ## 7. 代码入口
 

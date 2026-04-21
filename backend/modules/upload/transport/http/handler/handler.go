@@ -169,7 +169,7 @@ func (h *Handler) Preview(c coretransport.Context) {
 		c.JSON(status, body)
 		return
 	}
-	c.JSON(http.StatusOK, response.Success(mapItem(*item), requestID(c)))
+	c.JSON(http.StatusOK, response.Success(mapPreview(*item), requestID(c)))
 }
 
 func (h *Handler) Bind(c coretransport.Context) {
@@ -236,6 +236,50 @@ func mapItem(item uploadmodel.FileAsset) uploadresp.FileItem {
 		CreatedAt:      item.CreatedAt,
 		UpdatedAt:      item.UpdatedAt,
 	}
+}
+
+func mapPreview(item uploadmodel.FileAsset) uploadresp.Preview {
+	fileItem := mapItem(item)
+	kind := resolvePreviewKind(item.MimeType)
+	mode := "download_only"
+	if item.Visibility == uploadmodel.FileVisibilityPublic && strings.TrimSpace(item.PublicURL) != "" {
+		mode = "public_url"
+	} else if kind != "download-only" {
+		mode = "download"
+	}
+	return uploadresp.Preview{
+		FileItem:         fileItem,
+		PreviewKind:      kind,
+		PreviewMode:      mode,
+		DownloadURL:      buildDownloadURL(item.Id),
+		CanPreview:       kind != "download-only",
+		CanOpenInBrowser: kind != "download-only",
+	}
+}
+
+func resolvePreviewKind(mimeType string) string {
+	normalized := strings.ToLower(strings.TrimSpace(mimeType))
+	if normalized == "" {
+		return "download-only"
+	}
+	if strings.HasPrefix(normalized, "image/") {
+		return "image"
+	}
+	if normalized == "application/pdf" {
+		return "pdf"
+	}
+	if strings.HasPrefix(normalized, "text/") || normalized == "application/json" || normalized == "application/xml" || normalized == "application/xhtml+xml" {
+		return "text"
+	}
+	return "download-only"
+}
+
+func buildDownloadURL(id string) string {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return ""
+	}
+	return "/api/v1/uploads/files/" + id + "/download"
 }
 
 func requestID(c coretransport.Context) string {

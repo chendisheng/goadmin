@@ -23,6 +23,14 @@ export interface UploadFileItem {
   updated_at: string;
 }
 
+export interface UploadFilePreviewItem extends UploadFileItem {
+  preview_kind?: 'image' | 'pdf' | 'text' | 'download-only';
+  preview_mode?: 'public_url' | 'download' | 'download_only';
+  download_url?: string;
+  can_preview?: boolean;
+  can_open_in_browser?: boolean;
+}
+
 export interface UploadFileQuery {
   keyword?: string;
   visibility?: string;

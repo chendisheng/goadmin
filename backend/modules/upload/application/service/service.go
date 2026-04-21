@@ -115,7 +115,6 @@ func (s *Service) Upload(ctx context.Context, req UploadRequest) (*model.FileAss
 		StorageKey:     putResult.Key,
 		StorageDriver:  s.driver.Name(),
 		StoragePath:    putResult.Key,
-		PublicURL:      putResult.URL,
 		MimeType:       contentType,
 		Extension:      ext,
 		SizeBytes:      putResult.Size,
@@ -130,6 +129,17 @@ func (s *Service) Upload(ctx context.Context, req UploadRequest) (*model.FileAss
 		Remark:         strings.TrimSpace(req.Remark),
 		CreatedAt:      now,
 		UpdatedAt:      now,
+	}
+	if visibility == string(model.FileVisibilityPublic) {
+		publicURL := strings.TrimSpace(putResult.URL)
+		if publicURL == "" {
+			publicURL, err = s.driver.PublicURL(ctx, putResult.Key)
+			if err != nil {
+				_ = s.driver.Delete(ctx, putResult.Key)
+				return nil, err
+			}
+		}
+		asset.PublicURL = publicURL
 	}
 	created, err := s.repo.Create(ctx, asset)
 	if err != nil {

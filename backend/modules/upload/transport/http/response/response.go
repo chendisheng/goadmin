@@ -31,3 +31,12 @@ type List struct {
 	Total int64      `json:"total"`
 	Items []FileItem `json:"items"`
 }
+
+type Preview struct {
+	FileItem
+	PreviewKind      string `json:"preview_kind,omitempty"`
+	PreviewMode      string `json:"preview_mode,omitempty"`
+	DownloadURL      string `json:"download_url,omitempty"`
+	CanPreview       bool   `json:"can_preview,omitempty"`
+	CanOpenInBrowser bool   `json:"can_open_in_browser,omitempty"`
+}

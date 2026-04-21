@@ -183,7 +183,7 @@ backend/modules/upload/
 
 - `upload.storage.driver`
 - `upload.storage.local.base_dir`
-- `upload.storage.local.public_base_url`
+- `upload.storage.local.public_base_url`（本地静态访问前缀，默认 `/uploads/files`）
 - `upload.storage.local.use_proxy_download`
 - `upload.storage.policy.max_upload_size`
 - `upload.storage.policy.allowed_extensions`
@@ -203,7 +203,7 @@ backend/modules/upload/
 
 配置会在启动时进行校验：
 
-- `local` 模式要求 `base_dir` 与 `public_base_url`
+- `local` 模式要求 `base_dir` 与 `public_base_url`，且推荐使用真正可直开的静态前缀（默认 `/uploads/files`）
 - `s3-compatible` 模式要求 endpoint、bucket、access key 等信息
 - `oss`、`cos`、`minio` 也分别有必填项校验
 - 对象存储驱动会额外对路径键、公开访问 URL 和签名 URL 做统一处理

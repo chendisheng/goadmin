@@ -1,6 +1,6 @@
 import { getStoredAccessToken } from '@/store/session';
 import type { ListResponse } from '@/types/admin';
-import type { UploadFileBindFormState, UploadFileFormState, UploadFileItem, UploadFileQuery } from '@/types/upload';
+import type { UploadFileBindFormState, UploadFileFormState, UploadFileItem, UploadFilePreviewItem, UploadFileQuery } from '@/types/upload';
 
 import http from './http';
 import { ApiError, type ApiEnvelope } from './types';
@@ -16,8 +16,8 @@ export function fetchUploadFile(id: string): Promise<UploadFileItem> {
   return http.get<UploadFileItem>(`${basePath}/${id}`);
 }
 
-export function previewUploadFile(id: string): Promise<UploadFileItem> {
-  return http.get<UploadFileItem>(`${basePath}/${id}/preview`);
+export function previewUploadFile(id: string): Promise<UploadFilePreviewItem> {
+  return http.get<UploadFilePreviewItem>(`${basePath}/${id}/preview`);
 }
 
 export function deleteUploadFile(id: string): Promise<{ deleted: boolean }> {

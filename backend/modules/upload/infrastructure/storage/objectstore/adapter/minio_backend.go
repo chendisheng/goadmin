@@ -95,12 +95,7 @@ func resolveMinIOPublicBaseURL(cfg Config) string {
 	if strings.TrimSpace(cfg.PublicBaseURL) != "" {
 		return strings.TrimRight(strings.TrimSpace(cfg.PublicBaseURL), "/")
 	}
-	endpoint := strings.TrimSpace(cfg.Endpoint)
-	bucket := strings.TrimSpace(cfg.Bucket)
-	if endpoint == "" {
-		return joinURL("/api/v1/uploads/files", bucket)
-	}
-	return joinURL(endpoint, bucket)
+	return ""
 }
 
 func (c *minioObjectBackend) Name() string {
@@ -227,16 +222,26 @@ func (c *minioObjectBackend) PublicURL(ctx context.Context, key string) (string,
 	if c == nil || c.client == nil {
 		return "", fmt.Errorf("minio backend is not configured")
 	}
+	if strings.TrimSpace(c.publicBaseURL) == "" {
+		return "", fmt.Errorf("minio public_base_url is required for public urls")
+	}
 	key, err := normalizeKey(key)
 	if err != nil {
 		return "", err
 	}
-	return c.buildPublicURL(key), nil
+	publicURL := c.buildPublicURL(key)
+	if strings.TrimSpace(publicURL) == "" {
+		return "", fmt.Errorf("minio public_base_url is required for public urls")
+	}
+	return publicURL, nil
 }
 
 func (c *minioObjectBackend) SignedURL(ctx context.Context, key string, opts storagecontract.SignedURLOptions) (string, error) {
 	if c == nil || c.client == nil {
 		return "", fmt.Errorf("minio backend is not configured")
+	}
+	if strings.TrimSpace(c.publicBaseURL) == "" {
+		return "", fmt.Errorf("minio public_base_url is required for signed urls")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -348,7 +353,7 @@ func (c *minioObjectBackend) objectInfoFromMinIO(info minio.ObjectInfo, key stri
 func (c *minioObjectBackend) buildPublicURL(key string) string {
 	base := strings.TrimRight(c.publicBaseURL, "/")
 	if base == "" {
-		base = joinURL(c.endpoint, c.bucket)
+		return ""
 	}
 	return joinURL(base, key)
 }

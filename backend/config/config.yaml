@@ -36,7 +36,7 @@ upload:
     driver: local
     local:
       base_dir: /tmp/goadmin/uploads
-      public_base_url: /api/v1/uploads/files
+      public_base_url: /uploads/files
       use_proxy_download: true
     s3_compatible:
       endpoint: http://127.0.0.1:9000

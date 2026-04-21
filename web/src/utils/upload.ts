@@ -1,5 +1,7 @@
 import type { UploadFileFormState } from '@/types/upload';
 
+export type UploadPreviewKind = 'image' | 'pdf' | 'text' | 'download-only';
+
 export function formatUploadFileSize(bytes?: number): string {
   if (bytes == null || Number.isNaN(Number(bytes))) {
     return '-';
@@ -67,6 +69,50 @@ export function isPreviewableImage(mimeType?: string): boolean {
   return Boolean(mimeType?.toLowerCase().startsWith('image/'));
 }
 
+export function isPreviewablePdf(mimeType?: string): boolean {
+  return normalizeMimeType(mimeType) === 'application/pdf';
+}
+
+export function isPreviewableText(mimeType?: string): boolean {
+  const normalized = normalizeMimeType(mimeType);
+  if (!normalized) {
+    return false;
+  }
+  return normalized.startsWith('text/') || ['application/json', 'application/xml', 'application/xhtml+xml'].includes(normalized);
+}
+
+export function isPreviewableDocument(mimeType?: string): boolean {
+  return isPreviewablePdf(mimeType) || isPreviewableText(mimeType);
+}
+
+export function resolveUploadPreviewKind(mimeType?: string): UploadPreviewKind {
+  if (isPreviewableImage(mimeType)) {
+    return 'image';
+  }
+  if (isPreviewablePdf(mimeType)) {
+    return 'pdf';
+  }
+  if (isPreviewableText(mimeType)) {
+    return 'text';
+  }
+  return 'download-only';
+}
+
+export function isBrowserDirectPublicUrl(url?: string): boolean {
+  const normalized = url?.trim() ?? '';
+  if (!normalized) {
+    return false;
+  }
+  if (/^https?:\/\//i.test(normalized)) {
+    return true;
+  }
+  return normalized.startsWith('/') && !normalized.startsWith('/api/');
+}
+
 export function canSubmitUploadForm(file: File | null, form: Pick<UploadFileFormState, 'visibility'>): boolean {
   return file instanceof File && Boolean(form.visibility.trim());
+}
+
+function normalizeMimeType(value?: string): string {
+  return value?.trim().toLowerCase() ?? '';
 }

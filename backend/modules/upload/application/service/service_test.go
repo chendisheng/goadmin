@@ -83,7 +83,7 @@ func (r *memoryRepo) Unbind(ctx context.Context, id string) (*model.FileAsset, e
 func TestUploadAndDeleteFlow(t *testing.T) {
 	t.Parallel()
 
-	driver, err := local.NewDriver(config.LocalStorageConfig{BaseDir: t.TempDir(), PublicBaseURL: "/api/v1/uploads/files", UseProxyDownload: true})
+	driver, err := local.NewDriver(config.LocalStorageConfig{BaseDir: t.TempDir(), PublicBaseURL: "/uploads/files", UseProxyDownload: true})
 	if err != nil {
 		t.Fatalf("new local driver: %v", err)
 	}
@@ -112,8 +112,11 @@ func TestUploadAndDeleteFlow(t *testing.T) {
 	if created.Id == "" {
 		t.Fatal("expected uploaded asset id")
 	}
-	if created.StorageKey == "" || created.PublicURL == "" {
+	if created.StorageKey == "" {
 		t.Fatalf("unexpected created asset: %+v", created)
+	}
+	if created.PublicURL != "" {
+		t.Fatalf("private file should not expose public_url: %+v", created)
 	}
 	if _, _, err := driver.Get(context.Background(), created.StorageKey); err != nil {
 		t.Fatalf("stored file missing: %v", err)
@@ -147,10 +150,46 @@ func TestUploadAndDeleteFlow(t *testing.T) {
 	}
 }
 
+func TestUploadPublicFileExposesPublicURL(t *testing.T) {
+	t.Parallel()
+
+	driver, err := local.NewDriver(config.LocalStorageConfig{BaseDir: t.TempDir(), PublicBaseURL: "/uploads/files", UseProxyDownload: true})
+	if err != nil {
+		t.Fatalf("new local driver: %v", err)
+	}
+	svc, err := New(newMemoryRepo(), driver, config.StoragePolicyConfig{
+		AllowedExtensions: []string{".txt"},
+		AllowedMIMETypes:  []string{"text/plain"},
+		VisibilityDefault: "private",
+		PathPrefix:        "uploads",
+	})
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	created, err := svc.Upload(context.Background(), UploadRequest{
+		File:        bytes.NewBufferString("hello public"),
+		Filename:    "note.txt",
+		ContentType: "text/plain",
+		Size:        int64(len("hello public")),
+		UploadedBy:  "admin",
+		Visibility:  string(model.FileVisibilityPublic),
+	})
+	if err != nil {
+		t.Fatalf("upload failed: %v", err)
+	}
+	if created.PublicURL == "" {
+		t.Fatalf("public file should expose public_url: %+v", created)
+	}
+	if created.Visibility != model.FileVisibilityPublic {
+		t.Fatalf("unexpected visibility: %+v", created)
+	}
+}
+
 func TestUploadRejectsDisallowedExtension(t *testing.T) {
 	t.Parallel()
 
-	driver, err := local.NewDriver(config.LocalStorageConfig{BaseDir: t.TempDir(), PublicBaseURL: "/api/v1/uploads/files", UseProxyDownload: true})
+	driver, err := local.NewDriver(config.LocalStorageConfig{BaseDir: t.TempDir(), PublicBaseURL: "/uploads/files", UseProxyDownload: true})
 	if err != nil {
 		t.Fatalf("new local driver: %v", err)
 	}

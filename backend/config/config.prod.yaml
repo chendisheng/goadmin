@@ -33,7 +33,7 @@ upload:
     driver: local
     local:
       base_dir: /tmp/goadmin/uploads
-      public_base_url: /api/v1/uploads/files
+      public_base_url: /uploads/files
       use_proxy_download: true
     policy:
       max_upload_size: 20mb

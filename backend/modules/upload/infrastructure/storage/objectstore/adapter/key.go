@@ -70,19 +70,7 @@ func stableConfigKey(cfg Config) string {
 }
 
 func defaultPublicBaseURL(name string, cfg Config) string {
-	endpoint := strings.TrimSpace(cfg.Endpoint)
-	bucket := strings.TrimSpace(cfg.Bucket)
-	switch name {
-	case "cos":
-		if endpoint != "" && bucket != "" {
-			return joinURL(endpoint, bucket)
-		}
-	case "oss", "s3-compatible", "minio":
-		if endpoint != "" && bucket != "" {
-			return joinURL(endpoint, bucket)
-		}
-	}
-	return joinURL("/api/v1/uploads/files", bucket)
+	return ""
 }
 
 func validateConfig(name string, cfg Config) error {

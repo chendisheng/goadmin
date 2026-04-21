@@ -3,6 +3,11 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	codegenhttp "goadmin/codegen/transport/http"
@@ -53,6 +58,8 @@ func Register(engine *gin.Engine, deps Dependencies) {
 	engine.Use(ginmiddleware.AccessLog(deps.Logger))
 	engine.Use(ginmiddleware.Recovery(deps.Logger))
 	engine.Use(ginmiddleware.CORS())
+
+	registerLocalUploadPublicRoutes(engine, deps)
 
 	api := newRouteRegistrarAdapter(engine.Group("/api/v1"))
 	{
@@ -118,6 +125,64 @@ func requestID(c *gin.Context) string {
 		}
 	}
 	return ""
+}
+
+func registerLocalUploadPublicRoutes(engine *gin.Engine, deps Dependencies) {
+	if engine == nil || deps.Config == nil {
+		return
+	}
+	if strings.ToLower(strings.TrimSpace(deps.Config.Upload.Storage.Driver)) != "local" {
+		return
+	}
+	baseDir := strings.TrimSpace(deps.Config.Upload.Storage.Local.BaseDir)
+	publicBaseURL := strings.TrimSpace(deps.Config.Upload.Storage.Local.PublicBaseURL)
+	routePath := publicUploadRoutePath(publicBaseURL)
+	if baseDir == "" || routePath == "" || strings.HasPrefix(routePath, "/api/") {
+		return
+	}
+	absBaseDir, err := filepath.Abs(baseDir)
+	if err != nil {
+		return
+	}
+	absBaseDir = filepath.Clean(absBaseDir)
+
+	engine.GET(routePath+"/*filepath", func(c *gin.Context) {
+		relativePath := strings.TrimSpace(c.Param("filepath"))
+		if relativePath == "" {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		relativePath = path.Clean("/" + strings.TrimPrefix(relativePath, "/"))
+		relativePath = strings.TrimPrefix(relativePath, "/")
+		if relativePath == "" || relativePath == "." {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		absPath := filepath.Clean(filepath.Join(absBaseDir, filepath.FromSlash(relativePath)))
+		if absPath != absBaseDir && !strings.HasPrefix(absPath, absBaseDir+string(os.PathSeparator)) {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		if _, err := os.Stat(absPath); err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.File(absPath)
+	})
+}
+
+func publicUploadRoutePath(publicBaseURL string) string {
+	raw := strings.TrimSpace(publicBaseURL)
+	if raw == "" {
+		return ""
+	}
+	if parsed, err := url.Parse(raw); err == nil && parsed.Path != "" {
+		raw = parsed.Path
+	}
+	if !strings.HasPrefix(raw, "/") {
+		raw = "/" + raw
+	}
+	return strings.TrimRight(raw, "/")
 }
 
 func registerPluginRoutes(public, protected coretransport.RouteRegistrar, registry *pluginregistry.Registry) {

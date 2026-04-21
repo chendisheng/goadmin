@@ -7,8 +7,11 @@ import AdminTable from '@/components/admin/AdminTable.vue';
 import { formatDateTime } from '@/utils/admin';
 import {
   canSubmitUploadForm,
+  isBrowserDirectPublicUrl,
   formatUploadFileSize,
   isPreviewableImage,
+  isPreviewableDocument,
+  resolveUploadPreviewKind,
   resolveUploadStatusLabel,
   resolveUploadStatusTagType,
   resolveUploadVisibilityLabel,
@@ -24,7 +27,7 @@ import {
   unbindUploadFile,
   uploadUploadFile,
 } from '@/api/upload';
-import type { UploadFileBindFormState, UploadFileFormState, UploadFileItem, UploadFileQuery } from '@/types/upload';
+import type { UploadFileBindFormState, UploadFileFormState, UploadFileItem, UploadFilePreviewItem, UploadFileQuery } from '@/types/upload';
 
 const tableLoading = ref(false);
 const uploadLoading = ref(false);
@@ -34,13 +37,14 @@ const uploadDialogVisible = ref(false);
 const bindDialogVisible = ref(false);
 const previewDialogVisible = ref(false);
 const previewBrowserUrl = ref('');
+const previewBrowserUrlIsObjectUrl = ref(false);
 const uploadFormRef = ref<FormInstance>();
 const bindFormRef = ref<FormInstance>();
 const rows = ref<UploadFileItem[]>([]);
 const total = ref(0);
 const selectedFile = ref<File | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
-const previewItem = ref<UploadFileItem | null>(null);
+const previewItem = ref<UploadFilePreviewItem | null>(null);
 const previewTargetId = ref('');
 const bindTarget = ref<UploadFileItem | null>(null);
 
@@ -104,6 +108,26 @@ const selectedFileLabel = computed(() => {
   return `${selectedFile.value.name} · ${formatUploadFileSize(selectedFile.value.size)}`;
 });
 
+const previewKind = computed(() => resolveUploadPreviewKind(previewItem.value?.mime_type));
+
+const previewMode = computed(() => previewItem.value?.preview_mode || 'download_only');
+
+const canDirectPreview = computed(() => {
+  const item = previewItem.value;
+  if (!item) {
+    return false;
+  }
+  return item.visibility === 'public' && isBrowserDirectPublicUrl(item.public_url) && previewMode.value === 'public_url';
+});
+
+const previewTitle = computed(() => {
+  if (!previewItem.value) {
+    return '文件预览';
+  }
+  const kindLabel = previewKind.value === 'image' ? '图片预览' : previewKind.value === 'pdf' ? 'PDF 预览' : previewKind.value === 'text' ? '文本预览' : '仅下载';
+  return `${previewItem.value.original_name || '文件预览'} · ${kindLabel}`;
+});
+
 const uploadReady = computed(() => canSubmitUploadForm(selectedFile.value, uploadForm));
 
 function resetUploadForm() {
@@ -120,10 +144,11 @@ function resetBindForm() {
 }
 
 function revokePreviewBrowserUrl() {
-  if (previewBrowserUrl.value) {
+  if (previewBrowserUrl.value && previewBrowserUrlIsObjectUrl.value) {
     window.URL.revokeObjectURL(previewBrowserUrl.value);
-    previewBrowserUrl.value = '';
   }
+  previewBrowserUrl.value = '';
+  previewBrowserUrlIsObjectUrl.value = false;
 }
 
 async function loadFiles() {
@@ -233,7 +258,16 @@ async function openPreview(row: UploadFileItem) {
   try {
     revokePreviewBrowserUrl();
     previewItem.value = await previewUploadFile(row.id);
-    previewBrowserUrl.value = await createUploadFilePreviewUrl(row.id);
+    if (previewMode.value === 'download_only' || previewKind.value === 'download-only') {
+      previewBrowserUrl.value = '';
+      previewBrowserUrlIsObjectUrl.value = false;
+    } else if (previewMode.value === 'public_url' && isBrowserDirectPublicUrl(previewItem.value.public_url)) {
+      previewBrowserUrl.value = previewItem.value.public_url;
+      previewBrowserUrlIsObjectUrl.value = false;
+    } else if (previewItem.value.download_url) {
+      previewBrowserUrl.value = await createUploadFilePreviewUrl(row.id);
+      previewBrowserUrlIsObjectUrl.value = true;
+    }
     previewDialogVisible.value = true;
   } catch (error) {
     revokePreviewBrowserUrl();
@@ -271,6 +305,19 @@ async function openPreviewWindow() {
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '打开预览失败');
   }
+}
+
+function getPreviewSourceLabel() {
+  if (!previewItem.value) {
+    return '-';
+  }
+  if (previewMode.value === 'download_only' || previewKind.value === 'download-only') {
+    return '仅下载';
+  }
+  if (previewMode.value === 'public_url' && isBrowserDirectPublicUrl(previewItem.value.public_url)) {
+    return '公开直连';
+  }
+  return '鉴权下载';
 }
 
 async function handleDownload(row: UploadFileItem) {
@@ -554,7 +601,7 @@ onActivated(() => {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="previewDialogVisible" title="文件预览" width="840px" destroy-on-close @closed="revokePreviewBrowserUrl">
+    <el-dialog v-model="previewDialogVisible" :title="previewTitle" width="840px" destroy-on-close @closed="revokePreviewBrowserUrl">
       <template v-if="previewItem">
         <el-space wrap class="mb-4">
           <el-tag :type="resolveUploadVisibilityTagType(previewItem.visibility)" effect="plain">
@@ -563,16 +610,12 @@ onActivated(() => {
           <el-tag :type="resolveUploadStatusTagType(previewItem.status)" effect="plain">
             {{ resolveUploadStatusLabel(previewItem.status) }}
           </el-tag>
-          <el-button v-if="previewItem.public_url" plain @click="copyPreviewUrl(previewItem.public_url)">复制公开地址</el-button>
-          <el-link v-if="previewBrowserUrl" type="primary" @click="openPreviewWindow">新窗口打开</el-link>
+          <el-link v-if="isBrowserDirectPublicUrl(previewItem.public_url)" plain @click="copyPreviewUrl(previewItem.public_url)">复制公开地址</el-link>
         </el-space>
 
         <el-alert
-          v-if="!previewBrowserUrl"
-          title="当前文件没有公开访问地址，可通过下载按钮获取文件。"
-          type="warning"
-          :closable="false"
-          show-icon
+          v-if="previewKind === 'download-only'"
+          title="当前文件类型不适合在线预览，请使用下载按钮获取原文件。"
           class="mb-4"
         />
 
@@ -591,8 +634,9 @@ onActivated(() => {
           <el-descriptions-item label="业务字段">{{ previewItem.biz_field || '-' }}</el-descriptions-item>
           <el-descriptions-item label="上传人">{{ previewItem.uploaded_by || '-' }}</el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ formatDateTime(previewItem.updated_at) }}</el-descriptions-item>
+          <el-descriptions-item label="访问方式">{{ getPreviewSourceLabel() }}</el-descriptions-item>
           <el-descriptions-item label="公开地址" :span="2">
-            <el-link v-if="previewBrowserUrl" type="primary" @click="openPreviewWindow">新窗口打开</el-link>
+            <el-link v-if="previewBrowserUrl && previewKind !== 'download-only'" type="primary" @click="openPreviewWindow">新窗口打开</el-link>
             <span v-else>-</span>
           </el-descriptions-item>
         </el-descriptions>
@@ -600,9 +644,15 @@ onActivated(() => {
         <div v-if="previewBrowserUrl && isPreviewableImage(previewItem.mime_type)" class="upload-preview-image-wrap">
           <el-image :src="previewBrowserUrl" fit="contain" class="upload-preview-image" :preview-src-list="[previewBrowserUrl]" />
         </div>
+        <div v-else-if="previewBrowserUrl && previewKind === 'pdf'" class="upload-preview-document-wrap">
+          <iframe :src="previewBrowserUrl" class="upload-preview-document" title="文件预览" />
+        </div>
+        <div v-else-if="previewBrowserUrl && previewKind === 'text'" class="upload-preview-text-wrap">
+          <iframe :src="previewBrowserUrl" class="upload-preview-text" title="文本预览" />
+        </div>
         <el-alert
           v-else-if="previewBrowserUrl"
-          title="当前文件类型不是图片，已在上方显示元数据，可使用下载按钮查看原文件。"
+          title="当前文件使用临时预览地址，已在上方显示元数据。"
           type="info"
           :closable="false"
           show-icon
@@ -635,5 +685,34 @@ onActivated(() => {
   max-width: 100%;
   max-height: 420px;
   border-radius: 8px;
+}
+
+.upload-preview-document-wrap {
+  margin-top: 16px;
+  min-height: 480px;
+  border: 1px solid var(--el-border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.upload-preview-document {
+  width: 100%;
+  height: 480px;
+  border: 0;
+}
+
+.upload-preview-text-wrap {
+  margin-top: 16px;
+  min-height: 360px;
+  border: 1px solid var(--el-border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.upload-preview-text {
+  width: 100%;
+  height: 360px;
+  border: 0;
+  background: #fff;
 }
 </style>

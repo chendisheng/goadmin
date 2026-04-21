@@ -60,9 +60,6 @@ func New(name string, cfg Config) (*Client, error) {
 	if err := validateConfig(name, cfg); err != nil {
 		return nil, err
 	}
-	if strings.TrimSpace(cfg.PublicBaseURL) == "" {
-		cfg.PublicBaseURL = defaultPublicBaseURL(name, cfg)
-	}
 	baseDir := filepath.Join(os.TempDir(), "goadmin", "uploads", "object", sanitizeSegment(name), stableConfigKey(cfg))
 	return &Client{
 		name:          name,
@@ -255,6 +252,9 @@ func (c *Client) PublicURL(ctx context.Context, key string) (string, error) {
 	if c.minio != nil {
 		return c.minio.PublicURL(ctx, key)
 	}
+	if strings.TrimSpace(c.publicBaseURL) == "" {
+		return "", fmt.Errorf("object storage public_base_url is required for public urls")
+	}
 	key, err := normalizeKey(key)
 	if err != nil {
 		return "", err
@@ -268,6 +268,9 @@ func (c *Client) SignedURL(ctx context.Context, key string, opts storagecontract
 	}
 	if c.minio != nil {
 		return c.minio.SignedURL(ctx, key, opts)
+	}
+	if strings.TrimSpace(c.publicBaseURL) == "" {
+		return "", fmt.Errorf("object storage public_base_url is required for signed urls")
 	}
 	base, err := c.PublicURL(ctx, key)
 	if err != nil {
@@ -313,6 +316,9 @@ func (c *Client) resolvePaths(key string) (string, string, error) {
 }
 
 func (c *Client) buildPublicURL(key string) string {
+	if strings.TrimSpace(c.publicBaseURL) == "" {
+		return ""
+	}
 	key = strings.TrimPrefix(strings.ReplaceAll(key, "\\", "/"), "/")
 	if key == "" {
 		return c.publicBaseURL

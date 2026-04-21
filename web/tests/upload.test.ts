@@ -6,6 +6,9 @@ import {
   canSubmitUploadForm,
   formatUploadFileSize,
   isPreviewableImage,
+  isPreviewableDocument,
+  isBrowserDirectPublicUrl,
+  resolveUploadPreviewKind,
   resolveUploadStatusLabel,
   resolveUploadStatusTagType,
   resolveUploadVisibilityLabel,
@@ -41,6 +44,16 @@ describe('upload helpers', () => {
 
     expect(isPreviewableImage('image/png')).toBe(true);
     expect(isPreviewableImage('application/pdf')).toBe(false);
+    expect(isPreviewableDocument('application/pdf')).toBe(true);
+    expect(isPreviewableDocument('text/plain')).toBe(true);
+    expect(isPreviewableDocument('application/zip')).toBe(false);
+    expect(resolveUploadPreviewKind('image/png')).toBe('image');
+    expect(resolveUploadPreviewKind('application/pdf')).toBe('pdf');
+    expect(resolveUploadPreviewKind('text/plain')).toBe('text');
+    expect(resolveUploadPreviewKind('application/zip')).toBe('download-only');
+    expect(isBrowserDirectPublicUrl('/api/v1/uploads/files/uploads/2026/04/demo.png')).toBe(false);
+    expect(isBrowserDirectPublicUrl('/uploads/files/uploads/2026/04/demo.png')).toBe(true);
+    expect(isBrowserDirectPublicUrl('https://cdn.example.com/uploads/demo.png')).toBe(true);
   });
 
   it('refuses to submit upload form without a file', () => {

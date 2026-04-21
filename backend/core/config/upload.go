@@ -78,7 +78,7 @@ func DefaultUploadConfig() UploadConfig {
 			Driver: "local",
 			Local: LocalStorageConfig{
 				BaseDir:          filepath.Join(os.TempDir(), "goadmin", "uploads"),
-				PublicBaseURL:    "/api/v1/uploads/files",
+				PublicBaseURL:    "/uploads/files",
 				UseProxyDownload: true,
 			},
 			Policy: StoragePolicyConfig{
@@ -105,7 +105,7 @@ func (c *UploadConfig) Normalize() {
 		c.Storage.Local.BaseDir = filepath.Join(os.TempDir(), "goadmin", "uploads")
 	}
 	if strings.TrimSpace(c.Storage.Local.PublicBaseURL) == "" {
-		c.Storage.Local.PublicBaseURL = "/api/v1/uploads/files"
+		c.Storage.Local.PublicBaseURL = "/uploads/files"
 	}
 	if strings.TrimSpace(c.Storage.Policy.MaxUploadSize) == "" {
 		c.Storage.Policy.MaxUploadSize = "20mb"

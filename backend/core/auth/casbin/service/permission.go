@@ -154,7 +154,8 @@ func syncDBPolicies(store casbinadapter.GormPolicyStore, policyPath string) erro
 	if err != nil {
 		return err
 	}
-	mergedRules := mergePolicyRules(fileRules, existingRules)
+	mergedRules := mergePolicyRules(defaultRules(), fileRules)
+	mergedRules = mergePolicyRules(mergedRules, existingRules)
 	if samePolicyRules(existingRules, mergedRules) {
 		return nil
 	}

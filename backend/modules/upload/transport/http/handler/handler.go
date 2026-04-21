@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	coreauth "goadmin/core/auth"
@@ -121,13 +124,42 @@ func (h *Handler) Delete(c coretransport.Context) {
 }
 
 func (h *Handler) Download(c coretransport.Context) {
-	item, err := h.service.Get(c.RequestContext(), c.Param("id"))
+	reader, info, item, err := h.service.Open(c.RequestContext(), c.Param("id"))
 	if err != nil {
 		status, body := response.Failure(err, requestID(c))
 		c.JSON(status, body)
 		return
 	}
-	c.FileAttachment(item.StoragePath, item.OriginalName)
+	defer func() { _ = reader.Close() }()
+
+	ext := strings.TrimSpace(item.Extension)
+	if ext == "" {
+		ext = filepath.Ext(item.OriginalName)
+	}
+	tmp, err := os.CreateTemp("", "goadmin-upload-*"+ext)
+	if err != nil {
+		status, body := response.Failure(err, requestID(c))
+		c.JSON(status, body)
+		return
+	}
+	tmpPath := tmp.Name()
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	if _, err := io.Copy(tmp, reader); err != nil {
+		_ = tmp.Close()
+		status, body := response.Failure(err, requestID(c))
+		c.JSON(status, body)
+		return
+	}
+	if err := tmp.Close(); err != nil {
+		status, body := response.Failure(err, requestID(c))
+		c.JSON(status, body)
+		return
+	}
+	if info != nil && strings.TrimSpace(info.ContentType) != "" {
+		c.SetHeader("Content-Type", info.ContentType)
+	}
+	c.FileAttachment(tmpPath, item.OriginalName)
 }
 
 func (h *Handler) Preview(c coretransport.Context) {

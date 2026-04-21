@@ -8,8 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
+	installapp "goadmin/codegen/application/install"
 	coreauthbootstrap "goadmin/core/auth/bootstrap"
 	corebootstrap "goadmin/core/bootstrap"
 	"goadmin/core/config"
@@ -113,6 +115,10 @@ func main() {
 	if err != nil {
 		logger.Fatal("init menu service", zap.Error(err))
 	}
+	manifestInstaller := installapp.NewService(installapp.Dependencies{MenuService: menuSvc})
+	if err := installModuleManifests(context.Background(), logger, projectRoot, manifestInstaller, corebootstrap.Modules()); err != nil {
+		logger.Fatal("install module manifests", zap.Error(err))
+	}
 	pluginSvc, err := pluginservice.New(pluginRepo)
 	if err != nil {
 		logger.Fatal("init plugin service", zap.Error(err))
@@ -197,4 +203,53 @@ func findProjectRoot() (string, error) {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func installModuleManifests(ctx context.Context, logger *zap.Logger, projectRoot string, installer *installapp.Service, modules []corebootstrap.Module) error {
+	if installer == nil {
+		return fmt.Errorf("manifest installer is required")
+	}
+	for _, module := range modules {
+		if module == nil {
+			continue
+		}
+		manifestPath, err := resolveStartupManifestPath(projectRoot, module.ManifestPath())
+		if err != nil {
+			return fmt.Errorf("resolve manifest for %s: %w", module.Name(), err)
+		}
+		result, err := installer.InstallManifest(ctx, manifestPath)
+		if err != nil {
+			return fmt.Errorf("install manifest for %s: %w", module.Name(), err)
+		}
+		if logger != nil {
+			logger.Info("installed module manifest",
+				zap.String("module", module.Name()),
+				zap.String("manifest", manifestPath),
+				zap.Int("created", result.CreatedCount),
+				zap.Int("updated", result.UpdatedCount),
+				zap.Int("skipped", result.SkippedCount),
+			)
+		}
+	}
+	return nil
+}
+
+func resolveStartupManifestPath(projectRoot, manifestPath string) (string, error) {
+	manifestPath = strings.TrimSpace(manifestPath)
+	if manifestPath == "" {
+		return "", fmt.Errorf("manifest path is required")
+	}
+	if filepath.IsAbs(manifestPath) {
+		return manifestPath, nil
+	}
+	candidates := []string{
+		filepath.Join(projectRoot, "backend", manifestPath),
+		filepath.Join(projectRoot, manifestPath),
+	}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("manifest file not found")
 }

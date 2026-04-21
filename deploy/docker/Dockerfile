@@ -5,7 +5,9 @@ FROM golang:1.22-bookworm AS builder
 WORKDIR /src/backend
 ARG TARGETARCH=amd64
 COPY backend/go.mod backend/go.sum ./
-RUN go mod download
+ENV GOSUMDB=off
+RUN go env -w GOPROXY=https://proxy.golang.org,direct
+RUN go mod tidy && go mod download
 COPY backend/ ./
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build -trimpath -ldflags='-s -w' -o /out/goadmin ./cmd/server
 

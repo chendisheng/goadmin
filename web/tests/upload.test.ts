@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { downloadUploadFile, uploadUploadFile } from '../src/api/upload';
+import { createUploadFilePreviewUrl, downloadUploadFile, uploadUploadFile } from '../src/api/upload';
 import {
   canSubmitUploadForm,
   formatUploadFileSize,
@@ -150,5 +150,30 @@ describe('upload api smoke', () => {
     expect(urlApi.createObjectURL).toHaveBeenCalledTimes(1);
     expect(urlApi.revokeObjectURL).toHaveBeenCalledWith('blob:upload-test');
     expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates a preview blob URL using authenticated download response', async () => {
+    const fetchMock = vi.fn(async () => new Response(new Blob(['preview file']), {
+      status: 200,
+      headers: {
+        'content-type': 'application/octet-stream',
+        'content-disposition': 'attachment; filename="preview.png"',
+      },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const urlApi = window.URL as typeof window.URL & {
+      createObjectURL?: (blob: Blob | MediaSource) => string;
+    };
+    Object.defineProperty(urlApi, 'createObjectURL', {
+      value: vi.fn(() => 'blob:preview-test'),
+      writable: true,
+    });
+
+    const previewUrl = await createUploadFilePreviewUrl('file-1');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(previewUrl).toBe('blob:preview-test');
+    expect(urlApi.createObjectURL).toHaveBeenCalledTimes(1);
   });
 });

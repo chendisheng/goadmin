@@ -149,6 +149,65 @@ func TestPermissionServiceDBSourceSeedsAndEnforcesPolicies(t *testing.T) {
 	}
 }
 
+func TestPermissionServiceDBSourceSeedsDefaultUploadPolicies(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "casbin.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite db: %v", err)
+	}
+
+	policyPath := filepath.Join(tmpDir, "policy.csv")
+	if err := os.WriteFile(policyPath, nil, 0o600); err != nil {
+		t.Fatalf("write empty policy file: %v", err)
+	}
+
+	service, err := NewPermissionService(Config{
+		Enabled:    true,
+		Source:     "db",
+		DB:         db,
+		ModelPath:  filepath.Clean(filepath.Join("..", "model", "rbac.conf")),
+		PolicyPath: policyPath,
+	})
+	if err != nil {
+		t.Fatalf("NewPermissionService(db): %v", err)
+	}
+
+	cases := []struct {
+		name   string
+		path   string
+		method string
+	}{
+		{name: "list", path: "/api/v1/uploads/files", method: "GET"},
+		{name: "upload", path: "/api/v1/uploads/files", method: "POST"},
+		{name: "download", path: "/api/v1/uploads/files/:id/download", method: "GET"},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			allowed, err := service.EnforceClaims(&coreauthjwt.Claims{Identity: coreauthjwt.Identity{Roles: []string{"admin"}}}, tc.path, tc.method)
+			if err != nil {
+				t.Fatalf("EnforceClaims returned error: %v", err)
+			}
+			if !allowed {
+				t.Fatalf("expected db-backed default policy to allow %s %s", tc.method, tc.path)
+			}
+		})
+	}
+
+	var policyCount int64
+	if err := db.Table("casbin_rule").Where("ptype = ?", "p").Count(&policyCount).Error; err != nil {
+		t.Fatalf("count casbin_rule records: %v", err)
+	}
+	if policyCount == 0 {
+		t.Fatal("expected built-in default policies to be seeded into casbin_rule")
+	}
+}
+
 func TestPermissionServiceDBSourceMergesMissingPoliciesFromCSV(t *testing.T) {
 	t.Parallel()
 

@@ -146,6 +146,31 @@ func (s *Service) Get(ctx context.Context, id string) (*model.FileAsset, error) 
 	return s.repo.Get(ctx, id)
 }
 
+func (s *Service) Open(ctx context.Context, id string) (io.ReadCloser, *storagecontract.ObjectInfo, *model.FileAsset, error) {
+	if s == nil || s.repo == nil || s.driver == nil {
+		return nil, nil, nil, fmt.Errorf("upload service is not configured")
+	}
+	item, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if item == nil {
+		return nil, nil, nil, fmt.Errorf("upload file asset %s not found", strings.TrimSpace(id))
+	}
+	key := strings.TrimSpace(item.StorageKey)
+	if key == "" {
+		key = strings.TrimSpace(item.StoragePath)
+	}
+	if key == "" {
+		return nil, nil, nil, fmt.Errorf("upload storage key is empty for %s", item.Id)
+	}
+	reader, info, err := s.driver.Get(ctx, key)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return reader, info, item, nil
+}
+
 func (s *Service) List(ctx context.Context, filter uploadrepo.ListFilter) ([]model.FileAsset, int64, error) {
 	if s == nil || s.repo == nil {
 		return nil, 0, fmt.Errorf("upload service is not configured")

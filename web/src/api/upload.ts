@@ -72,6 +72,18 @@ export async function downloadUploadFile(id: string, fallbackFilename?: string):
   window.URL.revokeObjectURL(objectUrl);
 }
 
+export async function createUploadFilePreviewUrl(id: string): Promise<string> {
+  const response = await fetch(resolveApiUrl(`${basePath}/${id}/download`), {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    throw await toDownloadError(response);
+  }
+  const blob = await response.blob();
+  return window.URL.createObjectURL(blob);
+}
+
 function authHeaders(): HeadersInit {
   const token = getStoredAccessToken();
   const headers: Record<string, string> = {

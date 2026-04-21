@@ -16,6 +16,7 @@ import {
 } from '@/utils/upload';
 import {
   bindUploadFile,
+  createUploadFilePreviewUrl,
   deleteUploadFile,
   downloadUploadFile,
   fetchUploadFiles,
@@ -32,6 +33,7 @@ const previewLoading = ref(false);
 const uploadDialogVisible = ref(false);
 const bindDialogVisible = ref(false);
 const previewDialogVisible = ref(false);
+const previewBrowserUrl = ref('');
 const uploadFormRef = ref<FormInstance>();
 const bindFormRef = ref<FormInstance>();
 const rows = ref<UploadFileItem[]>([]);
@@ -115,6 +117,13 @@ function resetUploadForm() {
 function resetBindForm() {
   Object.assign(bindForm, defaultBindForm());
   bindTarget.value = null;
+}
+
+function revokePreviewBrowserUrl() {
+  if (previewBrowserUrl.value) {
+    window.URL.revokeObjectURL(previewBrowserUrl.value);
+    previewBrowserUrl.value = '';
+  }
 }
 
 async function loadFiles() {
@@ -222,9 +231,12 @@ async function openPreview(row: UploadFileItem) {
   previewLoading.value = true;
   previewTargetId.value = row.id;
   try {
+    revokePreviewBrowserUrl();
     previewItem.value = await previewUploadFile(row.id);
+    previewBrowserUrl.value = await createUploadFilePreviewUrl(row.id);
     previewDialogVisible.value = true;
   } catch (error) {
+    revokePreviewBrowserUrl();
     ElMessage.error(error instanceof Error ? error.message : '预览失败');
   } finally {
     previewLoading.value = false;
@@ -241,6 +253,23 @@ async function copyPreviewUrl(url?: string) {
     ElMessage.success('公开地址已复制');
   } catch {
     ElMessage.warning('复制失败，请手动复制');
+  }
+}
+
+async function openPreviewWindow() {
+  try {
+    const previewUrl = previewBrowserUrl.value;
+    if (!previewUrl) {
+      ElMessage.warning('暂无可用的预览地址');
+      return;
+    }
+    const opened = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      ElMessage.warning('浏览器拦截了新窗口，请允许弹窗后重试');
+      return;
+    }
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '打开预览失败');
   }
 }
 
@@ -525,7 +554,7 @@ onActivated(() => {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="previewDialogVisible" title="文件预览" width="840px" destroy-on-close>
+    <el-dialog v-model="previewDialogVisible" title="文件预览" width="840px" destroy-on-close @closed="revokePreviewBrowserUrl">
       <template v-if="previewItem">
         <el-space wrap class="mb-4">
           <el-tag :type="resolveUploadVisibilityTagType(previewItem.visibility)" effect="plain">
@@ -535,11 +564,11 @@ onActivated(() => {
             {{ resolveUploadStatusLabel(previewItem.status) }}
           </el-tag>
           <el-button v-if="previewItem.public_url" plain @click="copyPreviewUrl(previewItem.public_url)">复制公开地址</el-button>
-          <el-link v-if="previewItem.public_url" :href="previewItem.public_url" target="_blank" type="primary">新窗口打开</el-link>
+          <el-link v-if="previewBrowserUrl" type="primary" @click="openPreviewWindow">新窗口打开</el-link>
         </el-space>
 
         <el-alert
-          v-if="!previewItem.public_url"
+          v-if="!previewBrowserUrl"
           title="当前文件没有公开访问地址，可通过下载按钮获取文件。"
           type="warning"
           :closable="false"
@@ -563,16 +592,16 @@ onActivated(() => {
           <el-descriptions-item label="上传人">{{ previewItem.uploaded_by || '-' }}</el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ formatDateTime(previewItem.updated_at) }}</el-descriptions-item>
           <el-descriptions-item label="公开地址" :span="2">
-            <el-link v-if="previewItem.public_url" :href="previewItem.public_url" target="_blank" type="primary">{{ previewItem.public_url }}</el-link>
+            <el-link v-if="previewBrowserUrl" type="primary" @click="openPreviewWindow">新窗口打开</el-link>
             <span v-else>-</span>
           </el-descriptions-item>
         </el-descriptions>
 
-        <div v-if="previewItem.public_url && isPreviewableImage(previewItem.mime_type)" class="upload-preview-image-wrap">
-          <el-image :src="previewItem.public_url" fit="contain" class="upload-preview-image" :preview-src-list="[previewItem.public_url]" />
+        <div v-if="previewBrowserUrl && isPreviewableImage(previewItem.mime_type)" class="upload-preview-image-wrap">
+          <el-image :src="previewBrowserUrl" fit="contain" class="upload-preview-image" :preview-src-list="[previewBrowserUrl]" />
         </div>
         <el-alert
-          v-else-if="previewItem.public_url"
+          v-else-if="previewBrowserUrl"
           title="当前文件类型不是图片，已在上方显示元数据，可使用下载按钮查看原文件。"
           type="info"
           :closable="false"

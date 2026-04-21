@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"io"
 	"testing"
 
 	"goadmin/core/config"
@@ -116,6 +117,26 @@ func TestUploadAndDeleteFlow(t *testing.T) {
 	}
 	if _, _, err := driver.Get(context.Background(), created.StorageKey); err != nil {
 		t.Fatalf("stored file missing: %v", err)
+	}
+
+	reader, info, opened, err := svc.Open(context.Background(), created.Id)
+	if err != nil {
+		t.Fatalf("open failed: %v", err)
+	}
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		_ = reader.Close()
+		t.Fatalf("read opened file: %v", err)
+	}
+	_ = reader.Close()
+	if string(data) != "hello goadmin" {
+		t.Fatalf("unexpected opened file content: %q", string(data))
+	}
+	if info == nil || info.ContentType == "" {
+		t.Fatalf("expected object info content type, got %+v", info)
+	}
+	if opened == nil || opened.StorageKey != created.StorageKey {
+		t.Fatalf("unexpected opened asset: %+v", opened)
 	}
 
 	if err := svc.Delete(context.Background(), created.Id); err != nil {

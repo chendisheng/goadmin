@@ -7,14 +7,37 @@ import (
 	"goadmin/core/config"
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
 	"goadmin/modules/upload/infrastructure/storage/local"
+	"goadmin/modules/upload/infrastructure/storage/objectstore"
 )
 
 func NewDriver(cfg config.UploadStorageConfig) (storagecontract.Driver, error) {
 	switch strings.ToLower(strings.TrimSpace(cfg.Driver)) {
 	case "", "local":
 		return local.NewDriver(cfg.Local)
-	case "s3-compatible", "oss", "cos", "minio":
-		return nil, fmt.Errorf("upload storage driver %q is not implemented yet", cfg.Driver)
+	case "s3-compatible":
+		driver, err := objectstore.NewS3CompatibleDriver(cfg.S3Compatible)
+		if err != nil {
+			return nil, err
+		}
+		return driver, nil
+	case "oss":
+		driver, err := objectstore.NewOSSDriver(cfg.OSS)
+		if err != nil {
+			return nil, err
+		}
+		return driver, nil
+	case "cos":
+		driver, err := objectstore.NewCOSDriver(cfg.COS)
+		if err != nil {
+			return nil, err
+		}
+		return driver, nil
+	case "minio":
+		driver, err := objectstore.NewMinIODriver(cfg.MinIO)
+		if err != nil {
+			return nil, err
+		}
+		return driver, nil
 	default:
 		return nil, fmt.Errorf("unsupported upload storage driver %q", cfg.Driver)
 	}

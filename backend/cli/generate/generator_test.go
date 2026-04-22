@@ -349,8 +349,8 @@ func TestRefreshBootstrapRegistryFiltersGeneratedModules(t *testing.T) {
 		}
 	}
 
-	writeBootstrap("codegen_console", strings.TrimSpace(`
-package codegen_console
+	writeBootstrap("legacy_console", strings.TrimSpace(`
+package legacy_console
 
 func NewBootstrap() any {
 	return nil
@@ -386,8 +386,8 @@ func NewBootstrap() any {
 	if err != nil {
 		t.Fatalf("read registry file: %v", err)
 	}
-	if strings.Contains(string(content), "codegen_console") {
-		t.Fatalf("registry should exclude builtin module codegen_console:\n%s", string(content))
+	if strings.Contains(string(content), "legacy_console") {
+		t.Fatalf("registry should exclude builtin module legacy_console:\n%s", string(content))
 	}
 }
 

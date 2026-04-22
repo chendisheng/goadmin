@@ -33,6 +33,7 @@ pnpm-debug.log*
 # Go build artifacts
 # =====================
 /bin/
+.cache/
 backend/bin/
 backend/dist/
 backend/.cache/

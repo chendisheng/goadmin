@@ -5,8 +5,14 @@ PKG := ./...
 BIN_DIR := bin
 SERVER_PKG := ./cmd/server
 CLI_PKG := ./cmd/cli
+CACHE_DIR ?= $(abspath .cache)
+GOMODCACHE ?= $(CACHE_DIR)/go-mod
+GOCACHE ?= $(CACHE_DIR)/go-build
+GOPROXY ?= https://proxy.golang.org,direct
+GOSUMDB ?= off
+GOENV := GOMODCACHE=$(GOMODCACHE) GOCACHE=$(GOCACHE) GOPROXY=$(GOPROXY) GOSUMDB=$(GOSUMDB)
 
-.PHONY: all dev run build build-cli run-cli test fmt tidy clean
+.PHONY: all dev run build build-cli run-cli test fmt tidy clean cache-init
 
 all: test build
 
@@ -14,27 +20,34 @@ dev:
 	bash ./scripts/dev.sh
 
 run:
-	$(GO) run $(SERVER_PKG)
+	$(GOENV) $(GO) run $(SERVER_PKG)
 
 build:
+	$(MAKE) cache-init
 	mkdir -p $(BIN_DIR)
-	$(GO) build -o $(BIN_DIR)/$(APP_NAME) $(SERVER_PKG)
+	$(GOENV) $(GO) build -o $(BIN_DIR)/$(APP_NAME) $(SERVER_PKG)
 
 build-cli:
+	$(MAKE) cache-init
 	mkdir -p $(BIN_DIR)
-	$(GO) build -o $(BIN_DIR)/$(CLI_NAME) $(CLI_PKG)
+	$(GOENV) $(GO) build -o $(BIN_DIR)/$(CLI_NAME) $(CLI_PKG)
 
 run-cli:
-	$(GO) run $(CLI_PKG) $(ARGS)
+	$(GOENV) $(GO) run $(CLI_PKG) $(ARGS)
 
 test:
-	$(GO) test $(PKG)
+	$(MAKE) cache-init
+	$(GOENV) $(GO) test $(PKG)
 
 fmt:
-	$(GO) fmt $(PKG)
+	$(GOENV) $(GO) fmt $(PKG)
 
 tidy:
-	$(GO) mod tidy
+	$(MAKE) cache-init
+	$(GOENV) $(GO) mod tidy
 
 clean:
 	rm -rf $(BIN_DIR)
+
+cache-init:
+	mkdir -p $(GOMODCACHE) $(GOCACHE)

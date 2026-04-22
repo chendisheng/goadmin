@@ -8,6 +8,10 @@ GO_BIN="${GO_BIN:-go}"
 GOADMIN_ENV="${GOADMIN_ENV:-dev}"
 APP_ENV="${APP_ENV:-${GOADMIN_ENV}}"
 GOADMIN_CONFIG_DIR="${GOADMIN_CONFIG_DIR:-${BACKEND_DIR}/config}"
+GOMODCACHE="${GOMODCACHE:-${BACKEND_DIR}/.cache/go-mod}"
+GOCACHE="${GOCACHE:-${BACKEND_DIR}/.cache/go-build}"
+GOPROXY="${GOPROXY:-https://proxy.golang.org,direct}"
+GOSUMDB="${GOSUMDB:-off}"
 ENV_FILE="${ENV_FILE:-}"
 
 if [ -z "${ENV_FILE}" ]; then
@@ -28,12 +32,17 @@ fi
 export GOADMIN_ENV
 export APP_ENV
 export GOADMIN_CONFIG_DIR
+export GOMODCACHE
+export GOCACHE
+export GOPROXY
+export GOSUMDB
 
 cd "${BACKEND_DIR}"
 
 echo "[dev] backend dir: ${BACKEND_DIR}"
 echo "[dev] env: ${GOADMIN_ENV}"
 echo "[dev] config dir: ${GOADMIN_CONFIG_DIR}"
+echo "[dev] cache dir: ${BACKEND_DIR}/.cache"
 echo "[dev] running: ${GO_BIN} run ./cmd/server"
 
 exec "${GO_BIN}" run ./cmd/server "$@"

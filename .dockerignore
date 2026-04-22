@@ -1,5 +1,6 @@
 # GoAdmin root Docker build context ignores
 .git
+.cache
 .github
 .idea
 .vscode

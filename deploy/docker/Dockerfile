@@ -4,16 +4,22 @@ FROM golang:1.22-bookworm AS builder
 
 WORKDIR /src/backend
 ARG TARGETARCH=amd64
+ARG GOPROXY=https://goproxy.cn,direct
 COPY backend/go.mod backend/go.sum ./
-ENV GOSUMDB=off
-RUN go env -w GOPROXY=https://proxy.golang.org,direct
-RUN go mod tidy && go mod download
+ENV GOPROXY=${GOPROXY}
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod tidy && go mod download
 COPY backend/ ./
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build -trimpath -ldflags='-s -w' -o /out/goadmin ./cmd/server
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build -trimpath -ldflags='-s -w' -o /out/goadmin ./cmd/server
 
 FROM alpine:3.20 AS runtime
 
-RUN apk add --no-cache bash ca-certificates tzdata \
+# Use a mirror that is typically reachable from macOS Docker Desktop environments.
+RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories \
+    && apk add --no-cache bash ca-certificates tzdata \
     && addgroup -S goadmin \
     && adduser -S -G goadmin goadmin
 

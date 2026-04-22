@@ -25,6 +25,29 @@ If you prefer to keep compose-specific env files next to the compose manifest, y
 docker compose -f deploy/docker-compose/docker-compose.yaml up --build
 ```
 
+If you want to run the backend outside Docker, use the host-development workflow below.
+
+### Host development / non-Docker backend development
+
+The backend Makefile and dev script use host-local Go module and build caches under `backend/.cache/go-mod` and `backend/.cache/go-build`.
+
+Recommended commands:
+
+```bash
+make host-dev
+make host-build
+make host-test
+make host-run-cli ARGS="generate module demo"
+```
+
+These targets reuse the same host-local directories for `go run`, `go build`, `go test`, `go fmt`, and `go mod tidy`.
+
+If you want to initialize the cache directories explicitly, run:
+
+```bash
+make host-cache-init
+```
+
 This starts the HTTP server with the current config loading rules:
 
 - `GOADMIN_ENV` / `APP_ENV` default to `dev`
@@ -79,6 +102,12 @@ The repository also includes the delivery artifacts needed for Phase 9 and the c
 - `deploy/helm/goadmin/` for Helm-based deployments
 - `.github/workflows/ci-cd.yml` for the unified backend + frontend CI/CD automation
 - `.github/workflows/web-ci-cd.yml` as a manual backup for frontend-only image publishing
+
+For local development, the root `Makefile` exposes the same host-development workflow through `make host-*` targets, while `make dev` continues to start the Docker Compose stack.
+
+The root `Makefile` also exposes `make docker-build-backend` and `make docker-build-web` as plain `docker build --no-cache` commands for manual image builds.
+
+`make compose-build-local` and `make compose-up-local` are simple aliases of `make compose-build` and `make compose-up`.
 
 Environment toggles are exposed through `deploy/docker-compose/.env.example` and the YAML config files under `backend/config/`, including `tenant.enabled`.
 

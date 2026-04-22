@@ -24,11 +24,15 @@ docker compose -f deploy/docker-compose/docker-compose.yaml up --build
 ./backend/scripts/dev.sh
 ```
 
+这个脚本默认会把 Go 模块缓存和编译缓存放到 `backend/.cache/go-mod` 与 `backend/.cache/go-build`，避免占用 Docker 构建缓存空间。
+
 这个脚本会：
 
 - 自动读取 `deploy/docker-compose/.env`，若不存在则回退到根目录 `.env`
 - 设置 `GOADMIN_ENV=dev`
 - 设置 `GOADMIN_CONFIG_DIR=backend/config`
+- 设置 `GOMODCACHE=backend/.cache/go-mod`
+- 设置 `GOCACHE=backend/.cache/go-build`
 - 启动 `go run ./cmd/server`
 
 ## 启动前准备

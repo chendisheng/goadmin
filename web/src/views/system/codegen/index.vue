@@ -6,24 +6,24 @@
           <template #header>
             <div class="card-header">
               <div>
-                <div class="title">CodeGen Console</div>
-                <div class="subtitle">在同一页面中切换 DSL、DB 与删除模式，复用统一结果区。</div>
+                <div class="title">{{ t('codegen.console_title', 'CodeGen Console') }}</div>
+                <div class="subtitle">{{ t('codegen.console_subtitle', '在同一页面中切换 DSL、DB 与删除模式，复用统一结果区。') }}</div>
               </div>
               <el-space wrap>
-                <el-button v-if="activeMode === 'dsl'" @click="loadSample">载入示例</el-button>
-                <el-button v-else-if="activeMode === 'db'" @click="loadDbSample">载入示例</el-button>
-                <el-button v-else @click="loadDeleteSample">载入示例</el-button>
-                <el-button @click="clearCurrentInputs">清空</el-button>
-                <el-button v-if="activeMode === 'dsl'" @click="triggerFileSelect">上传 DSL</el-button>
-                <el-button v-if="activeMode === 'dsl'" type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
-                <el-button v-if="activeMode === 'dsl'" type="success" :loading="generateLoading" @click="handleGenerate">一键生成</el-button>
-                <el-button v-if="activeMode === 'dsl'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
-                <el-button v-if="activeMode === 'db'" type="primary" :loading="previewLoading" @click="handlePreview">Dry-run 预览</el-button>
-                <el-button v-if="activeMode === 'db'" type="success" :loading="generateLoading || installLoading" @click="handleGenerateAndInstall">生成并安装</el-button>
-                <el-button v-if="activeMode === 'db'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">生成并下载</el-button>
-                <el-button v-if="activeMode === 'delete'" @click="loadDeleteSample">载入示例</el-button>
-                <el-button v-if="activeMode === 'delete'" type="primary" :loading="previewLoading" @click="handleDeletePreview">删除预览</el-button>
-                <el-button v-if="activeMode === 'delete'" type="danger" :loading="deleteLoading" :disabled="!deleteExecuteEnabled" @click="handleDeleteExecute">确认删除</el-button>
+                <el-button v-if="activeMode === 'dsl'" @click="loadSample">{{ t('codegen.load_sample', '载入示例') }}</el-button>
+                <el-button v-else-if="activeMode === 'db'" @click="loadDbSample">{{ t('codegen.load_sample', '载入示例') }}</el-button>
+                <el-button v-else @click="loadDeleteSample">{{ t('codegen.load_sample', '载入示例') }}</el-button>
+                <el-button @click="clearCurrentInputs">{{ t('codegen.clear', '清空') }}</el-button>
+                <el-button v-if="activeMode === 'dsl'" @click="triggerFileSelect">{{ t('codegen.upload_dsl', '上传 DSL') }}</el-button>
+                <el-button v-if="activeMode === 'dsl'" type="primary" :loading="previewLoading" @click="handlePreview">{{ t('codegen.preview_dry_run', 'Dry-run 预览') }}</el-button>
+                <el-button v-if="activeMode === 'dsl'" type="success" :loading="generateLoading" @click="handleGenerate">{{ t('codegen.generate_once', '一键生成') }}</el-button>
+                <el-button v-if="activeMode === 'dsl'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">{{ t('codegen.generate_download', '生成并下载') }}</el-button>
+                <el-button v-if="activeMode === 'db'" type="primary" :loading="previewLoading" @click="handlePreview">{{ t('codegen.preview_dry_run', 'Dry-run 预览') }}</el-button>
+                <el-button v-if="activeMode === 'db'" type="success" :loading="generateLoading || installLoading" @click="handleGenerateAndInstall">{{ t('codegen.generate_install', '生成并安装') }}</el-button>
+                <el-button v-if="activeMode === 'db'" type="warning" :loading="downloadLoading" @click="handleGenerateDownload">{{ t('codegen.generate_download', '生成并下载') }}</el-button>
+                <el-button v-if="activeMode === 'delete'" @click="loadDeleteSample">{{ t('codegen.load_sample', '载入示例') }}</el-button>
+                <el-button v-if="activeMode === 'delete'" type="primary" :loading="previewLoading" @click="handleDeletePreview">{{ t('codegen.delete_preview', '删除预览') }}</el-button>
+                <el-button v-if="activeMode === 'delete'" type="danger" :loading="deleteLoading" :disabled="!deleteExecuteEnabled" @click="handleDeleteExecute">{{ t('codegen.confirm_delete', '确认删除') }}</el-button>
               </el-space>
             </div>
           </template>
@@ -31,26 +31,26 @@
           <el-tabs v-model="activeMode" class="codegen-tabs" stretch>
             <el-tab-pane label="DSL" name="dsl">
               <el-form label-position="top" class="codegen-form">
-                <el-form-item label="Force overwrite">
+                <el-form-item :label="t('codegen.force_overwrite', '强制覆盖')">
                   <el-switch v-model="force" inline-prompt active-text="On" inactive-text="Off" />
                 </el-form-item>
-                <el-form-item label="下载包名称">
-                  <el-input v-model="packageName" placeholder="留空则由系统自动生成 zip 名称" />
+                <el-form-item :label="t('codegen.package_name', '下载包名称')">
+                  <el-input v-model="packageName" :placeholder="t('codegen.package_name_placeholder', '留空则由系统自动生成 zip 名称')" />
                 </el-form-item>
-                <el-form-item label="下载包内容">
+                <el-form-item :label="t('codegen.package_content', '下载包内容')">
                   <el-space wrap>
                     <el-switch v-model="includeReadme" inline-prompt active-text="README" inactive-text="README" />
                     <el-switch v-model="includeReport" inline-prompt active-text="Report" inactive-text="Report" />
                     <el-switch v-model="includeDsl" inline-prompt active-text="DSL" inactive-text="DSL" />
                   </el-space>
                 </el-form-item>
-                <el-form-item label="DSL 内容">
+                <el-form-item :label="t('codegen.dsl_content', 'DSL 内容')">
                   <el-input
                     v-model="dslText"
                     type="textarea"
                     :rows="28"
                     resize="none"
-                    placeholder="在这里粘贴或编辑 DSL YAML"
+                    :placeholder="t('codegen.dsl_placeholder', '在这里粘贴或编辑 DSL YAML')"
                   />
                 </el-form-item>
               </el-form>
@@ -61,17 +61,17 @@
               <div class="db-mode-panel">
                 <div class="db-hero">
                   <div>
-                    <div class="db-hero-title">数据库输入向导</div>
-                    <div class="db-hero-subtitle">先选驱动，再填连接串与扫描范围。建议先预览，确认结果后再生成。</div>
+                    <div class="db-hero-title">{{ t('codegen.db_guide_title', '数据库输入向导') }}</div>
+                    <div class="db-hero-subtitle">{{ t('codegen.db_guide_subtitle', '先选驱动，再填连接串与扫描范围。建议先预览，确认结果后再生成。') }}</div>
                   </div>
                   <el-space wrap>
                     <el-tag type="info" effect="light">{{ dbDriverLabel }}</el-tag>
-                    <el-tag type="success" effect="light">{{ dbParsedTables.length ? `${dbParsedTables.length} 个表` : '全部表' }}</el-tag>
+                    <el-tag type="success" effect="light">{{ dbParsedTables.length ? `${dbParsedTables.length} 个表` : t('common.all', '全部表') }}</el-tag>
                   </el-space>
                 </div>
 
                 <el-alert
-                  title="推荐先执行 Dry-run 预览，确认文件计划和冲突后再执行生成。"
+                  :title="t('codegen.db_recommended_preview', '推荐先执行 Dry-run 预览，确认文件计划和冲突后再执行生成。')"
                   type="info"
                   :closable="false"
                   show-icon
@@ -79,8 +79,8 @@
 
                 <div class="db-preset-row">
                   <div>
-                    <div class="db-section-title">快速模板</div>
-                    <div class="db-section-hint">一键预填常见数据库的连接格式。</div>
+                    <div class="db-section-title">{{ t('codegen.db_fast_template', '快速模板') }}</div>
+                    <div class="db-section-hint">{{ t('codegen.db_fast_template_hint', '一键预填常见数据库的连接格式。') }}</div>
                   </div>
                   <el-space wrap>
                     <el-button size="small" :type="dbDriver === 'mysql' ? 'primary' : 'default'" plain @click="applyDbPreset('mysql')">MySQL</el-button>
@@ -92,8 +92,8 @@
                 <el-form label-position="top" class="codegen-form db-form">
                   <el-row :gutter="16">
                     <el-col :xs="24" :md="6">
-                      <el-form-item label="数据库驱动">
-                        <el-select v-model="dbDriver" placeholder="请选择数据库驱动" filterable>
+                      <el-form-item :label="t('codegen.db_driver', '数据库驱动')">
+                        <el-select v-model="dbDriver" :placeholder="t('codegen.db_driver_placeholder', '请选择数据库驱动')" filterable>
                           <el-option label="MySQL" value="mysql" />
                           <el-option label="PostgreSQL" value="postgres" />
                           <el-option label="SQLite" value="sqlite" />
@@ -101,19 +101,19 @@
                       </el-form-item>
                     </el-col>
                     <el-col :xs="24" :md="6">
-                      <el-form-item label="数据库名">
-                        <el-input v-model="dbDatabase" placeholder="请输入数据库名称" />
+                      <el-form-item :label="t('codegen.db_name', '数据库名')">
+                        <el-input v-model="dbDatabase" :placeholder="t('codegen.db_name_placeholder', '请输入数据库名称')" />
                       </el-form-item>
                     </el-col>
                     <el-col :xs="24" :md="6">
-                      <el-form-item label="Schema">
-                        <el-input v-model="dbSchema" placeholder="可选，PostgreSQL 等场景使用" />
+                      <el-form-item :label="t('codegen.db_schema', 'Schema')">
+                        <el-input v-model="dbSchema" :placeholder="t('codegen.db_schema_placeholder', '可选，PostgreSQL 等场景使用')" />
                       </el-form-item>
                     </el-col>
                     <el-col :xs="24" :md="6">
-                      <el-form-item label="挂载根菜单">
-                        <el-select v-model="dbMountParentPath" clearable filterable placeholder="留空为顶层根菜单">
-                          <el-option label="顶层根菜单" value="" />
+                      <el-form-item :label="t('codegen.db_mount_root', '挂载根菜单')">
+                        <el-select v-model="dbMountParentPath" clearable filterable :placeholder="t('codegen.db_mount_root_placeholder', '留空为顶层根菜单')">
+                          <el-option :label="t('codegen.db_mount_root_top', '顶层根菜单')" value="" />
                           <el-option
                             v-for="option in dbMountMenuOptions"
                             :key="option.value"
@@ -125,19 +125,19 @@
                     </el-col>
                   </el-row>
 
-                    <el-form-item label="表名范围" class="db-form-item db-form-item--wide">
+                    <el-form-item :label="t('codegen.db_table_range', '表名范围')" class="db-form-item db-form-item--wide">
                       <el-input
                         v-model="dbTablesText"
                         type="textarea"
                         :rows="6"
                         resize="none"
-                        placeholder="支持逗号、换行分隔，例如：books, orders"
+                        :placeholder="t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：books, orders')"
                       />
                       <div class="db-form-row">
-                        <span class="db-field-help">留空则表示扫描全部表；建议优先预填少量表进行预览。</span>
+                        <span class="db-field-help">{{ t('codegen.db_table_range_help', '留空则表示扫描全部表；建议优先预填少量表进行预览。') }}</span>
                         <el-space wrap>
-                          <el-button text size="small" @click="loadDbSample">载入示例</el-button>
-                          <el-button text size="small" @click="clearDbTables">清空范围</el-button>
+                          <el-button text size="small" @click="loadDbSample">{{ t('codegen.load_sample', '载入示例') }}</el-button>
+                          <el-button text size="small" @click="clearDbTables">{{ t('codegen.clear', '清空') }}</el-button>
                         </el-space>
                       </div>
                       <div v-if="dbParsedTables.length" class="db-table-chip-list">
@@ -156,8 +156,8 @@
                   <div class="db-advanced">
                     <div class="db-section-header">
                       <div>
-                        <div class="db-section-title">生成选项</div>
-                        <div class="db-section-hint">控制是否覆盖现有文件、是否输出前端和权限策略。</div>
+                        <div class="db-section-title">{{ t('codegen.generate_options', '生成选项') }}</div>
+                        <div class="db-section-hint">{{ t('codegen.generate_options_hint', '控制是否覆盖现有文件、是否输出前端和权限策略。') }}</div>
                       </div>
                       <el-tag size="small" type="success" effect="light">{{ dbOptionSummary }}</el-tag>
                     </div>
@@ -174,7 +174,7 @@
             <el-tab-pane label="删除" name="delete">
               <div class="delete-mode-panel">
                 <el-alert
-                  title="请先执行删除预览，确认计划、风险与冲突后，再点击确认删除。"
+                  :title="t('codegen.delete_preview_required', '请先执行删除预览，确认计划、风险与冲突后，再点击确认删除。')"
                   type="warning"
                   :closable="false"
                   show-icon
@@ -183,19 +183,19 @@
                 <el-form label-position="top" class="codegen-form db-form delete-form">
                   <el-row :gutter="16">
                     <el-col :xs="24" :md="8">
-                      <el-form-item label="模块名">
+                      <el-form-item :label="t('codegen.delete_module', '模块名')">
                         <el-input v-model="deleteModule" placeholder="例如 book" />
                       </el-form-item>
                     </el-col>
                     <el-col :xs="24" :md="8">
-                      <el-form-item label="模块类型">
+                      <el-form-item :label="t('codegen.delete_kind', '模块类型')">
                         <el-input v-model="deleteKind" placeholder="例如 crud" />
                       </el-form-item>
                     </el-col>
                     <el-col :xs="24" :md="8">
-                      <el-form-item label="Policy Store">
-                        <el-select v-model="deletePolicyStore" clearable filterable placeholder="自动识别或手动指定">
-                          <el-option label="自动识别" value="" />
+                      <el-form-item :label="t('codegen.delete_policy_store', 'Policy Store')">
+                        <el-select v-model="deletePolicyStore" clearable filterable :placeholder="t('codegen.delete_policy_store_placeholder', '自动识别或手动指定')">
+                          <el-option :label="t('codegen.delete_policy_store_auto_detect', '自动识别')" value="" />
                           <el-option label="CSV" value="csv" />
                           <el-option label="DB" value="db" />
                         </el-select>
@@ -203,7 +203,7 @@
                     </el-col>
                   </el-row>
 
-                  <el-form-item label="删除范围">
+                  <el-form-item :label="t('codegen.delete_scope', '删除范围')">
                     <el-space wrap>
                       <el-switch v-model="deleteWithRuntime" inline-prompt active-text="Runtime" inactive-text="Runtime" />
                       <el-switch v-model="deleteWithPolicy" inline-prompt active-text="Policy" inactive-text="Policy" />
@@ -213,13 +213,13 @@
                     </el-space>
                   </el-form-item>
 
-                  <el-form-item label="执行说明">
+                  <el-form-item :label="t('codegen.execute_notes', '执行说明')">
                     <el-input
                       v-model="deleteNotes"
                       type="textarea"
                       :rows="5"
                       resize="none"
-                      placeholder="可选：补充删除说明，仅用于界面记录，不会直接传给后端核心"
+                      :placeholder="t('codegen.execute_notes_placeholder', '可选：补充删除说明，仅用于界面记录，不会直接传给后端核心')"
                     />
                   </el-form-item>
                 </el-form>
@@ -235,8 +235,8 @@
             <template #header>
               <div class="card-header compact">
                 <div>
-                  <div class="title">执行结果</div>
-                  <div class="subtitle">预览和生成都会回传资源级动作。</div>
+                  <div class="title">{{ t('codegen.result_title', '执行结果') }}</div>
+                  <div class="subtitle">{{ t('codegen.result_subtitle', '预览和生成都会回传资源级动作。') }}</div>
                 </div>
               </div>
             </template>
@@ -248,7 +248,7 @@
               :closable="false"
               show-icon
             />
-            <div v-else class="result-empty">尚未执行预览或生成。</div>
+            <div v-else class="result-empty">{{ t('codegen.no_result', '尚未执行预览或生成。') }}</div>
 
             <div class="preview-table-wrap">
               <el-table :data="previewItems" class="preview-table" size="small" border>
@@ -285,13 +285,13 @@
             <template #header>
               <div class="card-header compact">
                 <div>
-                  <div class="title">文件计划</div>
-                  <div class="subtitle">显示数据库预览阶段推导出的文件清单。</div>
+                  <div class="title">{{ t('codegen.file_plan_title', '文件计划') }}</div>
+                  <div class="subtitle">{{ t('codegen.file_plan_subtitle', '显示数据库预览阶段推导出的文件清单。') }}</div>
                 </div>
               </div>
             </template>
 
-            <el-empty v-if="!filePlans.length" description="暂无文件计划" />
+            <el-empty v-if="!filePlans.length" :description="t('codegen.no_file_plan', '暂无文件计划')" />
             <el-table v-else :data="filePlans" size="small" border class="preview-table">
               <el-table-column prop="path" label="Path" min-width="220" show-overflow-tooltip />
               <el-table-column prop="action" label="Action" width="120" />
@@ -317,13 +317,13 @@
             <template #header>
               <div class="card-header compact">
                 <div>
-                  <div class="title">风险与冲突</div>
-                  <div class="subtitle">展示删除预览中的风险提示和阻断冲突。</div>
+                  <div class="title">{{ t('codegen.risk_title', '风险与冲突') }}</div>
+                  <div class="subtitle">{{ t('codegen.risk_subtitle', '展示删除预览中的风险提示和阻断冲突。') }}</div>
                 </div>
               </div>
             </template>
 
-            <el-empty v-if="!deleteConflicts.length" description="暂无冲突" />
+            <el-empty v-if="!deleteConflicts.length" :description="t('codegen.no_risk', '暂无冲突')" />
             <el-table v-else :data="deleteConflicts" size="small" border class="preview-table">
               <el-table-column prop="kind" label="Kind" min-width="140" show-overflow-tooltip />
               <el-table-column prop="severity" label="Severity" width="110" />
@@ -336,8 +336,8 @@
             <template #header>
               <div class="card-header compact">
                 <div>
-                  <div class="title">冲突</div>
-                  <div class="subtitle">展示文件覆盖风险与路径冲突信息。</div>
+                  <div class="title">{{ t('codegen.conflict_title', '冲突') }}</div>
+                  <div class="subtitle">{{ t('codegen.conflict_subtitle', '展示文件覆盖风险与路径冲突信息。') }}</div>
                 </div>
               </div>
             </template>
@@ -354,39 +354,39 @@
             <template #header>
               <div class="card-header compact">
                 <div>
-                  <div class="title">审计</div>
-                  <div class="subtitle">记录输入、执行步骤与输出统计。</div>
+                  <div class="title">{{ t('codegen.audit_title', '审计') }}</div>
+                  <div class="subtitle">{{ t('codegen.audit_subtitle', '记录输入、执行步骤与输出统计。') }}</div>
                 </div>
               </div>
             </template>
 
-            <el-empty v-if="!auditRecord" description="暂无审计记录" />
+            <el-empty v-if="!auditRecord" :description="t('codegen.no_audit', '暂无审计记录')" />
             <div v-else class="artifact-panel">
               <div class="artifact-summary-grid">
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">记录时间</span>
+                  <span class="artifact-summary-label">{{ t('codegen.record_time', '记录时间') }}</span>
                   <span class="artifact-summary-value">{{ formatDateTime(auditRecord.recorded_at) }}</span>
                   <span class="artifact-summary-meta">{{ auditRecord.recorded_at }}</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">输入</span>
+                  <span class="artifact-summary-label">{{ t('codegen.input', '输入') }}</span>
                   <span class="artifact-summary-value">{{ auditRecord.input.driver }} / {{ auditRecord.input.database }}</span>
                   <span class="artifact-summary-meta">dry-run: {{ auditRecord.input.dry_run ? 'yes' : 'no' }}</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">输出文件</span>
+                  <span class="artifact-summary-label">{{ t('codegen.output_file_count', '输出文件') }}</span>
                   <span class="artifact-summary-value">{{ auditRecord.output.file_count }}</span>
                   <span class="artifact-summary-meta">冲突：{{ auditRecord.output.conflict_count }}</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">表范围</span>
+                  <span class="artifact-summary-label">{{ t('codegen.table_scope', '表范围') }}</span>
                   <span class="artifact-summary-value">{{ auditRecord.input.tables?.length ?? 0 }}</span>
                   <span class="artifact-summary-meta">{{ (auditRecord.input.tables ?? []).join(', ') || '全部表' }}</span>
                 </div>
               </div>
               <div class="artifact-grid artifact-grid--compact">
                 <div class="artifact-item artifact-item--wide">
-                  <span class="artifact-label">执行步骤</span>
+                  <span class="artifact-label">{{ t('codegen.execution_steps', '执行步骤') }}</span>
                   <ul class="message-list compact-list">
                     <li v-for="step in auditRecord.steps" :key="step.name">
                       {{ step.name }} [{{ step.status }}]{{ step.detail ? ` - ${step.detail}` : '' }}
@@ -394,7 +394,7 @@
                   </ul>
                 </div>
                 <div class="artifact-item artifact-item--wide">
-                  <span class="artifact-label">输出概览</span>
+                  <span class="artifact-label">{{ t('codegen.output_overview', '输出概览') }}</span>
                   <span class="artifact-value">文件 {{ auditRecord.output.files.length }} · 冲突 {{ auditRecord.output.conflicts.length }}</span>
                 </div>
               </div>
@@ -405,8 +405,8 @@
             <template #header>
               <div class="card-header compact">
                 <div>
-                  <div class="title">删除结果</div>
-                  <div class="subtitle">展示本次删除的执行概览、异常情况与处理明细。</div>
+                  <div class="title">{{ t('codegen.delete_result_title', '删除结果') }}</div>
+                  <div class="subtitle">{{ t('codegen.delete_result_subtitle', '展示本次删除的执行概览、异常情况与处理明细。') }}</div>
                 </div>
               </div>
             </template>
@@ -420,29 +420,29 @@
               />
               <div class="artifact-summary-grid">
                 <div class="artifact-summary-card" :class="`artifact-summary-card--${deleteResultStatusTone}`">
-                  <span class="artifact-summary-label">结果状态</span>
+                  <span class="artifact-summary-label">{{ t('codegen.result_status', '结果状态') }}</span>
                   <span class="artifact-summary-value">{{ deleteResultStatusLabel }}</span>
                   <span class="artifact-summary-meta">{{ deleteResultSummaryText }}</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">已处理</span>
+                  <span class="artifact-summary-label">{{ t('codegen.processed', '已处理') }}</span>
                   <span class="artifact-summary-value">{{ deleteResultSummary?.total_deleted ?? 0 }}</span>
                   <span class="artifact-summary-meta">源文件 {{ deleteResultSummary?.deleted_source_files ?? 0 }} · 运行时 {{ deleteResultSummary?.deleted_runtime_assets ?? 0 }}</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">跳过 / 异常</span>
+                  <span class="artifact-summary-label">{{ t('codegen.skipped_failed', '跳过 / 异常') }}</span>
                   <span class="artifact-summary-value">{{ deleteResultSummary?.skipped ?? 0 }} / {{ deleteResultSummary?.failed ?? 0 }}</span>
                   <span class="artifact-summary-meta">权限 {{ deleteResultSummary?.deleted_policy_changes ?? 0 }} · 前端 {{ deleteResultSummary?.deleted_frontend_changes ?? 0 }}</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">执行耗时</span>
+                  <span class="artifact-summary-label">{{ t('codegen.elapsed', '执行耗时') }}</span>
                   <span class="artifact-summary-value">{{ deleteResultElapsedText }}</span>
                   <span class="artifact-summary-meta">开始于 {{ formatDateTime(deleteResult?.started_at ?? '') }} · 结束于 {{ formatDateTime(deleteResult?.finished_at ?? '') }}</span>
                 </div>
               </div>
               <div class="artifact-grid artifact-grid--compact">
                 <div class="artifact-item artifact-item--wide">
-                  <span class="artifact-label">删除明细</span>
+                  <span class="artifact-label">{{ t('codegen.delete_detail', '删除明细') }}</span>
                   <ul class="message-list compact-list">
                     <li v-for="item in deleteResultDeleted" :key="deleteItemKey(item)">
                       {{ describeDeleteItem(item) }}
@@ -450,7 +450,7 @@
                   </ul>
                 </div>
                 <div class="artifact-item artifact-item--wide">
-                  <span class="artifact-label">跳过明细</span>
+                  <span class="artifact-label">{{ t('codegen.skip_detail', '跳过明细') }}</span>
                   <ul class="message-list compact-list">
                     <li v-for="item in deleteResultSkipped" :key="deleteItemKey(item)">
                       {{ describeDeleteItem(item) }}
@@ -458,7 +458,7 @@
                   </ul>
                 </div>
                 <div class="artifact-item artifact-item--wide" v-if="deleteResultFailures.length">
-                  <span class="artifact-label">异常明细</span>
+                  <span class="artifact-label">{{ t('codegen.failure_detail', '异常明细') }}</span>
                   <ul class="message-list compact-list">
                     <li v-for="failure in deleteResultFailures" :key="describeDeleteFailureKey(failure)">
                       {{ describeDeleteFailure(failure) }}
@@ -489,17 +489,17 @@
             <template #header>
               <div class="card-header compact artifact-header">
                 <div>
-                  <div class="title">下载产物</div>
-                  <div class="subtitle">展示最近一次服务端打包结果，并支持重新下载。</div>
+                  <div class="title">{{ t('codegen.artifact_title', '下载产物') }}</div>
+                  <div class="subtitle">{{ t('codegen.artifact_subtitle', '展示最近一次服务端打包结果，并支持重新下载。') }}</div>
                 </div>
                 <el-space v-if="artifactInfo" wrap>
                   <el-button text :class="{ 'artifact-copy-button--active': copyFeedbackActive }" :disabled="!canCopyArtifactUrl" @click="handleCopyDownloadUrl">{{ copyButtonText }}</el-button>
-                  <el-button text type="primary" :disabled="isArtifactExpired" :loading="downloadLoading" @click="handleArtifactDownload">重新下载</el-button>
+                  <el-button text type="primary" :disabled="isArtifactExpired" :loading="downloadLoading" @click="handleArtifactDownload">{{ t('common.refresh', '重新下载') }}</el-button>
                 </el-space>
               </div>
             </template>
 
-            <el-empty v-if="!artifactInfo" description="尚未生成下载包" />
+            <el-empty v-if="!artifactInfo" :description="t('codegen.no_artifact', '尚未生成下载包')" />
             <div v-else class="artifact-panel">
               <el-alert
                 :title="artifactStatusMessage"
@@ -509,22 +509,22 @@
               />
               <div class="artifact-summary-grid">
                 <div class="artifact-summary-card" :class="`artifact-summary-card--${artifactStatusTone}`">
-                  <span class="artifact-summary-label">产物状态</span>
+                  <span class="artifact-summary-label">{{ t('codegen.artifact_status', '产物状态') }}</span>
                   <span class="artifact-summary-value">{{ artifactStatusLabel }}</span>
                   <span class="artifact-summary-meta">{{ artifactStatusSummary }}</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">文件概览</span>
+                  <span class="artifact-summary-label">{{ t('codegen.file_overview', '文件概览') }}</span>
                   <span class="artifact-summary-value">{{ artifactInfo.filename }}</span>
                   <span class="artifact-summary-meta">{{ artifactSizeText }} · {{ artifactInfo.file_count }} 个文件</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">有效期</span>
+                  <span class="artifact-summary-label">{{ t('codegen.valid_until', '有效期') }}</span>
                   <span class="artifact-summary-value">{{ artifactRemainingText }}</span>
                   <span class="artifact-summary-meta">到期于 {{ artifactExpireText }}</span>
                 </div>
                 <div class="artifact-summary-card">
-                  <span class="artifact-summary-label">最近活动</span>
+                  <span class="artifact-summary-label">{{ t('codegen.recent_activity', '最近活动') }}</span>
                   <span class="artifact-summary-value">{{ artifactLastDownloadText }}</span>
                   <span class="artifact-summary-meta">
                     <template v-if="lastDownloadDuration > 0">耗时 {{ artifactLastDownloadDurationText }} · </template>
@@ -535,24 +535,24 @@
               </div>
               <div class="artifact-grid artifact-grid--compact">
                 <div class="artifact-item artifact-item--wide">
-                  <span class="artifact-label">任务 ID</span>
+                  <span class="artifact-label">{{ t('codegen.task_id', '任务 ID') }}</span>
                   <span class="artifact-value monospace">{{ artifactInfo.task_id }}</span>
                 </div>
                 <div class="artifact-item">
-                  <span class="artifact-label">文件名</span>
+                  <span class="artifact-label">{{ t('codegen.filename', '文件名') }}</span>
                   <span class="artifact-value">{{ artifactInfo.filename }}</span>
                 </div>
                 <div class="artifact-item">
-                  <span class="artifact-label">最近一次失败原因</span>
+                  <span class="artifact-label">{{ t('codegen.last_failure_reason', '最近一次失败原因') }}</span>
                   <span class="artifact-value">{{ artifactLastErrorText }}</span>
                 </div>
                 <div class="artifact-item artifact-item--wide">
-                  <span class="artifact-label">下载地址</span>
+                  <span class="artifact-label">{{ t('codegen.download_url', '下载地址') }}</span>
                   <template v-if="canCopyArtifactUrl">
                     <el-button plain size="small" :class="{ 'artifact-copy-button--active': copyFeedbackActive }" @click="handleCopyDownloadUrl">{{ copyButtonText }}</el-button>
                     <span class="artifact-hint">{{ artifactDownloadUrlSummary }}</span>
                   </template>
-                  <span v-else class="artifact-hint">下载包已过期，旧下载地址已隐藏，请重新生成新的代码包。</span>
+                  <span v-else class="artifact-hint">{{ t('codegen.expired_hidden', '下载包已过期，旧下载地址已隐藏，请重新生成新的代码包。') }}</span>
                 </div>
               </div>
             </div>
@@ -592,6 +592,7 @@ import {
 import { fetchPublicConfig } from '@/api/health';
 import { fetchMenuTree } from '@/api/system-menus';
 import { ApiError } from '@/api/types';
+import { useAppI18n } from '@/i18n';
 import type { PublicConfigPayload } from '@/api/health';
 import type { MenuItem } from '@/types/admin';
 
@@ -668,6 +669,7 @@ let artifactTicker: ReturnType<typeof window.setInterval> | null = null;
 let copyFeedbackTimer: ReturnType<typeof window.setTimeout> | null = null;
 const dbMountMenuOptions = ref<MenuMountOption[]>([]);
 const publicConfig = ref<PublicConfigPayload | null>(null);
+const { t } = useAppI18n();
 
 const currentReport = computed(() => (activeMode.value === 'db' ? dbReport.value : dslReport.value));
 const dbParsedTables = computed(() => parseTableNames(dbTablesText.value));
@@ -677,14 +679,14 @@ const dbDriverLabel = computed(() => {
     postgres: 'PostgreSQL',
     sqlite: 'SQLite',
   };
-  return map[dbDriver.value] || dbDriver.value || '未选择';
+  return map[dbDriver.value] || dbDriver.value || '—';
 });
 const dbOptionSummary = computed(() => {
   const parts: string[] = [];
-  parts.push(dbForce.value ? '覆盖现有文件' : '安全覆盖关闭');
-  parts.push(dbGenerateFrontend.value ? '生成前端' : '跳过前端');
-  parts.push(dbGeneratePolicy.value ? '生成权限' : '跳过权限');
-  parts.push(dbMountParentPath.value ? `挂载：${dbMountMenuLabel.value}` : '挂载：顶层根菜单');
+  parts.push(dbForce.value ? t('codegen.cover_existing', '覆盖现有文件') : t('codegen.safe_cover_off', '安全覆盖关闭'));
+  parts.push(dbGenerateFrontend.value ? t('codegen.generate_frontend', '生成前端') : t('codegen.skip_frontend', '跳过前端'));
+  parts.push(dbGeneratePolicy.value ? t('codegen.generate_policy', '生成权限') : t('codegen.skip_policy', '跳过权限'));
+  parts.push(dbMountParentPath.value ? `${t('codegen.mount_root_prefix', '挂载：')}${dbMountMenuLabel.value}` : t('codegen.mount_root_top_label', '挂载：顶层根菜单'));
   return parts.join(' · ');
 });
 const dbGeneratedModuleName = computed(() => dbReport.value?.resources?.[0]?.module?.trim() || '');
@@ -694,7 +696,7 @@ const deletePlanItems = computed<PreviewRow[]>(() => mapDeletePlanToPreviewRows(
 const deleteConflicts = computed(() => deletePreviewPlan.value?.conflicts ?? []);
 const deleteRequestSnapshotLabel = computed(() => {
   if (!deleteRequestCache.value) {
-    return '未预览';
+    return t('codegen.no_preview', '未预览');
   }
   return `${deleteRequestCache.value.module || '-'} · ${deleteRequestCache.value.dry_run ? 'dry-run' : 'execute'}`;
 });
@@ -705,12 +707,12 @@ const deletePlanStatusMessage = computed(() => {
   const conflicts = deleteConflicts.value.length;
   const total = deletePlanItems.value.length;
   if (conflicts > 0) {
-    return `删除预览完成：${total} 项计划中包含 ${conflicts} 个冲突，请确认后再执行。`;
+    return t('codegen.delete_preview_complete_conflict', '删除预览完成：{total} 项计划中包含 {conflicts} 个冲突，请确认后再执行。', { total, conflicts });
   }
   if (warnings.length > 0) {
-    return `删除预览完成：${total} 项计划，存在 ${warnings.length} 条风险提示。`;
+    return t('codegen.delete_preview_complete_warning', '删除预览完成：{total} 项计划，存在 {warnings} 条风险提示。', { total, warnings: warnings.length });
   }
-  return `删除预览完成：共 ${total} 项计划，可继续确认执行。`;
+  return t('codegen.delete_preview_complete_normal', '删除预览完成：共 {total} 项计划，可继续确认执行。', { total });
 });
 const deletePlanStatusType = computed(() => {
   if (deleteConflicts.value.length > 0) {
@@ -731,22 +733,26 @@ const deleteResultSummaryText = computed(() => {
   if (!summary) {
     return '-';
   }
-  return `已处理 ${summary.total_deleted ?? 0} 项 · 跳过 ${summary.skipped ?? 0} 项 · 异常 ${summary.failed ?? 0} 项`;
+  return t('codegen.delete_result_summary', '已处理 {deleted} 项 · 跳过 {skipped} 项 · 异常 {failed} 项', {
+    deleted: summary.total_deleted ?? 0,
+    skipped: summary.skipped ?? 0,
+    failed: summary.failed ?? 0,
+  });
 });
 const deleteResultStatusLabel = computed(() => {
   switch (deleteResult.value?.status ?? '') {
     case 'succeeded':
-      return '成功';
+      return t('common.ok', '成功');
     case 'partial':
-      return '部分成功';
+      return t('codegen.delete_partial', '部分成功');
     case 'failed':
-      return '失败';
+      return t('codegen.delete_failed', '失败');
     case 'dry_run':
       return 'Dry-run';
     case 'planned':
-      return '已计划';
+      return t('codegen.delete_planned', '已计划');
     default:
-      return '未知';
+      return t('common.unknown', '未知');
   }
 });
 const deleteResultStatusType = computed(() => {
@@ -783,47 +789,50 @@ const deleteResultStatusMessage = computed(() => {
   }
   const summary = result.summary;
   if (result.status === 'succeeded') {
-    return `删除已完成，共处理 ${summary?.total_deleted ?? 0} 项。`;
+    return t('codegen.delete_result_completed_summary', '删除已完成，共处理 {total} 项。', { total: summary?.total_deleted ?? 0 });
   }
   if (result.status === 'partial') {
-    return `删除已完成，但有 ${summary?.skipped ?? 0} 项被跳过、${summary?.failed ?? 0} 项出现异常。`;
+    return t('codegen.delete_result_partial_summary', '删除已完成，但有 {skipped} 项被跳过、{failed} 项出现异常。', {
+      skipped: summary?.skipped ?? 0,
+      failed: summary?.failed ?? 0,
+    });
   }
   if (result.status === 'failed') {
-    return `删除执行未完成，请先查看异常明细。`;
+    return t('codegen.delete_failed', '删除执行未完成，请先查看异常明细。');
   }
-  return `删除执行已结束，当前状态为 ${deleteResultStatusLabel.value}。`;
+  return t('codegen.delete_result_ended_status', '删除执行已结束，当前状态为 {status}。', { status: deleteResultStatusLabel.value });
 });
 const deleteMessages = computed(() => {
   const messages: string[] = [];
   if (deletePreviewPlan.value) {
-    messages.push(...(deletePreviewPlan.value.warnings ?? []).map((message) => `预览提示：${message}`));
+    messages.push(...(deletePreviewPlan.value.warnings ?? []).map((message) => `${t('codegen.delete_preview_hint_prefix', '预览提示：')}${message}`));
     if ((deletePreviewPlan.value.warnings ?? []).length === 0 && (deletePreviewPlan.value.conflicts?.length ?? 0) === 0) {
-      messages.push('预览提示：未发现额外风险提示。');
+      messages.push(t('codegen.delete_preview_no_extra_risk', '预览提示：未发现额外风险提示。'));
     }
   }
   if (deleteResult.value) {
-    messages.push(...(deleteResult.value.warnings ?? []).map((message) => `执行提示：${message}`));
+    messages.push(...(deleteResult.value.warnings ?? []).map((message) => `${t('codegen.delete_execute_hint_prefix', '执行提示：')}${message}`));
     for (const failure of deleteResult.value.failures ?? []) {
-      const detail = failure.reason || '未提供原因';
-      messages.push(`异常：${detail}${failure.item ? `（${describeDeleteItem(failure.item)}）` : ''}`);
+      const detail = failure.reason || t('codegen.delete_failure_reason_unknown', '未提供原因');
+      messages.push(`${t('codegen.delete_failure_prefix', '异常：')}${detail}${failure.item ? `（${describeDeleteItem(failure.item)}）` : ''}`);
     }
     if ((deleteResult.value.warnings ?? []).length === 0 && (deleteResult.value.failures ?? []).length === 0) {
-      messages.push('执行提示：未发现额外异常。');
+      messages.push(t('codegen.delete_execute_no_extra_exception', '执行提示：未发现额外异常。'));
     }
   }
   return messages;
 });
-const messagePanelTitle = computed(() => (activeMode.value === 'delete' ? '删除提示' : '消息'));
+const messagePanelTitle = computed(() => (activeMode.value === 'delete' ? t('codegen.delete_messages_title', '删除提示') : t('codegen.messages_title', '消息')));
 const messagePanelSubtitle = computed(() =>
   activeMode.value === 'delete'
-    ? '汇总删除预览提示、执行提示与异常信息。'
-    : '包含 dry-run 提示、生成摘要和校验信息。',
+    ? t('codegen.delete_messages_subtitle', '汇总删除预览提示、执行提示与异常信息。')
+    : t('codegen.messages_subtitle', '包含 dry-run 提示、生成摘要和校验信息。'),
 );
-const messagePanelEmptyText = computed(() => (activeMode.value === 'delete' ? '暂无删除提示' : '暂无消息'));
+const messagePanelEmptyText = computed(() => (activeMode.value === 'delete' ? t('codegen.no_delete_messages', '暂无删除提示') : t('codegen.no_messages', '暂无消息')));
 const deleteExecuteEnabled = computed(() => activeMode.value === 'delete' && deletePreviewReport.value !== null);
 const dbMountMenuLabel = computed(() => {
   if (!dbMountParentPath.value) {
-    return '顶层根菜单';
+    return t('codegen.db_mount_root_top_label', '顶层根菜单');
   }
   const option = dbMountMenuOptions.value.find((item) => item.value === dbMountParentPath.value);
   return option?.label || dbMountParentPath.value;
@@ -898,30 +907,30 @@ const artifactStatusMessage = computed(() => {
     return '';
   }
   if (downloadLoading.value) {
-    return '正在准备下载包，请稍候，浏览器即将开始下载。';
+    return t('codegen.downloading', '正在准备下载包，请稍候，浏览器即将开始下载。');
   }
   if (isArtifactExpired.value) {
-    return '当前下载包已过期，请重新执行“生成并下载”以获得新的代码包。';
+    return t('codegen.artifact_expired', '当前下载包已过期，请重新执行“生成并下载”以获得新的代码包。');
   }
-  return '下载包已就绪，你可以重新下载，或复制下载地址用于当前登录态调试。';
+  return t('codegen.artifact_ready', '下载包已就绪，你可以重新下载，或复制下载地址用于当前登录态调试。');
 });
 const artifactStatusLabel = computed(() => {
   if (downloadLoading.value) {
-    return '下载准备中';
+    return t('codegen.download_preparing', '下载准备中');
   }
   if (isArtifactExpired.value) {
-    return '已过期';
+    return t('codegen.artifact_expired_label', '已过期');
   }
-  return '可下载';
+  return t('codegen.artifact_downloadable', '可下载');
 });
 const artifactStatusSummary = computed(() => {
   if (downloadLoading.value) {
-    return '浏览器即将开始下载';
+    return t('codegen.download_preparing_detail', '浏览器即将开始下载');
   }
   if (isArtifactExpired.value) {
-    return '需要重新生成新的代码包';
+    return t('codegen.artifact_expired_detail', '需要重新生成新的代码包');
   }
-  return '支持重新下载和复制完整地址';
+  return t('codegen.artifact_ready_detail', '支持重新下载和复制完整地址');
 });
 const artifactStatusTone = computed(() => {
   if (downloadLoading.value) {
@@ -946,13 +955,13 @@ const artifactLastErrorText = computed(() => lastArtifactError.value || '无');
 const artifactLastFailureText = computed(() => formatDateTime(lastArtifactErrorAt.value));
 const artifactLastErrorTypeText = computed(() => {
   const map: Record<typeof lastArtifactErrorType.value, string> = {
-    auth: '登录失效',
-    notfound: '资源不存在',
-    expired: '已过期',
-    server: '服务异常',
-    unknown: '其他',
+    auth: t('codegen.error_auth', '登录失效'),
+    notfound: t('codegen.error_notfound', '资源不存在'),
+    expired: t('codegen.error_expired', '已过期'),
+    server: t('codegen.error_server', '服务异常'),
+    unknown: t('codegen.error_unknown', '其他'),
   };
-  return map[lastArtifactErrorType.value] || '其他';
+  return map[lastArtifactErrorType.value] || t('codegen.error_unknown', '其他');
 });
 const artifactLastErrorTypeTag = computed(() => {
   const map: Record<typeof lastArtifactErrorType.value, 'info' | 'warning' | 'danger' | 'success'> = {
@@ -1014,7 +1023,7 @@ resources:
         path: /system/codegen
         component: system/codegen/index
 `;
-  ElMessage.success('示例 DSL 已载入');
+  ElMessage.success(t('codegen.load_sample_success', '示例已载入'));
 }
 
 function loadDbSample() {
@@ -1026,7 +1035,7 @@ function loadDbSample() {
   dbGenerateFrontend.value = true;
   dbGeneratePolicy.value = true;
   dbMountParentPath.value = '';
-  ElMessage.success('示例数据库配置已载入');
+  ElMessage.success(t('codegen.load_db_sample_success', '示例数据库配置已载入'));
 }
 
 function loadDeleteSample() {
@@ -1040,7 +1049,7 @@ function loadDeleteSample() {
   deleteWithRegistry.value = true;
   deleteForce.value = false;
   deleteNotes.value = '先预览再确认执行';
-  ElMessage.success('示例删除配置已载入');
+  ElMessage.success(t('codegen.load_delete_sample_success', '示例删除配置已载入'));
 }
 
 function applyDbPreset(driver: 'mysql' | 'postgres' | 'sqlite') {
@@ -1077,7 +1086,7 @@ function applyDbConfigDefaults() {
 
 async function handleDeleteExecute() {
   if (!deleteExecuteEnabled.value || !deletePreviewReport.value || !deleteRequestCache.value) {
-    ElMessage.warning('请先完成删除预览');
+    ElMessage.warning(t('codegen.delete_preview_required', '请先完成删除预览'));
     return;
   }
   const preview = deletePreviewReport.value;
@@ -1086,18 +1095,23 @@ async function handleDeleteExecute() {
   const total = preview.plan.summary?.total ?? deletePlanItems.value.length;
   try {
     await ElMessageBox.confirm(
-      `即将对模块 ${preview.plan.module || deleteModule.value} 执行删除，共 ${total} 项。当前方案包含 ${warnings} 条提示和 ${conflicts} 个冲突。确认后将调用后端删除执行接口。`,
-      '确认删除方案',
+      t('codegen.delete_execute_confirm', '即将对模块 {module} 执行删除，共 {total} 项。当前方案包含 {warnings} 条提示和 {conflicts} 个冲突。确认后将调用后端删除执行接口。', {
+        module: preview.plan.module || deleteModule.value,
+        total,
+        warnings,
+        conflicts,
+      }),
+      t('codegen.confirm_delete_title', '确认删除方案'),
       {
-        confirmButtonText: '确认执行',
-        cancelButtonText: '返回修改',
+        confirmButtonText: t('codegen.confirm_execute', '确认执行'),
+        cancelButtonText: t('codegen.return_modify', '返回修改'),
         type: 'warning',
         distinguishCancelAndClose: true,
       },
     );
   } catch (error) {
     if (error === 'cancel' || error === 'close') {
-      ElMessage.info('已取消删除操作');
+      ElMessage.info(t('codegen.delete_cancelled', '已取消删除操作'));
       return;
     }
     throw error;
@@ -1125,7 +1139,7 @@ async function handleDeleteExecute() {
     }
     ElMessage.success(deleteResultStatusMessage.value || '删除执行完成');
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '删除执行失败');
+    ElMessage.error(error instanceof Error ? error.message : t('codegen.delete_failed', '删除执行失败'));
   } finally {
     deleteLoading.value = false;
   }
@@ -1226,9 +1240,9 @@ async function handleFileChange(event: Event) {
   try {
     const content = await file.text();
     dslText.value = content;
-    ElMessage.success(`已载入 ${file.name}`);
+    ElMessage.success(t('codegen.file_loaded', '已载入 {name}', { name: file.name }));
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '读取 DSL 文件失败');
+    ElMessage.error(error instanceof Error ? error.message : t('codegen.file_read_failed', '读取 DSL 文件失败'));
   } finally {
     if (input) {
       input.value = '';
@@ -1254,21 +1268,21 @@ async function handlePreview() {
   try {
     if (activeMode.value === 'db') {
       dbReport.value = await previewCodegenDatabase(buildDatabaseRequest());
-      operationStatus.value = '数据库 Dry-run 预览完成';
-      ElMessage.success('数据库 Dry-run 预览完成');
+      operationStatus.value = t('codegen.db_dry_run_complete', '数据库 Dry-run 预览完成');
+      ElMessage.success(t('codegen.db_dry_run_complete', '数据库 Dry-run 预览完成'));
       lastRunSuccess.value = true;
       return;
     }
     if (!dslText.value.trim()) {
-      ElMessage.warning('请先填写 DSL 内容');
+      ElMessage.warning(t('codegen.fill_dsl', '请先填写 DSL 内容'));
       return;
     }
     dslReport.value = await previewCodegenDsl({ dsl: dslText.value, force: force.value });
     lastRunSuccess.value = true;
-    operationStatus.value = 'Dry-run 预览完成';
-    ElMessage.success('Dry-run 预览完成');
+    operationStatus.value = t('codegen.dry_run_complete', 'Dry-run 预览完成');
+    ElMessage.success(t('codegen.dry_run_complete', 'Dry-run 预览完成'));
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : 'Dry-run 预览失败');
+    ElMessage.error(error instanceof Error ? error.message : t('codegen.dry_run_failed', 'Dry-run 预览失败'));
   } finally {
     previewLoading.value = false;
   }
@@ -1289,20 +1303,20 @@ async function handleGenerate() {
     if (activeMode.value === 'db') {
       dbReport.value = await generateCodegenDatabase(buildDatabaseRequest());
       lastRunSuccess.value = true;
-      operationStatus.value = '数据库代码已直接生成到服务端工程';
-      ElMessage.success('数据库生成已完成');
+      operationStatus.value = t('codegen.db_generated_status', '数据库代码已直接生成到服务端工程');
+      ElMessage.success(t('codegen.db_generate_complete', '数据库生成已完成'));
       return;
     }
     if (!dslText.value.trim()) {
-      ElMessage.warning('请先填写 DSL 内容');
+      ElMessage.warning(t('codegen.fill_dsl', '请先填写 DSL 内容'));
       return;
     }
     dslReport.value = await generateCodegenDsl({ dsl: dslText.value, force: force.value });
     lastRunSuccess.value = true;
-    operationStatus.value = '代码已直接生成到服务端工程';
-    ElMessage.success('生成已完成');
+    operationStatus.value = t('codegen.generated_status', '代码已直接生成到服务端工程');
+    ElMessage.success(t('codegen.generate_complete', '生成已完成'));
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '生成失败');
+    ElMessage.error(error instanceof Error ? error.message : t('codegen.generate_failed', '生成失败'));
   } finally {
     generateLoading.value = false;
   }
@@ -1310,7 +1324,7 @@ async function handleGenerate() {
 
 async function handleGenerateAndInstall() {
   if (activeMode.value !== 'db') {
-    ElMessage.warning('请先切换到 DB 模式');
+    ElMessage.warning(t('codegen.switch_db_mode', '请先切换到 DB 模式'));
     return;
   }
   const validationError = validateDatabaseInputs();
@@ -1324,20 +1338,22 @@ async function handleGenerateAndInstall() {
   try {
     dbReport.value = await generateCodegenDatabase(buildDatabaseRequest());
     lastRunSuccess.value = true;
-    operationStatus.value = '数据库代码已生成，等待确认安装到系统';
-    ElMessage.success('数据库生成已完成');
+    operationStatus.value = t('codegen.db_generated_waiting_install', '数据库代码已生成，等待确认安装到系统');
+    ElMessage.success(t('codegen.db_generate_complete', '数据库生成已完成'));
 
     if (!dbGeneratedModuleName.value) {
-      ElMessage.warning('无法识别生成模块，请先重新生成');
+      ElMessage.warning(t('codegen.db_cannot_identify_module', '无法识别生成模块，请先重新生成'));
       return;
     }
 
     await ElMessageBox.confirm(
-      `即将把模块 ${dbGeneratedModuleName.value} 的 manifest 安装到系统菜单中，是否继续？`,
-      '确认安装到系统',
+      t('codegen.db_install_prompt', '即将把模块 {module} 的 manifest 安装到系统菜单中，是否继续？', {
+        module: dbGeneratedModuleName.value,
+      }),
+      t('codegen.install_confirm_title', '确认安装到系统'),
       {
-        confirmButtonText: '继续安装',
-        cancelButtonText: '取消',
+        confirmButtonText: t('codegen.install_confirm_continue', '继续安装'),
+        cancelButtonText: t('common.cancel', '取消'),
         type: 'warning',
         distinguishCancelAndClose: true,
       },
@@ -1346,15 +1362,18 @@ async function handleGenerateAndInstall() {
     installLoading.value = true;
     const result = await installCodegenManifest({ module: dbGeneratedModuleName.value });
     lastRunSuccess.value = true;
-    operationStatus.value = `模块 ${result.module || dbGeneratedModuleName.value} 已安装到系统，共 ${result.menu_total} 个菜单`;
-    ElMessage.success('安装到系统完成');
+    operationStatus.value = t('codegen.install_result_summary', '模块 {module} 已安装到系统，共 {total} 个菜单', {
+      module: result.module || dbGeneratedModuleName.value,
+      total: result.menu_total,
+    });
+    ElMessage.success(t('codegen.db_install_complete', '安装到系统完成'));
     await loadDbMountMenuOptions();
   } catch (error) {
     if (error === 'cancel' || error === 'close') {
-      ElMessage.info('已取消安装');
+      ElMessage.info(t('codegen.install_cancelled', '已取消安装'));
       return;
     }
-    ElMessage.error(error instanceof Error ? error.message : '生成并安装失败');
+    ElMessage.error(error instanceof Error ? error.message : t('codegen.generate_install_failed', '生成并安装失败'));
   } finally {
     installLoading.value = false;
     generateLoading.value = false;
@@ -1378,12 +1397,12 @@ async function handleDeletePreview() {
     deleteResult.value = null;
     lastRunSuccess.value = true;
     operationStatus.value = deletePlanStatusMessage.value;
-    ElMessage.success('删除预览完成');
+    ElMessage.success(t('codegen.delete_preview_complete', '删除预览完成'));
   } catch (error) {
     deletePreviewReport.value = null;
     deleteRequestCache.value = null;
     deleteResult.value = null;
-    ElMessage.error(error instanceof Error ? error.message : '删除预览失败');
+    ElMessage.error(error instanceof Error ? error.message : t('codegen.delete_preview_failed', '删除预览失败'));
   } finally {
     previewLoading.value = false;
   }
@@ -1398,7 +1417,7 @@ async function handleGenerateDownload() {
       return;
     }
   } else if (!dslText.value.trim()) {
-    ElMessage.warning('请先填写 DSL 内容');
+    ElMessage.warning(t('codegen.fill_dsl', '请先填写 DSL 内容'));
     return;
   }
   downloadLoading.value = true;
@@ -1428,9 +1447,12 @@ async function handleGenerateDownload() {
     await downloadCodegenArtifact(artifact.download_url, artifact.filename);
     lastDownloadAt.value = new Date().toISOString();
     lastDownloadDuration.value = downloadStartAt.value ? Date.now() - downloadStartAt.value : 0;
-    ElMessage.success(`下载已开始：${artifact.filename}`);
+    ElMessage.success(t('codegen.download_ready_prefix', '下载已开始：') + artifact.filename);
   } catch (error) {
-    handleArtifactError(error, isDbMode ? '生成数据库下载包失败' : '生成下载包失败');
+    handleArtifactError(
+      error,
+      isDbMode ? t('codegen.generate_database_download_failed', '生成数据库下载包失败') : t('codegen.generate_download_failed', '生成下载包失败'),
+    );
   } finally {
     downloadLoading.value = false;
     downloadStartAt.value = 0;
@@ -1439,12 +1461,12 @@ async function handleGenerateDownload() {
 
 async function handleArtifactDownload() {
   if (!artifactInfo.value) {
-    ElMessage.warning('暂无可下载产物');
+    ElMessage.warning(t('codegen.no_artifact', '暂无可下载产物'));
     return;
   }
   if (isArtifactExpired.value) {
     artifactForceExpired.value = true;
-    ElMessage.warning('下载包已过期，请重新执行“生成并下载”');
+    ElMessage.warning(t('codegen.artifact_expired_short', '下载包已过期，请重新执行“生成并下载”'));
     return;
   }
   downloadLoading.value = true;
@@ -1456,9 +1478,9 @@ async function handleArtifactDownload() {
     lastArtifactError.value = '';
     lastArtifactErrorAt.value = '';
     lastArtifactErrorType.value = 'unknown';
-    ElMessage.success(`下载已开始：${artifactInfo.value.filename}`);
+    ElMessage.success(t('codegen.download_ready_prefix', '下载已开始：') + artifactInfo.value.filename);
   } catch (error) {
-    handleArtifactError(error, '下载失败');
+    handleArtifactError(error, t('codegen.download_failed', '下载失败'));
   } finally {
     downloadLoading.value = false;
     downloadStartAt.value = 0;
@@ -1467,21 +1489,21 @@ async function handleArtifactDownload() {
 
 async function handleCopyDownloadUrl() {
   if (!artifactInfo.value || !canCopyArtifactUrl.value) {
-    ElMessage.warning('暂无可复制地址');
+    ElMessage.warning(t('codegen.no_copy_url', '暂无可复制地址'));
     return;
   }
   const value = artifactDownloadUrlText.value;
   if (!value) {
-    ElMessage.warning('下载地址为空');
+    ElMessage.warning(t('codegen.empty_download_url', '下载地址为空'));
     return;
   }
   try {
     await copyText(value);
     triggerCopyFeedback();
-    ElMessage.success('下载地址已复制');
+    ElMessage.success(t('codegen.copied', '下载地址已复制'));
   } catch (error) {
     resetCopyFeedback();
-    ElMessage.error(error instanceof Error ? error.message : '复制下载地址失败');
+    ElMessage.error(error instanceof Error ? error.message : t('codegen.copy_failed', '复制下载地址失败'));
   }
 }
 
@@ -1491,28 +1513,28 @@ function handleArtifactError(error: unknown, fallbackMessage: string) {
       case 401:
         lastRunSuccess.value = false;
         lastArtifactErrorType.value = 'auth';
-        rememberArtifactError('登录状态已失效，请重新登录后再下载代码包');
-        ElMessage.error('登录状态已失效，请重新登录后再下载代码包');
+        rememberArtifactError(t('codegen.download_auth_error', '登录状态已失效，请重新登录后再下载代码包'));
+        ElMessage.error(t('codegen.download_auth_error', '登录状态已失效，请重新登录后再下载代码包'));
         return;
       case 404:
         lastRunSuccess.value = false;
         lastArtifactErrorType.value = 'notfound';
-        rememberArtifactError('下载包不存在，可能已被清理，请重新执行“生成并下载”');
-        ElMessage.error('下载包不存在，可能已被清理，请重新执行“生成并下载”');
+        rememberArtifactError(t('codegen.download_notfound_error', '下载包不存在，可能已被清理，请重新执行“生成并下载”'));
+        ElMessage.error(t('codegen.download_notfound_error', '下载包不存在，可能已被清理，请重新执行“生成并下载”'));
         return;
       case 410:
         artifactForceExpired.value = true;
-        operationStatus.value = '下载包已过期，请重新执行“生成并下载”。';
+        operationStatus.value = t('codegen.artifact_expired_short', '下载包已过期，请重新执行“生成并下载”。');
         lastRunSuccess.value = false;
         lastArtifactErrorType.value = 'expired';
-        rememberArtifactError('下载包已过期，请重新执行“生成并下载”');
-        ElMessage.warning('下载包已过期，请重新执行“生成并下载”');
+        rememberArtifactError(t('codegen.artifact_expired_short', '下载包已过期，请重新执行“生成并下载”'));
+        ElMessage.warning(t('codegen.artifact_expired_short', '下载包已过期，请重新执行“生成并下载”'));
         return;
       case 500:
         lastRunSuccess.value = false;
         lastArtifactErrorType.value = 'server';
-        rememberArtifactError('下载服务暂时不可用，请稍后重试');
-        ElMessage.error('下载服务暂时不可用，请稍后重试');
+        rememberArtifactError(t('codegen.download_server_error', '下载服务暂时不可用，请稍后重试'));
+        ElMessage.error(t('codegen.download_server_error', '下载服务暂时不可用，请稍后重试'));
         return;
       default:
         break;
@@ -1549,7 +1571,7 @@ async function loadDbMountMenuOptions() {
 function flattenMenuMountOptions(items: MenuItem[], depth = 0): MenuMountOption[] {
   const options: MenuMountOption[] = [];
   for (const item of items) {
-    const name = item.name?.trim() || item.path || '未命名菜单';
+    const name = item.name?.trim() || item.path || t('codegen.unnamed_menu', '未命名菜单');
     const labelPrefix = depth > 0 ? `${'—'.repeat(depth)} ` : '';
     if ((item.type || '').toLowerCase() === 'directory') {
       options.push({
@@ -1566,17 +1588,17 @@ function flattenMenuMountOptions(items: MenuItem[], depth = 0): MenuMountOption[
 
 function validateDatabaseInputs(): string {
   if (!dbDriver.value.trim()) {
-    return '请先选择数据库驱动';
+    return t('codegen.db_validate_driver', '请先选择数据库驱动');
   }
   if (!dbDatabase.value.trim()) {
-    return '请先填写数据库名';
+    return t('codegen.db_validate_name', '请先填写数据库名');
   }
   return '';
 }
 
 function validateDeleteInputs(): string {
   if (!deleteModule.value.trim()) {
-    return '请先填写要删除的模块名';
+    return t('codegen.delete_validate_module', '请先填写要删除的模块名');
   }
   return '';
 }

@@ -46,6 +46,7 @@ func buildModuleRenderData(name string, force bool) moduleRenderData {
 		PackageName:         entityLower,
 		EntityLower:         entityLower,
 		EntityPlural:        Pluralize(entityLower),
+		Title:               ToCamel(entityLower),
 		Module:              entityLower,
 		Kind:                kind,
 		ManifestRoutes:      renderCRUDManifestRoutes(buildCRUDManifestRoutes(Pluralize(entityLower))),
@@ -191,10 +192,13 @@ type scaffoldData struct {
 	Name                string
 	PackageName         string
 	Entity              string
+	Title               string
 	EntityLower         string
 	EntityPlural        string
 	Module              string
 	Kind                string
+	RouteTitleKey       string
+	RouteTitleDefault   string
 	TableComment        string
 	Database            string
 	Schema              string
@@ -215,83 +219,6 @@ type scaffoldData struct {
 	ManifestMenus       string
 	ManifestPermissions string
 	Force               bool
-}
-
-func (d scaffoldData) PrimaryField() Field {
-	for _, field := range d.Fields {
-		if field.Primary {
-			return field
-		}
-	}
-	return Field{}
-}
-
-func (d scaffoldData) NeedsPrimaryIDGeneration() bool {
-	return d.PrimaryField().IsStringPrimaryKey()
-}
-
-func (d scaffoldData) NeedsStringsImport() bool {
-	if d.NeedsPrimaryIDGeneration() {
-		return true
-	}
-	for _, field := range d.Fields {
-		if field.Primary {
-			continue
-		}
-		if field.GoType == "string" {
-			return true
-		}
-	}
-	return false
-}
-
-func (d scaffoldData) DisplayFields() []Field {
-	return nonPrimaryFields(d.Fields)
-}
-
-func (d scaffoldData) FormFields() []Field {
-	return nonPrimaryFields(d.Fields)
-}
-
-func (d scaffoldData) SearchFields() []Field {
-	result := make([]Field, 0, len(d.Fields))
-	for _, field := range d.Fields {
-		if field.Primary {
-			continue
-		}
-		if field.GoType != "string" {
-			continue
-		}
-		result = append(result, field)
-	}
-	return result
-}
-
-func (d scaffoldData) SearchFilterBlock() string {
-	fields := d.SearchFields()
-	if len(fields) == 0 {
-		return ""
-	}
-	var builder strings.Builder
-	builder.WriteString("\tif kw := strings.TrimSpace(strings.ToLower(keyword)); kw != \"\" {\n")
-	builder.WriteString("\t\tlike := \"%\" + kw + \"%\"\n")
-	builder.WriteString("\t\tbase = base.Where(\n")
-	builder.WriteString("\t\t\t\"")
-	for i, field := range fields {
-		if i > 0 {
-			builder.WriteString(" OR ")
-		}
-		builder.WriteString("LOWER(")
-		builder.WriteString(field.Column)
-		builder.WriteString(") LIKE ?")
-	}
-	builder.WriteString("\",\n")
-	for range fields {
-		builder.WriteString("\t\t\tlike,\n")
-	}
-	builder.WriteString("\t\t)\n")
-	builder.WriteString("\t}\n")
-	return builder.String()
 }
 
 type manifestRenderData struct {
@@ -323,15 +250,17 @@ type pluginRenderData struct {
 }
 
 type pageRenderData struct {
-	ViewScope  string
-	PageSlug   string
-	PageName   string
-	Title      string
-	RoutePath  string
-	RouteName  string
-	Component  string
-	Permission string
-	Force      bool
+	ViewScope    string
+	PageSlug     string
+	PageName     string
+	Title        string
+	TitleKey     string
+	TitleDefault string
+	RoutePath    string
+	RouteName    string
+	Component    string
+	Permission   string
+	Force        bool
 }
 
 type moduleRenderData struct {
@@ -339,6 +268,7 @@ type moduleRenderData struct {
 	PackageName         string
 	EntityLower         string
 	EntityPlural        string
+	Title               string
 	Module              string
 	Kind                string
 	ManifestRoutes      string
@@ -465,10 +395,13 @@ func buildScaffoldData(name string, fields []Field, tableComment, database, sche
 		Name:                entityLower,
 		PackageName:         packageName,
 		Entity:              entity,
+		Title:               entity,
 		EntityLower:         entityLower,
 		EntityPlural:        entityPlural,
 		Module:              entityLower,
 		Kind:                "business-module",
+		RouteTitleKey:       buildLocaleKey("route", entityLower),
+		RouteTitleDefault:   entity + " Management",
 		TableComment:        strings.TrimSpace(tableComment),
 		Database:            strings.TrimSpace(database),
 		Schema:              strings.TrimSpace(schemaName),
@@ -533,6 +466,83 @@ func buildConfigRenderData(opts ConfigOptions) configRenderData {
 		module = name
 	}
 	return configRenderData{Name: name, Module: module, Kind: "config", Force: opts.Force}
+}
+
+func (d scaffoldData) PrimaryField() Field {
+	for _, field := range d.Fields {
+		if field.Primary {
+			return field
+		}
+	}
+	return Field{}
+}
+
+func (d scaffoldData) NeedsPrimaryIDGeneration() bool {
+	return d.PrimaryField().IsStringPrimaryKey()
+}
+
+func (d scaffoldData) NeedsStringsImport() bool {
+	if d.NeedsPrimaryIDGeneration() {
+		return true
+	}
+	for _, field := range d.Fields {
+		if field.Primary {
+			continue
+		}
+		if field.GoType == "string" {
+			return true
+		}
+	}
+	return false
+}
+
+func (d scaffoldData) DisplayFields() []Field {
+	return nonPrimaryFields(d.Fields)
+}
+
+func (d scaffoldData) FormFields() []Field {
+	return nonPrimaryFields(d.Fields)
+}
+
+func (d scaffoldData) SearchFields() []Field {
+	result := make([]Field, 0, len(d.Fields))
+	for _, field := range d.Fields {
+		if field.Primary {
+			continue
+		}
+		if field.GoType != "string" {
+			continue
+		}
+		result = append(result, field)
+	}
+	return result
+}
+
+func (d scaffoldData) SearchFilterBlock() string {
+	fields := d.SearchFields()
+	if len(fields) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("\tif kw := strings.TrimSpace(strings.ToLower(keyword)); kw != \"\" {\n")
+	builder.WriteString("\t\tlike := \"%\" + kw + \"%\"\n")
+	builder.WriteString("\t\tbase = base.Where(\n")
+	builder.WriteString("\t\t\t\"")
+	for i, field := range fields {
+		if i > 0 {
+			builder.WriteString(" OR ")
+		}
+		builder.WriteString("LOWER(")
+		builder.WriteString(field.Column)
+		builder.WriteString(") LIKE ?")
+	}
+	builder.WriteString("\",\n")
+	for range fields {
+		builder.WriteString("\t\t\tlike,\n")
+	}
+	builder.WriteString("\t\t)\n")
+	builder.WriteString("\t}\n")
+	return builder.String()
 }
 
 func (d scaffoldData) PolicyLines() []string {
@@ -685,8 +695,8 @@ func buildCRUDManifestMenus(entityLower, entityPlural string, frontend bool) []M
 		listPath = rootPath
 	}
 	return []ManifestMenu{
-		{Name: ToCamel(entityPlural), Path: rootPath, Component: "Layout", Icon: "menu", Permission: entityLower + ":view", Type: "directory", Redirect: listPath, Visible: true, Enabled: true, Sort: 1},
-		{Name: "List", Path: listPath, Component: "view/" + entityLower + "/index", Icon: "menu", Permission: entityLower + ":list", Type: "menu", Visible: true, Enabled: true, Sort: 2},
+		{Name: ToCamel(entityPlural), TitleKey: buildLocaleKey("route", entityLower), TitleDefault: ToCamel(entityPlural), Path: rootPath, Component: "Layout", Icon: "menu", Permission: entityLower + ":view", Type: "directory", Redirect: listPath, Visible: true, Enabled: true, Sort: 1},
+		{Name: "List", TitleKey: buildLocaleKey("route", entityLower, "list"), TitleDefault: "List", Path: listPath, Component: "view/" + entityLower + "/index", Icon: "menu", Permission: entityLower + ":list", Type: "menu", Visible: true, Enabled: true, Sort: 2},
 	}
 }
 
@@ -749,6 +759,16 @@ func renderManifestMenus(menus []ManifestMenu) string {
 		builder.WriteString("  - name: ")
 		builder.WriteString(menu.Name)
 		builder.WriteString("\n")
+		if menu.TitleKey != "" {
+			builder.WriteString("    title_key: ")
+			builder.WriteString(menu.TitleKey)
+			builder.WriteString("\n")
+		}
+		if menu.TitleDefault != "" {
+			builder.WriteString("    title_default: ")
+			builder.WriteString(menu.TitleDefault)
+			builder.WriteString("\n")
+		}
 		builder.WriteString("    path: ")
 		builder.WriteString(menu.Path)
 		builder.WriteString("\n")
@@ -818,6 +838,25 @@ func renderManifestPermissionsOrDefault(permissions []ManifestPermission, defaul
 	return renderManifestPermissions(defaults)
 }
 
+func buildLocaleKey(prefix string, parts ...string) string {
+	prefix = strings.TrimSpace(prefix)
+	segments := make([]string, 0, len(parts))
+	for _, part := range parts {
+		segment := NormalizeName(part)
+		if segment == "" {
+			continue
+		}
+		segments = append(segments, segment)
+	}
+	if prefix == "" {
+		return strings.Join(segments, "_")
+	}
+	if len(segments) == 0 {
+		return prefix
+	}
+	return prefix + "." + strings.Join(segments, "_")
+}
+
 func buildPluginRenderData(name string, force bool) pluginRenderData {
 	entityLower := ToSnake(name)
 	if entityLower == "" {
@@ -842,6 +881,10 @@ func buildPageRenderData(opts PageOptions) pageRenderData {
 	if viewScope == "" {
 		viewScope = "page"
 	}
+	routeScope := NormalizeName(opts.RouteScope)
+	if routeScope == "" {
+		routeScope = viewScope
+	}
 	pageSlug := ToSnake(opts.PageSlug)
 	if pageSlug == "" {
 		pageSlug = ToSnake(opts.PageName)
@@ -856,12 +899,16 @@ func buildPageRenderData(opts PageOptions) pageRenderData {
 	if title == "" {
 		title = ToCamel(pageSlug)
 	}
+	titleKey := strings.TrimSpace(opts.TitleKey)
+	if titleKey == "" {
+		titleKey = buildLocaleKey("route", routeScope, pageSlug)
+	}
+	titleDefault := strings.TrimSpace(opts.TitleDefault)
+	if titleDefault == "" {
+		titleDefault = title
+	}
 	routePath := normalizePath(opts.RoutePath)
 	if routePath == "" {
-		routeScope := NormalizeName(opts.RouteScope)
-		if routeScope == "" {
-			routeScope = viewScope
-		}
 		routePath = normalizePath("/" + routeScope + "/" + pageSlug)
 	}
 	component := normalizeViewComponent(opts.Component)
@@ -881,15 +928,17 @@ func buildPageRenderData(opts PageOptions) pageRenderData {
 	}
 	routeName += pageSlug
 	return pageRenderData{
-		ViewScope:  viewScope,
-		PageSlug:   pageSlug,
-		PageName:   strings.TrimSpace(opts.PageName),
-		Title:      title,
-		RoutePath:  routePath,
-		RouteName:  routeName,
-		Component:  component,
-		Permission: strings.TrimSpace(opts.Permission),
-		Force:      opts.Force,
+		ViewScope:    viewScope,
+		PageSlug:     pageSlug,
+		PageName:     strings.TrimSpace(opts.PageName),
+		Title:        titleDefault,
+		TitleKey:     titleKey,
+		TitleDefault: titleDefault,
+		RoutePath:    routePath,
+		RouteName:    routeName,
+		Component:    component,
+		Permission:   strings.TrimSpace(opts.Permission),
+		Force:        opts.Force,
 	}
 }
 
@@ -925,6 +974,8 @@ func (g *Generator) writeScaffold(data scaffoldData) error {
 		filepath.Join(base, "bootstrap.go"):                                          bootstrapTemplate,
 		filepath.Join(base, "module.go"):                                             moduleTemplate,
 		filepath.Join(base, "manifest.yaml"):                                         manifestTemplate,
+		filepath.Join(base, "locales", "zh-CN", data.EntityLower+".yaml"):            crudLocaleZhTemplate,
+		filepath.Join(base, "locales", "en-US", data.EntityLower+".yaml"):            crudLocaleEnTemplate,
 		filepath.Join(base, "domain", "model", data.EntityLower+".go"):               modelTemplate,
 		filepath.Join(base, "domain", "repository", "repository.go"):                 repositoryTemplate,
 		filepath.Join(base, "application", "command", data.EntityLower+".go"):        commandTemplate,
@@ -1023,8 +1074,10 @@ func (g *Generator) refreshBootstrapRegistry() error {
 func (g *Generator) writeModuleScaffold(data moduleRenderData) error {
 	base := filepath.Join(g.Root, "backend", "modules", data.Name)
 	files := map[string]string{
-		filepath.Join(base, "module.go"):     moduleTemplate,
-		filepath.Join(base, "manifest.yaml"): manifestTemplate,
+		filepath.Join(base, "module.go"):                                  moduleTemplate,
+		filepath.Join(base, "manifest.yaml"):                              manifestTemplate,
+		filepath.Join(base, "locales", "zh-CN", data.EntityLower+".yaml"): moduleLocaleZhTemplate,
+		filepath.Join(base, "locales", "en-US", data.EntityLower+".yaml"): moduleLocaleEnTemplate,
 	}
 	for path, tmpl := range files {
 		if err := g.writeGoOrText(path, tmpl, data, data.Force); err != nil {
@@ -1038,6 +1091,8 @@ func (g *Generator) writePluginScaffold(data pluginRenderData) error {
 	base := filepath.Join(g.Root, "backend", "plugin", "builtin", data.EntityLower)
 	files := map[string]string{
 		filepath.Join(base, data.EntityLower+".go"):                                           pluginTemplate,
+		filepath.Join(base, "locales", "zh-CN", "plugin.yaml"):                                pluginLocaleZhTemplate,
+		filepath.Join(base, "locales", "en-US", "plugin.yaml"):                                pluginLocaleEnTemplate,
 		filepath.Join(g.Root, "web", "src", "plugins", data.EntityLower+".ts"):                pluginFrontendTemplate,
 		filepath.Join(g.Root, "web", "src", "views", "plugin", data.EntityLower, "index.vue"): pluginViewTemplate,
 	}
@@ -1157,9 +1212,32 @@ func vueStringLiteral(value string) string {
 	return "'" + inner + "'"
 }
 
+func yamlStringLiteral(value string) string {
+	return strconv.Quote(value)
+}
+
+func localeFieldLabelZh(field Field) string {
+	label := strings.TrimSpace(field.DisplayLabel())
+	if label == "" {
+		return field.DisplayLabel()
+	}
+	return label
+}
+
+func localeFieldLabelEn(field Field) string {
+	label := strings.TrimSpace(field.DisplayLabel())
+	if label == "" {
+		return "Field"
+	}
+	return label
+}
+
 func renderTemplate(tmpl string, data any) (string, error) {
 	t, err := template.New("goadmin").Funcs(template.FuncMap{
-		"vueStringLiteral": vueStringLiteral,
+		"yamlStringLiteral":  yamlStringLiteral,
+		"localeFieldLabelZh": localeFieldLabelZh,
+		"localeFieldLabelEn": localeFieldLabelEn,
+		"vueStringLiteral":   vueStringLiteral,
 	}).Parse(tmpl)
 	if err != nil {
 		return "", err

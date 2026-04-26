@@ -100,6 +100,8 @@ export interface RoleFormState {
 export interface MenuFormState {
   parent_id: string;
   name: string;
+  titleKey: string;
+  titleDefault: string;
   path: string;
   component: string;
   icon: string;

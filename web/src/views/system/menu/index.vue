@@ -29,6 +29,8 @@ const query = reactive({
 const defaultForm = (): MenuFormState => ({
   parent_id: '',
   name: '',
+  titleKey: '',
+  titleDefault: '',
   path: '',
   component: '',
   icon: '',
@@ -91,6 +93,8 @@ function openEdit(row: MenuItem) {
     ...defaultForm(),
     parent_id: row.parent_id ?? '',
     name: row.name,
+    titleKey: row.titleKey ?? '',
+    titleDefault: row.titleDefault ?? '',
     path: row.path,
     component: row.component ?? '',
     icon: row.icon ?? '',
@@ -131,6 +135,8 @@ async function submitForm() {
       ...form,
       parent_id: form.parent_id.trim(),
       name: form.name.trim(),
+      titleKey: form.titleKey.trim(),
+      titleDefault: form.titleDefault.trim(),
       path: form.path.trim(),
       component: form.component.trim(),
       icon: form.icon.trim(),
@@ -300,6 +306,12 @@ onMounted(() => {
         </el-form-item>
         <el-form-item :label="t('menu.name', '菜单名称')" required>
           <el-input v-model="form.name" :placeholder="t('menu.name_placeholder', '请输入菜单名称')" />
+        </el-form-item>
+        <el-form-item :label="t('menu.title_key', '标题 Key')">
+          <el-input v-model="form.titleKey" :placeholder="t('menu.title_key_placeholder', '例如 route.dashboard')" />
+        </el-form-item>
+        <el-form-item :label="t('menu.title_default', '标题默认值')">
+          <el-input v-model="form.titleDefault" :placeholder="t('menu.title_default_placeholder', '例如 仪表盘')" />
         </el-form-item>
         <el-form-item :label="t('menu.path', '路径')" required>
           <el-input v-model="form.path" :placeholder="t('menu.path_placeholder', '请输入路由路径')" />

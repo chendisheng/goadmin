@@ -6,11 +6,13 @@ import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { fetchRoles } from '@/api/roles';
 import { createUser, deleteUser, fetchUsers, updateUser } from '@/api/users';
+import { useAppI18n } from '@/i18n';
 import { useSessionStore } from '@/store/session';
 import type { RoleItem, UserFormState, UserItem } from '@/types/admin';
 import { formatDateTime, statusTagType } from '@/utils/admin';
 
 const sessionStore = useSessionStore();
+const { t } = useAppI18n();
 const tableLoading = ref(false);
 const dialogLoading = ref(false);
 const dialogVisible = ref(false);
@@ -93,12 +95,12 @@ function resolveRoleLabel(code: string): string {
 }
 
 function statusLabel(status: string): string {
-  return status === 'inactive' ? '禁用' : '启用';
+  return status === 'inactive' ? t('user.status_inactive', '禁用') : t('user.status_active', '启用');
 }
 
 async function submitForm() {
   if (form.username.trim() === '') {
-    ElMessage.warning('请输入用户名');
+    ElMessage.warning(t('user.username_required', '请输入用户名'));
     return;
   }
   dialogLoading.value = true;
@@ -117,10 +119,10 @@ async function submitForm() {
 
     if (editingId.value) {
       await updateUser(editingId.value, payload);
-      ElMessage.success('用户已更新');
+      ElMessage.success(t('user.updated', '用户已更新'));
     } else {
       await createUser(payload);
-      ElMessage.success('用户已创建');
+      ElMessage.success(t('user.created', '用户已创建'));
     }
 
     dialogVisible.value = false;
@@ -131,13 +133,13 @@ async function submitForm() {
 }
 
 async function removeRow(row: UserItem) {
-  await ElMessageBox.confirm(`确认删除用户 ${row.username} 吗？`, '删除用户', {
+  await ElMessageBox.confirm(t('user.confirm_delete', '确认删除用户 {name} 吗？', { name: row.username }), t('user.delete_title', '删除用户'), {
     type: 'warning',
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
+    confirmButtonText: t('common.delete', '删除'),
+    cancelButtonText: t('common.cancel', '取消'),
   });
   await deleteUser(row.id);
-  ElMessage.success('用户已删除');
+  ElMessage.success(t('user.deleted', '用户已删除'));
   await loadUsers();
 }
 
@@ -173,46 +175,46 @@ onMounted(() => {
 <template>
   <div class="admin-page">
     <AdminTable
-      title="用户管理"
-      description="维护系统用户、角色绑定与基础资料。"
+      :title="t('user.title', '用户管理')"
+      :description="t('user.description', '维护系统用户、角色绑定与基础资料。')"
       :loading="tableLoading"
     >
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadUsers">刷新</el-button>
-        <el-button v-permission="'user:create'" type="primary" @click="openCreate">新增用户</el-button>
+        <el-button :loading="tableLoading" @click="loadUsers">{{ t('common.refresh', '刷新') }}</el-button>
+        <el-button v-permission="'user:create'" type="primary" @click="openCreate">{{ t('common.create', '新增') }}</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
-          <el-form-item label="关键字">
-            <el-input v-model="query.keyword" clearable placeholder="用户名 / 显示名 / 邮箱" />
+          <el-form-item :label="t('user.keyword_label', '关键字')">
+            <el-input v-model="query.keyword" clearable :placeholder="t('user.keyword_placeholder', '用户名 / 显示名 / 邮箱')" />
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="query.status" clearable placeholder="全部状态" style="width: 180px">
-              <el-option label="启用" value="active" />
-              <el-option label="禁用" value="inactive" />
+          <el-form-item :label="t('user.status_label', '状态')">
+            <el-select v-model="query.status" clearable :placeholder="t('user.status_placeholder', '全部状态')" style="width: 180px">
+              <el-option :label="t('user.status_active', '启用')" value="active" />
+              <el-option :label="t('user.status_inactive', '禁用')" value="inactive" />
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="handleReset">重置</el-button>
+            <el-button type="primary" @click="handleSearch">{{ t('common.search', '查询') }}</el-button>
+            <el-button @click="handleReset">{{ t('common.reset', '重置') }}</el-button>
           </el-form-item>
         </el-form>
       </template>
 
       <el-table :data="rows" border row-key="id" v-loading="tableLoading">
-        <el-table-column prop="username" label="用户名" min-width="140" />
-        <el-table-column prop="display_name" label="显示名称" min-width="140" />
-        <el-table-column prop="mobile" label="手机号" min-width="140" />
-        <el-table-column prop="email" label="邮箱" min-width="200" />
-        <el-table-column label="状态" width="100">
+        <el-table-column prop="username" :label="t('user.username', '用户名')" min-width="140" />
+        <el-table-column prop="display_name" :label="t('user.display_name', '显示名称')" min-width="140" />
+        <el-table-column prop="mobile" :label="t('user.mobile', '手机号')" min-width="140" />
+        <el-table-column prop="email" :label="t('user.email', '邮箱')" min-width="200" />
+        <el-table-column :label="t('user.status', '状态')" width="100">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)" effect="plain">
               {{ statusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="角色" min-width="220">
+        <el-table-column :label="t('user.role', '角色')" min-width="220">
           <template #default="{ row }">
             <el-space wrap>
               <el-tag v-for="code in row.role_codes || []" :key="code" effect="plain">
@@ -222,15 +224,15 @@ onMounted(() => {
             </el-space>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column :label="t('user.created_at', '创建时间')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column :label="t('common.actions', '操作')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'user:update'" link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button v-permission="'user:delete'" link type="danger" @click="removeRow(row)">删除</el-button>
+            <el-button v-permission="'user:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', '编辑') }}</el-button>
+            <el-button v-permission="'user:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', '删除') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -253,31 +255,31 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑用户' : '新增用户'"
+      :title="editingId ? t('user.edit_title', '编辑用户') : t('user.create_title', '新增用户')"
       :loading="dialogLoading"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form">
-        <el-form-item label="用户名" required>
-          <el-input v-model="form.username" placeholder="请输入用户名" />
+        <el-form-item :label="t('user.username', '用户名')" required>
+          <el-input v-model="form.username" :placeholder="t('user.username_placeholder', '请输入用户名')" />
         </el-form-item>
-        <el-form-item label="显示名称">
-          <el-input v-model="form.display_name" placeholder="请输入显示名称" />
+        <el-form-item :label="t('user.display_name', '显示名称')">
+          <el-input v-model="form.display_name" :placeholder="t('user.display_name_placeholder', '请输入显示名称')" />
         </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="form.mobile" placeholder="请输入手机号" />
+        <el-form-item :label="t('user.mobile', '手机号')">
+          <el-input v-model="form.mobile" :placeholder="t('user.mobile_placeholder', '请输入手机号')" />
         </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="form.email" placeholder="请输入邮箱" />
+        <el-form-item :label="t('user.email', '邮箱')">
+          <el-input v-model="form.email" :placeholder="t('user.email_placeholder', '请输入邮箱')" />
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item :label="t('user.status', '状态')">
           <el-select v-model="form.status" style="width: 100%">
-            <el-option label="启用" value="active" />
-            <el-option label="禁用" value="inactive" />
+            <el-option :label="t('user.status_active', '启用')" value="active" />
+            <el-option :label="t('user.status_inactive', '禁用')" value="inactive" />
           </el-select>
         </el-form-item>
-        <el-form-item label="角色">
-          <el-select v-model="form.role_codes" multiple clearable filterable :loading="roleLoading" placeholder="选择角色">
+        <el-form-item :label="t('user.role', '角色')">
+          <el-select v-model="form.role_codes" multiple clearable filterable :loading="roleLoading" :placeholder="t('user.role_placeholder', '选择角色')">
             <el-option
               v-for="role in roleOptions"
               :key="role.id"
@@ -286,8 +288,8 @@ onMounted(() => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="密码哈希">
-          <el-input v-model="form.password_hash" type="password" show-password placeholder="可选，留空表示不修改" />
+        <el-form-item :label="t('user.password_hash', '密码哈希')">
+          <el-input v-model="form.password_hash" type="password" show-password :placeholder="t('user.password_hash_placeholder', '可选，留空表示不修改')" />
         </el-form-item>
       </el-form>
     </AdminFormDialog>

@@ -157,10 +157,16 @@ func TestGenerateModule(t *testing.T) {
 
 	modulePath := filepath.Join(root, "backend", "modules", "inventory", "module.go")
 	manifestPath := filepath.Join(root, "backend", "modules", "inventory", "manifest.yaml")
+	localeZhPath := filepath.Join(root, "backend", "modules", "inventory", "locales", "zh-CN", "inventory.yaml")
+	localeEnPath := filepath.Join(root, "backend", "modules", "inventory", "locales", "en-US", "inventory.yaml")
 	assertFileContains(t, modulePath, "package inventory")
 	assertFileContains(t, modulePath, `const Name = "inventory"`)
 	assertFileContains(t, manifestPath, "kind: business-module")
 	assertFileContains(t, manifestPath, "path: /api/v1/inventories")
+	assertFileContains(t, localeZhPath, "inventory.repository_required")
+	assertFileContains(t, localeZhPath, "Inventory仓储未配置")
+	assertFileContains(t, localeEnPath, "inventory.service_not_configured")
+	assertFileContains(t, localeEnPath, "Inventory service is not configured")
 
 	if _, err := os.Stat(filepath.Join(root, "backend", "modules", "inventory", "application")); !os.IsNotExist(err) {
 		t.Fatalf("unexpected CRUD directory created for module scaffold: %v", err)
@@ -195,6 +201,8 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	schemaPath := filepath.Join(root, "backend", "modules", "article", "schema.sql")
 	requestPath := filepath.Join(root, "backend", "modules", "article", "transport", "http", "request", "article.go")
 	responsePath := filepath.Join(root, "backend", "modules", "article", "transport", "http", "response", "article.go")
+	localeZhPath := filepath.Join(root, "backend", "modules", "article", "locales", "zh-CN", "article.yaml")
+	localeEnPath := filepath.Join(root, "backend", "modules", "article", "locales", "en-US", "article.yaml")
 	policyPath := filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv")
 	registryPath := filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go")
 
@@ -228,6 +236,12 @@ func TestGenerateCRUDAndPolicyDedup(t *testing.T) {
 	assertFileContains(t, requestPath, "PublishAt time.Time")
 	assertFileContains(t, responsePath, "type Item struct")
 	assertFileContains(t, responsePath, "PublishAt time.Time")
+	assertFileContains(t, localeZhPath, "article.field.name.label")
+	assertFileContains(t, localeZhPath, "article.field.name.placeholder")
+	assertFileContains(t, localeZhPath, "article.field.publish_at.label")
+	assertFileContains(t, localeZhPath, "article.field.publish_at.placeholder")
+	assertFileContains(t, localeEnPath, "article.field.name.label")
+	assertFileContains(t, localeEnPath, "Please enter Name")
 	assertFileContains(t, policyPath, "p, admin, /api/v1/articles, GET")
 	assertFileContains(t, policyPath, "p, admin, /api/v1/articles/:id, DELETE")
 
@@ -401,8 +415,8 @@ func TestGenerateManifestRendersMenuParentPath(t *testing.T) {
 		Module: "book",
 		Kind:   "crud",
 		Menus: []ManifestMenu{
-			{Name: "Books", Path: "/books", Component: "Layout", Redirect: "/books/list", Type: "directory", Visible: true, Enabled: true, Sort: 1},
-			{Name: "List", Path: "/books/list", ParentPath: "/books", Component: "view/book/index", Type: "menu", Visible: true, Enabled: true, Sort: 2},
+			{Name: "Books", TitleKey: "route.book", TitleDefault: "Books", Path: "/books", Component: "Layout", Redirect: "/books/list", Type: "directory", Visible: true, Enabled: true, Sort: 1},
+			{Name: "List", TitleKey: "route.book_list", TitleDefault: "List", Path: "/books/list", ParentPath: "/books", Component: "view/book/index", Type: "menu", Visible: true, Enabled: true, Sort: 2},
 		},
 	}); err != nil {
 		t.Fatalf("GenerateManifest returned error: %v", err)
@@ -410,6 +424,8 @@ func TestGenerateManifestRendersMenuParentPath(t *testing.T) {
 
 	manifestPath := filepath.Join(root, "backend", "modules", "book", "manifest.yaml")
 	assertFileContains(t, manifestPath, "menus:")
+	assertFileContains(t, manifestPath, "title_key: route.book")
+	assertFileContains(t, manifestPath, "title_default: Books")
 	assertFileContains(t, manifestPath, "parent_path: /books")
 	assertFileContains(t, manifestPath, "path: /books/list")
 }
@@ -429,10 +445,13 @@ func TestGenerateCRUDFrontendPathsUseRepoWebRoot(t *testing.T) {
 	}
 
 	assertPathExists(t, filepath.Join(root, "web", "src", "api", "article.ts"))
-	assertPathExists(t, filepath.Join(root, "web", "src", "router", "modules", "article.ts"))
+	routePath := filepath.Join(root, "web", "src", "router", "modules", "article.ts")
+	assertPathExists(t, routePath)
 	assertPathExists(t, filepath.Join(root, "web", "src", "views", "article", "index.vue"))
 	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "api", "article.ts"))
 	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "views", "article", "index.vue"))
+	assertFileContains(t, routePath, "titleKey:")
+	assertFileContains(t, routePath, "titleDefault:")
 }
 
 func TestGenerateCRUDFrontendRendersUsablePage(t *testing.T) {
@@ -450,9 +469,12 @@ func TestGenerateCRUDFrontendRendersUsablePage(t *testing.T) {
 	}
 
 	apiPath := filepath.Join(root, "web", "src", "api", "book.ts")
+	routePath := filepath.Join(root, "web", "src", "router", "modules", "book.ts")
 	viewPath := filepath.Join(root, "web", "src", "views", "book", "index.vue")
 	assertFileContains(t, apiPath, "const basePath = '/books'")
 	assertFileContains(t, apiPath, "http.post(basePath, data)")
+	assertFileContains(t, routePath, "titleKey:")
+	assertFileContains(t, routePath, "titleDefault:")
 	content, err := os.ReadFile(apiPath)
 	if err != nil {
 		t.Fatalf("read api file: %v", err)
@@ -470,7 +492,8 @@ func TestGenerateCRUDFrontendRendersUsablePage(t *testing.T) {
 	assertFileContains(t, viewPath, "el-date-picker")
 	assertFileContains(t, viewPath, "el-input-number")
 	assertFileContains(t, viewPath, "prop=\"title\"")
-	assertFileContains(t, viewPath, "Book管理")
+	assertFileContains(t, viewPath, "resolveRouteLocaleMeta")
+	assertFileContains(t, viewPath, "pageTitle")
 }
 
 func TestRenderTemplateUsesVueStringLiteral(t *testing.T) {
@@ -506,7 +529,10 @@ func TestGeneratePageUsesRepoWebRoot(t *testing.T) {
 	}
 
 	assertPathExists(t, filepath.Join(root, "web", "src", "views", "system", "report.vue"))
-	assertPathExists(t, filepath.Join(root, "web", "src", "router", "modules", "system-report.ts"))
+	routePath := filepath.Join(root, "web", "src", "router", "modules", "system-report.ts")
+	assertPathExists(t, routePath)
+	assertFileContains(t, routePath, "titleKey:")
+	assertFileContains(t, routePath, "titleDefault:")
 	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "views", "system", "report.vue"))
 	assertPathNotExists(t, filepath.Join(root, "backend", "web", "src", "router", "modules", "system-report.ts"))
 }
@@ -565,9 +591,15 @@ func TestGeneratePlugin(t *testing.T) {
 	}
 
 	pluginPath := filepath.Join(root, "backend", "plugin", "builtin", "demo", "demo.go")
+	localeZhPath := filepath.Join(root, "backend", "plugin", "builtin", "demo", "locales", "zh-CN", "plugin.yaml")
+	localeEnPath := filepath.Join(root, "backend", "plugin", "builtin", "demo", "locales", "en-US", "plugin.yaml")
 	assertFileContains(t, pluginPath, "package demo")
 	assertFileContains(t, pluginPath, "pong from demo plugin")
 	assertFileContains(t, filepath.Join(root, "backend", "core", "auth", "casbin", "adapter", "policy.csv"), "p, admin, /plugins/demo/ping, GET")
+	assertFileContains(t, localeZhPath, "plugin.demo.title")
+	assertFileContains(t, localeZhPath, "Demo插件")
+	assertFileContains(t, localeEnPath, "plugin.demo.description")
+	assertFileContains(t, localeEnPath, "Demo plugin description")
 }
 
 func mustField(t *testing.T, fields []Field, name string) Field {

@@ -63,6 +63,10 @@ function isDropHint(targetId: string, position: 'before' | 'after' | 'inside') {
   return dropHint.value?.targetId === targetId && dropHint.value?.position === position;
 }
 
+function getMenuDisplayTitle(menu: PluginMenu): string {
+  return t(menu.titleKey || '', menu.titleDefault || menu.name || menu.id || t('plugin.menu_unnamed', '未命名菜单'));
+}
+
 function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after' | 'inside') {
   event.preventDefault();
   const sourceId = event.dataTransfer?.getData('text/plain') || draggingId.value;
@@ -107,7 +111,7 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
         >
         <template #header>
           <div class="page-card__header">
-            <span>{{ menu.name || menu.id || t('plugin.menu_unnamed', '未命名菜单') }}</span>
+            <span>{{ getMenuDisplayTitle(menu) }}</span>
             <el-space wrap>
               <el-tag effect="plain">{{ menu.type || t('plugin.menu_type_menu', '菜单') }}</el-tag>
               <el-tag effect="plain" type="info">{{ t('plugin.drag_sorting', '拖拽排序') }}</el-tag>
@@ -136,6 +140,12 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
           </el-form-item>
           <el-form-item :label="t('plugin.menu_name', '名称')" required>
             <el-input v-model="menu.name" :placeholder="t('plugin.menu_name_placeholder', '菜单名称')" />
+          </el-form-item>
+          <el-form-item :label="t('plugin.menu_title_key', '标题 Key')">
+            <el-input v-model="menu.titleKey" :placeholder="t('plugin.menu_title_key_placeholder', '例如 route.dashboard')" />
+          </el-form-item>
+          <el-form-item :label="t('plugin.menu_title_default', '标题默认值')">
+            <el-input v-model="menu.titleDefault" :placeholder="t('plugin.menu_title_default_placeholder', '例如 仪表盘')" />
           </el-form-item>
           <el-form-item :label="t('plugin.path', '路径')" required>
             <el-input v-model="menu.path" :placeholder="t('plugin.menu_path_placeholder', '/plugin/example/home')" />
@@ -184,7 +194,7 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
           @dragleave="clearDropHint"
           @drop="onDrop($event, menu.id, 'after')"
         >
-          {{ t('plugin.drop_after', '拖到这里，放在 {name} 之后', { name: menu.name || menu.id || t('plugin.current_menu', '当前菜单') }) }}
+          {{ t('plugin.drop_after', '拖到这里，放在 {name} 之后', { name: getMenuDisplayTitle(menu) }) }}
         </div>
       </el-card>
       </div>

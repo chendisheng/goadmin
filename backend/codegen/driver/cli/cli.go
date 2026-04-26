@@ -451,16 +451,22 @@ func generateSchemaResourcePages(gen *legacygenerate.Generator, resource schema.
 	}
 	scope := choosePageScope(resource)
 	for _, page := range pages {
+		pageSlug := page.NormalizedName()
+		if pageSlug == "" {
+			pageSlug = schema.NormalizeName(page.Title())
+		}
 		if err := gen.GeneratePage(legacygenerate.PageOptions{
-			ViewScope:  scope,
-			RouteScope: scope,
-			PageName:   page.Title(),
-			PageSlug:   page.NormalizedName(),
-			Title:      buildPageTitle(resource, page, scope),
-			RoutePath:  page.RoutePath(scope),
-			Component:  page.ComponentName(scope),
-			Permission: choosePagePermission(resource, page, scope),
-			Force:      force,
+			ViewScope:    scope,
+			RouteScope:   scope,
+			PageName:     page.Title(),
+			PageSlug:     pageSlug,
+			Title:        buildPageTitle(resource, page, scope),
+			TitleKey:     buildRouteLocaleKey("route", scope, pageSlug),
+			TitleDefault: buildPageTitle(resource, page, scope),
+			RoutePath:    page.RoutePath(scope),
+			Component:    page.ComponentName(scope),
+			Permission:   choosePagePermission(resource, page, scope),
+			Force:        force,
 		}); err != nil {
 			return err
 		}
@@ -985,30 +991,38 @@ func buildManifestMenus(resource schema.Resource) []legacygenerate.ManifestMenu 
 		firstPath = "/" + scope
 	}
 	menus = append(menus, legacygenerate.ManifestMenu{
-		Name:       titleizeScope(scope),
-		Path:       "/" + scope,
-		ParentPath: mountParentPath,
-		Component:  "Layout",
-		Icon:       "menu",
-		Permission: scope + ":view",
-		Type:       "directory",
-		Redirect:   firstPath,
-		Visible:    true,
-		Enabled:    true,
-		Sort:       1,
+		Name:         titleizeScope(scope),
+		TitleKey:     buildRouteLocaleKey("route", scope),
+		TitleDefault: titleizeScope(scope),
+		Path:         "/" + scope,
+		ParentPath:   mountParentPath,
+		Component:    "Layout",
+		Icon:         "menu",
+		Permission:   scope + ":view",
+		Type:         "directory",
+		Redirect:     firstPath,
+		Visible:      true,
+		Enabled:      true,
+		Sort:         1,
 	})
 	for index, page := range pages {
+		pageSlug := page.NormalizedName()
+		if pageSlug == "" {
+			pageSlug = schema.NormalizeName(page.Title())
+		}
 		menus = append(menus, legacygenerate.ManifestMenu{
-			Name:       page.Title(),
-			Path:       page.RoutePath(scope),
-			ParentPath: "/" + scope,
-			Component:  page.ComponentName(scope),
-			Icon:       "menu",
-			Permission: choosePagePermission(resource, page, scope),
-			Type:       "menu",
-			Visible:    true,
-			Enabled:    true,
-			Sort:       index + 2,
+			Name:         page.Title(),
+			TitleKey:     buildRouteLocaleKey("route", scope, pageSlug),
+			TitleDefault: page.Title(),
+			Path:         page.RoutePath(scope),
+			ParentPath:   "/" + scope,
+			Component:    page.ComponentName(scope),
+			Icon:         "menu",
+			Permission:   choosePagePermission(resource, page, scope),
+			Type:         "menu",
+			Visible:      true,
+			Enabled:      true,
+			Sort:         index + 2,
 		})
 	}
 	return menus
@@ -1047,9 +1061,28 @@ func buildCRUDManifestMenus(resource schema.Resource, mountParentPath string) []
 		rootName = "Menu"
 	}
 	return []legacygenerate.ManifestMenu{
-		{Name: rootName, Path: rootPath, ParentPath: mountParentPath, Component: "Layout", Icon: "menu", Permission: entityLower + ":view", Type: "directory", Redirect: listPath, Visible: true, Enabled: true, Sort: 1},
-		{Name: "List", Path: listPath, ParentPath: rootPath, Component: "view/" + entityLower + "/index", Icon: "menu", Permission: entityLower + ":list", Type: "menu", Visible: true, Enabled: true, Sort: 2},
+		{Name: rootName, TitleKey: buildRouteLocaleKey("route", entityLower), TitleDefault: rootName, Path: rootPath, ParentPath: mountParentPath, Component: "Layout", Icon: "menu", Permission: entityLower + ":view", Type: "directory", Redirect: listPath, Visible: true, Enabled: true, Sort: 1},
+		{Name: "List", TitleKey: buildRouteLocaleKey("route", entityLower, "list"), TitleDefault: "List", Path: listPath, ParentPath: rootPath, Component: "view/" + entityLower + "/index", Icon: "menu", Permission: entityLower + ":list", Type: "menu", Visible: true, Enabled: true, Sort: 2},
 	}
+}
+
+func buildRouteLocaleKey(prefix string, parts ...string) string {
+	prefix = strings.TrimSpace(prefix)
+	segments := make([]string, 0, len(parts))
+	for _, part := range parts {
+		segment := schema.NormalizeName(part)
+		if segment == "" {
+			continue
+		}
+		segments = append(segments, segment)
+	}
+	if prefix == "" {
+		return strings.Join(segments, "_")
+	}
+	if len(segments) == 0 {
+		return prefix
+	}
+	return prefix + "." + strings.Join(segments, "_")
 }
 
 func buildManifestPermissions(resource schema.Resource) []legacygenerate.ManifestPermission {

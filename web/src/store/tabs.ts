@@ -2,15 +2,19 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 
+import { translate } from '@/i18n';
 import type { WorkspaceTabRecord, WorkspaceTabSnapshot, WorkspaceTabState } from '@/types/tabs';
 
 const TAB_SNAPSHOT_KEY = 'goadmin.workspace.tabs.v1';
 const TAB_SNAPSHOT_VERSION = 1 as const;
-const DEFAULT_TAB_TITLE = '页面';
 const DEFAULT_TAB_COMPONENT_KEY = 'route-view';
 const DEFAULT_FIXED_ROUTES = new Set(['/dashboard']);
 const DEFAULT_NON_TAB_ROUTES = new Set(['/login']);
 const DEFAULT_NON_TAB_ROUTE_NAMES = new Set(['login', 'not-found']);
+
+function defaultTabTitle(): string {
+  return translate('tabs.page', 'Page');
+}
 
 function canUseStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined';
@@ -135,7 +139,7 @@ function normalizeTabRecord(input: unknown): WorkspaceTabRecord | null {
 
   const routePath = typeof input.routePath === 'string' ? input.routePath.trim() : '';
   const routeFullPath = typeof input.routeFullPath === 'string' ? input.routeFullPath.trim() : '';
-  const title = typeof input.title === 'string' && input.title.trim() !== '' ? input.title.trim() : DEFAULT_TAB_TITLE;
+  const title = typeof input.title === 'string' && input.title.trim() !== '' ? input.title.trim() : defaultTabTitle();
   const titleKey = typeof input.titleKey === 'string' && input.titleKey.trim() !== '' ? input.titleKey.trim() : undefined;
   const titleDefault = typeof input.titleDefault === 'string' && input.titleDefault.trim() !== '' ? input.titleDefault.trim() : undefined;
   const componentKey = normalizeComponentKey(typeof input.componentKey === 'string' ? input.componentKey : undefined, normalizeRouteName(input.routeName));
@@ -183,7 +187,7 @@ function buildTabFromRoute(route: RouteLocationNormalizedLoaded): WorkspaceTabRe
   }
 
   const routeName = normalizeRouteName(route.name);
-  const title = typeof route.meta.title === 'string' && route.meta.title.trim() !== '' ? route.meta.title.trim() : DEFAULT_TAB_TITLE;
+  const title = typeof route.meta.title === 'string' && route.meta.title.trim() !== '' ? route.meta.title.trim() : defaultTabTitle();
   const titleKey = typeof route.meta.titleKey === 'string' && route.meta.titleKey.trim() !== '' ? route.meta.titleKey.trim() : undefined;
   const titleDefault = typeof route.meta.titleDefault === 'string' && route.meta.titleDefault.trim() !== ''
     ? route.meta.titleDefault.trim()

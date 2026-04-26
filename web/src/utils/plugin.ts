@@ -154,6 +154,8 @@ export function createPluginMenuNode(pluginName = '', parentId = ''): PluginMenu
     id: `menu-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     parent_id: parentId,
     name: '',
+    titleKey: '',
+    titleDefault: '',
     path: '',
     component: '',
     icon: '',

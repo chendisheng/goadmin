@@ -15,6 +15,32 @@ func NewModule() Module {
 }
 `
 
+const moduleLocaleZhTemplate = `translation:
+  {{.EntityLower}}.repository_required: {{ yamlStringLiteral (printf "%s仓储未配置" .Title) }}
+  {{.EntityLower}}.service_not_configured: {{ yamlStringLiteral (printf "%s服务未配置" .Title) }}
+  {{.EntityLower}}.not_found: {{ yamlStringLiteral (printf "%s不存在" .Title) }}
+  {{.EntityLower}}.conflict: {{ yamlStringLiteral (printf "%s已存在" .Title) }}
+  {{.EntityLower}}.operation_failed: {{ yamlStringLiteral (printf "%s操作失败" .Title) }}
+  {{.EntityLower}}.invalid_list_request: {{ yamlStringLiteral (printf "无效的%s列表请求" .Title) }}
+  {{.EntityLower}}.invalid_create_request: {{ yamlStringLiteral (printf "无效的%s创建请求" .Title) }}
+  {{.EntityLower}}.invalid_update_request: {{ yamlStringLiteral (printf "无效的%s更新请求" .Title) }}
+  {{.EntityLower}}.bootstrap_route_registrar_required: {{ yamlStringLiteral (printf "%s模块注册需要路由注册器" .Title) }}
+  {{.EntityLower}}.bootstrap_db_required: {{ yamlStringLiteral (printf "%s模块注册需要数据库" .Title) }}
+`
+
+const moduleLocaleEnTemplate = `translation:
+  {{.EntityLower}}.repository_required: {{ yamlStringLiteral (printf "%s repository is required" .Title) }}
+  {{.EntityLower}}.service_not_configured: {{ yamlStringLiteral (printf "%s service is not configured" .Title) }}
+  {{.EntityLower}}.not_found: {{ yamlStringLiteral (printf "%s not found" .Title) }}
+  {{.EntityLower}}.conflict: {{ yamlStringLiteral (printf "%s already exists" .Title) }}
+  {{.EntityLower}}.operation_failed: {{ yamlStringLiteral (printf "%s operation failed" .Title) }}
+  {{.EntityLower}}.invalid_list_request: {{ yamlStringLiteral (printf "invalid %s list request" .Title) }}
+  {{.EntityLower}}.invalid_create_request: {{ yamlStringLiteral (printf "invalid %s create request" .Title) }}
+  {{.EntityLower}}.invalid_update_request: {{ yamlStringLiteral (printf "invalid %s update request" .Title) }}
+  {{.EntityLower}}.bootstrap_route_registrar_required: {{ yamlStringLiteral (printf "%s bootstrap requires route registrar" .Title) }}
+  {{.EntityLower}}.bootstrap_db_required: {{ yamlStringLiteral (printf "%s bootstrap requires db" .Title) }}
+`
+
 const manifestTemplate = `name: {{.Name}}
 version: v1
 kind: {{.Kind}}
@@ -35,6 +61,36 @@ module: {{.Module}}
 settings:
   environment: generated
   enabled: true
+`
+
+const crudLocaleZhTemplate = `translation:
+  {{.EntityLower}}.repository_required: {{ yamlStringLiteral (printf "%s仓储未配置" .Title) }}
+  {{.EntityLower}}.service_not_configured: {{ yamlStringLiteral (printf "%s服务未配置" .Title) }}
+  {{.EntityLower}}.not_found: {{ yamlStringLiteral (printf "%s不存在" .Title) }}
+  {{.EntityLower}}.conflict: {{ yamlStringLiteral (printf "%s已存在" .Title) }}
+  {{.EntityLower}}.operation_failed: {{ yamlStringLiteral (printf "%s操作失败" .Title) }}
+  {{.EntityLower}}.invalid_list_request: {{ yamlStringLiteral (printf "无效的%s列表请求" .Title) }}
+  {{.EntityLower}}.invalid_create_request: {{ yamlStringLiteral (printf "无效的%s创建请求" .Title) }}
+  {{.EntityLower}}.invalid_update_request: {{ yamlStringLiteral (printf "无效的%s更新请求" .Title) }}
+  {{- range .Fields }}
+  {{$.EntityLower}}.field.{{.JSONName}}.label: {{ yamlStringLiteral (localeFieldLabelZh .) }}
+  {{$.EntityLower}}.field.{{.JSONName}}.placeholder: {{ yamlStringLiteral (printf "请输入%s" (localeFieldLabelZh .)) }}
+  {{- end }}
+`
+
+const crudLocaleEnTemplate = `translation:
+  {{.EntityLower}}.repository_required: {{ yamlStringLiteral (printf "%s repository is required" .Title) }}
+  {{.EntityLower}}.service_not_configured: {{ yamlStringLiteral (printf "%s service is not configured" .Title) }}
+  {{.EntityLower}}.not_found: {{ yamlStringLiteral (printf "%s not found" .Title) }}
+  {{.EntityLower}}.conflict: {{ yamlStringLiteral (printf "%s already exists" .Title) }}
+  {{.EntityLower}}.operation_failed: {{ yamlStringLiteral (printf "%s operation failed" .Title) }}
+  {{.EntityLower}}.invalid_list_request: {{ yamlStringLiteral (printf "invalid %s list request" .Title) }}
+  {{.EntityLower}}.invalid_create_request: {{ yamlStringLiteral (printf "invalid %s create request" .Title) }}
+  {{.EntityLower}}.invalid_update_request: {{ yamlStringLiteral (printf "invalid %s update request" .Title) }}
+  {{- range .Fields }}
+  {{$.EntityLower}}.field.{{.JSONName}}.label: {{ yamlStringLiteral (localeFieldLabelEn .) }}
+  {{$.EntityLower}}.field.{{.JSONName}}.placeholder: {{ yamlStringLiteral (printf "Please enter %s" (localeFieldLabelEn .)) }}
+  {{- end }}
 `
 
 const modelTemplate = `package model
@@ -550,7 +606,9 @@ const frontendRouterTemplate = `const route = {
   name: '{{.Entity}}',
   component: () => import('@/views/{{.EntityLower}}/index.vue'),
   meta: {
-    title: '{{.Entity}}',
+    title: '{{.RouteTitleDefault}}',
+    titleKey: '{{.RouteTitleKey}}',
+    titleDefault: '{{.RouteTitleDefault}}',
     icon: 'menu',
   },
 }
@@ -559,13 +617,22 @@ export default route
 `
 
 const frontendViewTemplate = `<script setup lang="ts">
-import { onActivated, onMounted, reactive, ref } from 'vue';
+import { computed, onActivated, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { useRoute } from 'vue-router';
 
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { create{{.Entity}}, delete{{.Entity}}, list{{.EntityPlural}}, update{{.Entity}} } from '@/api/{{.EntityLower}}';
+import { resolveRouteLocaleMeta } from '@/i18n';
 import { formatDateTime } from '@/utils/admin';
+
+const route = useRoute();
+
+const pageTitle = computed(() => {
+  const localized = resolveRouteLocaleMeta(route);
+  return localized.title.trim() !== '' ? localized.title : '{{.RouteTitleDefault}}';
+});
 
 type {{.Entity}}Item = {
   id: string;
@@ -743,7 +810,7 @@ onActivated(() => {
 <template>
   <div class="admin-page">
     <AdminTable
-      title="{{.Entity}}管理"
+      :title="pageTitle"
       description="由 goadmin-cli 生成的 CRUD 页面，可直接用于列表、编辑和删除。"
       :loading="tableLoading"
     >
@@ -816,7 +883,7 @@ onActivated(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑{{.Entity}}' : '新增{{.Entity}}'"
+      :title="editingId ? '编辑' + pageTitle : '新增' + pageTitle"
       :loading="dialogLoading"
       @confirm="submitForm"
     >
@@ -967,6 +1034,20 @@ func (p *Plugin) Register(ctx *pluginiface.Context, registrar pluginiface.Regist
 }
 `
 
+const pluginLocaleZhTemplate = `translation:
+  plugin.{{.EntityLower}}.title: {{ yamlStringLiteral (printf "%s插件" .Title) }}
+  plugin.{{.EntityLower}}.home: 首页
+  plugin.{{.EntityLower}}.description: {{ yamlStringLiteral (printf "%s插件说明" .Title) }}
+  plugin.{{.EntityLower}}.ping: {{ yamlStringLiteral (printf "%s插件响应" .Title) }}
+`
+
+const pluginLocaleEnTemplate = `translation:
+  plugin.{{.EntityLower}}.title: {{ yamlStringLiteral (printf "%s Plugin" .Title) }}
+  plugin.{{.EntityLower}}.home: Home
+  plugin.{{.EntityLower}}.description: {{ yamlStringLiteral (printf "%s plugin description" .Title) }}
+  plugin.{{.EntityLower}}.ping: {{ yamlStringLiteral (printf "%s plugin response" .Title) }}
+`
+
 const pluginFrontendTemplate = `export const plugin{{.Title}} = {
   name: '{{.EntityLower}}',
   routePrefix: '{{.RoutePrefix}}',
@@ -1001,7 +1082,9 @@ const pageRouterTemplate = `const route = {
   name: '{{.RouteName}}',
   component: () => import('@/views/{{.Component}}.vue'),
   meta: {
-    title: '{{.Title}}',
+    title: '{{.TitleDefault}}',
+    titleKey: '{{.TitleKey}}',
+    titleDefault: '{{.TitleDefault}}',
     permission: '{{.Permission}}',
   },
 }

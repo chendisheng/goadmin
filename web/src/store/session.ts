@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
+import { translate } from '@/i18n';
 import type { AuthUser, LoginResponse } from '@/types/auth';
 
 const ACCESS_TOKEN_KEY = 'goadmin.access_token';
@@ -103,7 +104,7 @@ export const useSessionStore = defineStore('session', () => {
   const currentUser = ref<AuthUser | null>(null);
 
   const isAuthenticated = computed(() => accessToken.value.trim().length > 0);
-  const displayName = computed(() => currentUser.value?.display_name || currentUser.value?.username || '访客');
+  const displayName = computed(() => currentUser.value?.display_name || currentUser.value?.username || translate('common.visitor'));
   const roleLabels = computed(() => currentUser.value?.roles ?? []);
   const permissions = computed(() => currentUser.value?.permissions ?? []);
 

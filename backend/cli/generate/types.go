@@ -316,17 +316,19 @@ type ManifestRoute struct {
 }
 
 type ManifestMenu struct {
-	Name       string
-	Path       string
-	ParentPath string
-	Component  string
-	Icon       string
-	Permission string
-	Type       string
-	Redirect   string
-	Visible    bool
-	Enabled    bool
-	Sort       int
+	Name         string
+	TitleKey     string
+	TitleDefault string
+	Path         string
+	ParentPath   string
+	Component    string
+	Icon         string
+	Permission   string
+	Type         string
+	Redirect     string
+	Visible      bool
+	Enabled      bool
+	Sort         int
 }
 
 type ManifestPermission struct {
@@ -352,15 +354,17 @@ type ConfigOptions struct {
 }
 
 type PageOptions struct {
-	ViewScope  string
-	RouteScope string
-	PageName   string
-	PageSlug   string
-	Title      string
-	RoutePath  string
-	Component  string
-	Permission string
-	Force      bool
+	ViewScope    string
+	RouteScope   string
+	PageName     string
+	PageSlug     string
+	Title        string
+	TitleKey     string
+	TitleDefault string
+	RoutePath    string
+	Component    string
+	Permission   string
+	Force        bool
 }
 
 type PermissionsOptions struct {

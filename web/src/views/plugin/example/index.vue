@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 
 import { pingExamplePlugin } from '@/api/plugins';
-import { useAppI18n } from '@/i18n';
+import { resolveRouteLocaleMeta, useAppI18n } from '@/i18n';
 import type { ExamplePluginPingResponse } from '@/types/plugin';
 
 const route = useRoute();
@@ -12,7 +12,10 @@ const { t } = useAppI18n();
 const loading = ref(false);
 const pingResult = ref<ExamplePluginPingResponse | null>(null);
 
-const pageTitle = computed(() => (typeof route.meta.title === 'string' && route.meta.title.trim() !== '' ? route.meta.title : t('plugin.example_title', '插件示例')));
+const pageTitle = computed(() => {
+  const localized = resolveRouteLocaleMeta(route);
+  return localized.title.trim() !== '' ? localized.title : t('plugin.example_title', '插件示例');
+});
 const componentName = computed(() => String(route.meta.componentName || 'view/plugin/example/index'));
 const routePath = computed(() => route.path);
 const routePermission = computed(() => String(route.meta.permission || 'plugin:example:view'));

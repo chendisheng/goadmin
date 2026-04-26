@@ -174,7 +174,7 @@ function buildSortSummary(): string {
   }
   const summary = form.menus
     .slice(0, 5)
-    .map((menu, index) => `${index + 1}. ${menu.name || menu.id || t('plugin.menu_unnamed', '未命名菜单')}`)
+    .map((menu, index) => `${index + 1}. ${t(menu.titleKey || '', menu.titleDefault || menu.name || menu.id || t('plugin.menu_unnamed', '未命名菜单'))}`)
     .join(' / ');
   return t('plugin.sort.summary', '已自动重排：{summary}{more}', {
     summary,

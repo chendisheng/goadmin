@@ -32,7 +32,7 @@ func New(service *casbin_ruleservice.Service, logger *zap.Logger) *Handler {
 func (h *Handler) List(c coretransport.Context) {
 	var req casbin_rulereq.ListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		status, body := response.Failure(coreerrors.Wrap(err, coreerrors.CodeBadRequest, "invalid list request"), requestID(c))
+		status, body := response.Failure(coreerrors.WrapWithKey(err, coreerrors.CodeBadRequest, "casbin_rule.invalid_list_request", "invalid list request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
@@ -65,7 +65,7 @@ func (h *Handler) Get(c coretransport.Context) {
 func (h *Handler) Create(c coretransport.Context) {
 	var req casbin_rulereq.CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		status, body := response.Failure(coreerrors.Wrap(err, coreerrors.CodeBadRequest, "invalid create request"), requestID(c))
+		status, body := response.Failure(coreerrors.WrapWithKey(err, coreerrors.CodeBadRequest, "casbin_rule.invalid_create_request", "invalid create request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
@@ -81,7 +81,7 @@ func (h *Handler) Create(c coretransport.Context) {
 func (h *Handler) Update(c coretransport.Context) {
 	var req casbin_rulereq.UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		status, body := response.Failure(coreerrors.Wrap(err, coreerrors.CodeBadRequest, "invalid update request"), requestID(c))
+		status, body := response.Failure(coreerrors.WrapWithKey(err, coreerrors.CodeBadRequest, "casbin_rule.invalid_update_request", "invalid update request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}

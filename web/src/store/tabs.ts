@@ -136,6 +136,8 @@ function normalizeTabRecord(input: unknown): WorkspaceTabRecord | null {
   const routePath = typeof input.routePath === 'string' ? input.routePath.trim() : '';
   const routeFullPath = typeof input.routeFullPath === 'string' ? input.routeFullPath.trim() : '';
   const title = typeof input.title === 'string' && input.title.trim() !== '' ? input.title.trim() : DEFAULT_TAB_TITLE;
+  const titleKey = typeof input.titleKey === 'string' && input.titleKey.trim() !== '' ? input.titleKey.trim() : undefined;
+  const titleDefault = typeof input.titleDefault === 'string' && input.titleDefault.trim() !== '' ? input.titleDefault.trim() : undefined;
   const componentKey = normalizeComponentKey(typeof input.componentKey === 'string' ? input.componentKey : undefined, normalizeRouteName(input.routeName));
   const fixed = input.fixed === true;
   const closable = input.closable !== false && !fixed;
@@ -154,6 +156,8 @@ function normalizeTabRecord(input: unknown): WorkspaceTabRecord | null {
     routePath,
     routeFullPath,
     title,
+    titleKey,
+    titleDefault,
     icon: typeof input.icon === 'string' && input.icon.trim() !== '' ? input.icon.trim() : null,
     componentKey,
     fixed,
@@ -180,6 +184,10 @@ function buildTabFromRoute(route: RouteLocationNormalizedLoaded): WorkspaceTabRe
 
   const routeName = normalizeRouteName(route.name);
   const title = typeof route.meta.title === 'string' && route.meta.title.trim() !== '' ? route.meta.title.trim() : DEFAULT_TAB_TITLE;
+  const titleKey = typeof route.meta.titleKey === 'string' && route.meta.titleKey.trim() !== '' ? route.meta.titleKey.trim() : undefined;
+  const titleDefault = typeof route.meta.titleDefault === 'string' && route.meta.titleDefault.trim() !== ''
+    ? route.meta.titleDefault.trim()
+    : title;
   const icon = typeof route.meta.icon === 'string' && route.meta.icon.trim() !== '' ? route.meta.icon.trim() : null;
   const fixed = route.meta.affix === true || DEFAULT_FIXED_ROUTES.has(route.path);
   const cacheable = route.meta.keepAlive !== false;
@@ -194,6 +202,8 @@ function buildTabFromRoute(route: RouteLocationNormalizedLoaded): WorkspaceTabRe
     routePath,
     routeFullPath,
     title,
+    titleKey,
+    titleDefault,
     icon,
     componentKey,
     fixed,

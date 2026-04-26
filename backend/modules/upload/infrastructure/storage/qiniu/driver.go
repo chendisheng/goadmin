@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"goadmin/core/config"
+	apperrors "goadmin/core/errors"
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
 
 	"github.com/qiniu/api.v7/v7/auth"
@@ -38,19 +39,19 @@ type Driver struct {
 func NewDriver(cfg config.QiniuStorageConfig) (*Driver, error) {
 	bucket := strings.TrimSpace(cfg.Bucket)
 	if bucket == "" {
-		return nil, fmt.Errorf("upload storage qiniu bucket is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_bucket_required", "upload storage qiniu bucket is required")
 	}
 	accessKey := strings.TrimSpace(cfg.AccessKeyID)
 	if accessKey == "" {
-		return nil, fmt.Errorf("upload storage qiniu access_key_id is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_access_key_id_required", "upload storage qiniu access_key_id is required")
 	}
 	secretKey := strings.TrimSpace(cfg.AccessKeySecret)
 	if secretKey == "" {
-		return nil, fmt.Errorf("upload storage qiniu access_key_secret is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_access_key_secret_required", "upload storage qiniu access_key_secret is required")
 	}
 	publicBaseURL := strings.TrimSpace(cfg.PublicBaseURL)
 	if publicBaseURL == "" {
-		return nil, fmt.Errorf("upload storage qiniu public_base_url is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_public_base_url_required", "upload storage qiniu public_base_url is required")
 	}
 	zone := resolveZone(strings.TrimSpace(cfg.Region))
 	qiniuCfg := &storage.Config{
@@ -75,10 +76,10 @@ func (d *Driver) Name() string { return "qiniu" }
 
 func (d *Driver) Put(ctx context.Context, req storagecontract.PutObjectRequest) (*storagecontract.PutObjectResult, error) {
 	if d == nil {
-		return nil, fmt.Errorf("qiniu storage driver is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_driver_not_configured", "qiniu storage driver is not configured")
 	}
 	if req.Reader == nil {
-		return nil, fmt.Errorf("upload reader is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.reader_required", "upload reader is required")
 	}
 	key, err := normalizeKey(req.Key)
 	if err != nil {
@@ -89,7 +90,7 @@ func (d *Driver) Put(ctx context.Context, req storagecontract.PutObjectRequest) 
 	}
 	tmp, err := os.CreateTemp("", "goadmin-qiniu-upload-*")
 	if err != nil {
-		return nil, fmt.Errorf("create qiniu upload temp file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.qiniu_create_temp_failed", "create qiniu upload temp file")
 	}
 	tmpPath := tmp.Name()
 	defer func() {
@@ -100,21 +101,21 @@ func (d *Driver) Put(ctx context.Context, req storagecontract.PutObjectRequest) 
 	hasher := sha256.New()
 	written, err := io.Copy(io.MultiWriter(tmp, hasher), req.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("write qiniu upload file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.qiniu_write_temp_failed", "write qiniu upload file")
 	}
 	if req.Size > 0 && written != req.Size {
-		return nil, fmt.Errorf("upload file size mismatch: got %d want %d", written, req.Size)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.file_size_mismatch", fmt.Sprintf("upload file size mismatch: got %d want %d", written, req.Size))
 	}
 	if err := tmp.Sync(); err != nil {
-		return nil, fmt.Errorf("sync qiniu upload file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.qiniu_sync_temp_failed", "sync qiniu upload file")
 	}
 	if err := tmp.Close(); err != nil {
-		return nil, fmt.Errorf("close qiniu upload temp file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.qiniu_close_temp_failed", "close qiniu upload temp file")
 	}
 
 	file, err := os.Open(tmpPath)
 	if err != nil {
-		return nil, fmt.Errorf("reopen qiniu upload temp file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.qiniu_reopen_temp_failed", "reopen qiniu upload temp file")
 	}
 	defer func() { _ = file.Close() }()
 
@@ -136,12 +137,12 @@ func (d *Driver) Put(ctx context.Context, req storagecontract.PutObjectRequest) 
 	uptoken := putPolicy.UploadToken(d.mac)
 	ret := storage.PutRet{}
 	if err := d.uploader.Put(ctx, &ret, uptoken, key, file, written, &storage.PutExtra{Params: map[string]string{}}); err != nil {
-		return nil, err
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.qiniu_put_failed", "qiniu upload failed")
 	}
 
 	checksum := hex.EncodeToString(hasher.Sum(nil))
 	if expected := strings.TrimSpace(req.ChecksumSHA256); expected != "" && !strings.EqualFold(expected, checksum) {
-		return nil, fmt.Errorf("upload checksum mismatch: got %s want %s", checksum, expected)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.checksum_mismatch", fmt.Sprintf("upload checksum mismatch: got %s want %s", checksum, expected))
 	}
 	publicURL := d.buildPublicURL(key)
 	return &storagecontract.PutObjectResult{
@@ -156,7 +157,7 @@ func (d *Driver) Put(ctx context.Context, req storagecontract.PutObjectRequest) 
 
 func (d *Driver) Get(ctx context.Context, key string) (io.ReadCloser, *storagecontract.ObjectInfo, error) {
 	if d == nil {
-		return nil, nil, fmt.Errorf("qiniu storage driver is not configured")
+		return nil, nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_driver_not_configured", "qiniu storage driver is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -185,7 +186,7 @@ func (d *Driver) Get(ctx context.Context, key string) (io.ReadCloser, *storageco
 
 func (d *Driver) Delete(ctx context.Context, key string) error {
 	if d == nil {
-		return fmt.Errorf("qiniu storage driver is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_driver_not_configured", "qiniu storage driver is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -202,7 +203,7 @@ func (d *Driver) Delete(ctx context.Context, key string) error {
 
 func (d *Driver) Exists(ctx context.Context, key string) (bool, error) {
 	if d == nil {
-		return false, fmt.Errorf("qiniu storage driver is not configured")
+		return false, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_driver_not_configured", "qiniu storage driver is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -220,7 +221,7 @@ func (d *Driver) Exists(ctx context.Context, key string) (bool, error) {
 
 func (d *Driver) PublicURL(ctx context.Context, key string) (string, error) {
 	if d == nil {
-		return "", fmt.Errorf("qiniu storage driver is not configured")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_driver_not_configured", "qiniu storage driver is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -231,7 +232,7 @@ func (d *Driver) PublicURL(ctx context.Context, key string) (string, error) {
 
 func (d *Driver) SignedURL(ctx context.Context, key string, opts storagecontract.SignedURLOptions) (string, error) {
 	if d == nil {
-		return "", fmt.Errorf("qiniu storage driver is not configured")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_driver_not_configured", "qiniu storage driver is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -265,7 +266,7 @@ func (d *Driver) buildPublicURL(key string) string {
 func (d *Driver) openDownloadReader(ctx context.Context, key string) (io.ReadCloser, error) {
 	url := d.buildPublicURL(key)
 	if url == "" {
-		return nil, fmt.Errorf("qiniu public_base_url is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_public_base_url_required", "qiniu public_base_url is required")
 	}
 	if strings.Contains(strings.ToLower(url), "token=") {
 		// already signed
@@ -282,7 +283,7 @@ func (d *Driver) openDownloadReader(ctx context.Context, key string) (io.ReadClo
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		defer func() { _ = resp.Body.Close() }()
-		return nil, fmt.Errorf("qiniu download failed: %s", resp.Status)
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.qiniu_download_failed", fmt.Sprintf("qiniu download failed: %s", resp.Status))
 	}
 	return resp.Body, nil
 }
@@ -330,12 +331,12 @@ func isQiniuNotFound(err error) bool {
 }
 
 func storagecontractErrNotFound(key string) error {
-	return fmt.Errorf("upload file asset %s not found", key)
+	return apperrors.NewWithKey(apperrors.CodeNotFound, "upload.file_not_found", fmt.Sprintf("upload file asset %s not found", key))
 }
 
 func ensureParentDir(key string) error {
 	if strings.Contains(key, "../") {
-		return fmt.Errorf("invalid qiniu object key")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.qiniu_object_key_invalid", "invalid qiniu object key")
 	}
 	return nil
 }
@@ -343,15 +344,15 @@ func ensureParentDir(key string) error {
 func normalizeKey(key string) (string, error) {
 	trimmed := strings.TrimSpace(key)
 	if trimmed == "" {
-		return "", fmt.Errorf("upload storage key is required")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_required", "upload storage key is required")
 	}
 	trimmed = strings.ReplaceAll(trimmed, "\\", "/")
 	trimmed = filepath.Clean(trimmed)
 	if trimmed == "." || trimmed == "" {
-		return "", fmt.Errorf("upload storage key is invalid")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_invalid", "upload storage key is invalid")
 	}
 	if strings.HasPrefix(trimmed, "../") || trimmed == ".." || strings.Contains(trimmed, "/../") {
-		return "", fmt.Errorf("upload storage key contains path traversal")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_traversal", "upload storage key contains path traversal")
 	}
 	return strings.TrimPrefix(trimmed, "/"), nil
 }

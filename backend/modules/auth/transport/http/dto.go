@@ -19,5 +19,6 @@ type UserInfo struct {
 	TenantID    string   `json:"tenant_id,omitempty"`
 	Username    string   `json:"username"`
 	DisplayName string   `json:"display_name,omitempty"`
+	Language    string   `json:"language,omitempty"`
 	Roles       []string `json:"roles,omitempty"`
 }

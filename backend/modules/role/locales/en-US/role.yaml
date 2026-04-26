@@ -1,0 +1,9 @@
+translation:
+  role.id_required: role id is required
+  role.name_required: role name is required
+  role.code_required: role code is required
+  role.tenant_mismatch: tenant mismatch
+  role.not_found: role not found
+  role.conflict: role already exists
+  role.operation_failed: role operation failed
+  role.service_not_configured: role service is not configured

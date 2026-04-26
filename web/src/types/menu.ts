@@ -1,11 +1,16 @@
 export interface BackendMenuRouteMeta {
   title: string;
+  titleKey?: string;
+  titleDefault?: string;
   icon?: string;
   permission?: string;
   hidden?: boolean;
   noCache?: boolean;
   affix?: boolean;
   link?: string;
+  subtitle?: string;
+  subtitleKey?: string;
+  subtitleDefault?: string;
 }
 
 export type BackendMenuRouteType = 'directory' | 'menu' | 'button';
@@ -30,10 +35,15 @@ export interface SidebarMenuNode {
   name: string;
   path: string;
   title: string;
+  titleKey?: string;
+  titleDefault?: string;
   icon?: string;
   component?: string;
   redirect?: string;
   permission?: string;
   hidden: boolean;
+  subtitle?: string;
+  subtitleKey?: string;
+  subtitleDefault?: string;
   children: SidebarMenuNode[];
 }

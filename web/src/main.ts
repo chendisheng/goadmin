@@ -1,6 +1,5 @@
 import { createApp } from 'vue';
 import ElementPlus from 'element-plus';
-import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import 'element-plus/dist/index.css';
 
 import { restoreAuthenticatedSession } from '@/auth/bootstrap';
@@ -10,6 +9,7 @@ import App from './App.vue';
 import router from './router';
 import pinia from './store';
 import { useAppStore } from './store/app';
+import { useLocaleStore } from './store/locale';
 import { useMenuStore } from './store/menu';
 import { useSessionStore } from './store/session';
 import { useTabsStore } from './store/tabs';
@@ -22,11 +22,13 @@ app.directive('permission', permissionDirective);
 
 const sessionStore = useSessionStore(pinia);
 const appStore = useAppStore(pinia);
+const localeStore = useLocaleStore(pinia);
 const menuStore = useMenuStore(pinia);
 const tabsStore = useTabsStore(pinia);
 
 sessionStore.hydrate();
 appStore.hydrate();
+localeStore.hydrate();
 tabsStore.hydrate();
 
 setUnauthorizedHandler(() => {
@@ -57,6 +59,6 @@ if (sessionStore.isAuthenticated) {
 }
 
 app.use(router);
-app.use(ElementPlus, { locale: zhCn });
+app.use(ElementPlus);
 await router.isReady();
 app.mount('#app');

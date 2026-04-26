@@ -1,0 +1,9 @@
+translation:
+  role.id_required: 角色ID不能为空
+  role.name_required: 角色名称不能为空
+  role.code_required: 角色编码不能为空
+  role.tenant_mismatch: 租户不匹配
+  role.not_found: 角色不存在
+  role.conflict: 角色已存在
+  role.operation_failed: 角色操作失败
+  role.service_not_configured: 角色服务未配置

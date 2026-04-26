@@ -1,0 +1,5 @@
+translation:
+  plugin.example.title: 示例插件
+  plugin.example.home: 首页
+  plugin.example.description: 示例插件说明
+  plugin.example.ping: 示例插件响应

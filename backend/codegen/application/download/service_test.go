@@ -2,6 +2,8 @@ package download
 
 import (
 	"archive/zip"
+	codegencli "goadmin/codegen/driver/cli"
+	apperrors "goadmin/core/errors"
 	"os"
 	"strings"
 	"testing"
@@ -96,6 +98,36 @@ permissions:
 
 	if _, err := os.Stat(resolved.PackagePath); err != nil {
 		t.Fatalf("stat package path: %v", err)
+	}
+}
+
+func TestServiceReturnsKeyedValidationErrors(t *testing.T) {
+	t.Parallel()
+
+	service := NewService(Dependencies{BaseDir: t.TempDir(), TTL: time.Hour})
+
+	if _, err := service.Generate(GenerateRequest{}); err == nil {
+		t.Fatal("expected validation error for empty DSL")
+	} else if appErr, ok := err.(*apperrors.AppError); !ok {
+		t.Fatalf("expected *AppError, got %T", err)
+	} else if appErr.Key != "codegen.download.dsl_required" {
+		t.Fatalf("Generate() key = %q, want codegen.download.dsl_required", appErr.Key)
+	}
+
+	if _, err := service.GenerateDatabase(nil, codegencli.DatabaseExecutionRequest{}); err == nil {
+		t.Fatal("expected validation error for missing DB")
+	} else if appErr, ok := err.(*apperrors.AppError); !ok {
+		t.Fatalf("expected *AppError, got %T", err)
+	} else if appErr.Key != "codegen.download.database_required" {
+		t.Fatalf("GenerateDatabase() key = %q, want codegen.download.database_required", appErr.Key)
+	}
+
+	if _, err := service.Resolve(""); err == nil {
+		t.Fatal("expected validation error for empty task id")
+	} else if appErr, ok := err.(*apperrors.AppError); !ok {
+		t.Fatalf("expected *AppError, got %T", err)
+	} else if appErr.Key != "codegen.download.task_id_required" {
+		t.Fatalf("Resolve() key = %q, want codegen.download.task_id_required", appErr.Key)
 	}
 }
 

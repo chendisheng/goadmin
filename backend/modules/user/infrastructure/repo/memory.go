@@ -151,6 +151,9 @@ func (r *MemoryRepository) Update(ctx context.Context, user *model.User) (*model
 	if strings.TrimSpace(user.DisplayName) != "" {
 		updated.DisplayName = user.DisplayName
 	}
+	if strings.TrimSpace(user.Language) != "" {
+		updated.Language = user.Language
+	}
 	if strings.TrimSpace(user.Mobile) != "" {
 		updated.Mobile = user.Mobile
 	}
@@ -246,7 +249,7 @@ func containsUserKeyword(user *model.User, kw string) bool {
 
 func defaultUsers() []model.User {
 	return []model.User{
-		{ID: "user-admin", TenantID: "system", Username: "admin", DisplayName: "System Admin", Email: "admin@goadmin.local", Mobile: "", Status: model.StatusActive, RoleCodes: []string{"admin"}},
-		{ID: "user-demo", TenantID: "system", Username: "demo", DisplayName: "Demo User", Email: "demo@goadmin.local", Mobile: "", Status: model.StatusActive, RoleCodes: []string{"user"}},
+		{ID: "user-admin", TenantID: "system", Username: "admin", DisplayName: "System Admin", Language: "zh-CN", Email: "admin@goadmin.local", Mobile: "", Status: model.StatusActive, RoleCodes: []string{"admin"}},
+		{ID: "user-demo", TenantID: "system", Username: "demo", DisplayName: "Demo User", Language: "zh-CN", Email: "demo@goadmin.local", Mobile: "", Status: model.StatusActive, RoleCodes: []string{"user"}},
 	}
 }

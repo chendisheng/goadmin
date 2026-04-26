@@ -8,20 +8,22 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	apperrors "goadmin/core/errors"
 )
 
 func normalizeKey(key string) (string, error) {
 	trimmed := strings.TrimSpace(key)
 	if trimmed == "" {
-		return "", fmt.Errorf("upload storage key is required")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_required", "upload storage key is required")
 	}
 	trimmed = strings.ReplaceAll(trimmed, "\\", "/")
 	trimmed = pathClean(trimmed)
 	if trimmed == "." || trimmed == "" {
-		return "", fmt.Errorf("upload storage key is invalid")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_invalid", "upload storage key is invalid")
 	}
 	if strings.HasPrefix(trimmed, "../") || trimmed == ".." || strings.Contains(trimmed, "/../") {
-		return "", fmt.Errorf("upload storage key contains path traversal")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_traversal", "upload storage key contains path traversal")
 	}
 	return strings.TrimPrefix(trimmed, "/"), nil
 }
@@ -90,26 +92,26 @@ func validateConfig(name string, cfg storageConfig) error {
 	needRegion := name == "cos"
 	needAccess := name != "cos"
 	if needEndpoint && strings.TrimSpace(cfg.Endpoint) == "" {
-		return fmt.Errorf("upload.storage.%s.endpoint is required", name)
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_endpoint_required", fmt.Sprintf("upload storage %s endpoint is required", name))
 	}
 	if needRegion && strings.TrimSpace(cfg.Region) == "" {
-		return fmt.Errorf("upload.storage.cos.region is required")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_cos_region_required", "upload storage cos region is required")
 	}
 	if strings.TrimSpace(cfg.Bucket) == "" {
-		return fmt.Errorf("upload.storage.%s.bucket is required", name)
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_bucket_required", fmt.Sprintf("upload storage %s bucket is required", name))
 	}
 	if needAccess && strings.TrimSpace(cfg.AccessKeyID) == "" {
-		return fmt.Errorf("upload.storage.%s.access_key_id is required", name)
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_access_key_id_required", fmt.Sprintf("upload storage %s access_key_id is required", name))
 	}
 	if needAccess && strings.TrimSpace(cfg.AccessKeySecret) == "" {
-		return fmt.Errorf("upload.storage.%s.access_key_secret is required", name)
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_access_key_secret_required", fmt.Sprintf("upload storage %s access_key_secret is required", name))
 	}
 	if name == "cos" {
 		if strings.TrimSpace(cfg.AccessKeyID) == "" {
-			return fmt.Errorf("upload.storage.cos.secret_id is required")
+			return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_cos_secret_id_required", "upload storage cos secret_id is required")
 		}
 		if strings.TrimSpace(cfg.AccessKeySecret) == "" {
-			return fmt.Errorf("upload.storage.cos.secret_key is required")
+			return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_cos_secret_key_required", "upload storage cos secret_key is required")
 		}
 	}
 	return nil

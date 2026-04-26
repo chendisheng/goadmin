@@ -27,6 +27,7 @@ const (
 
 type AppError struct {
 	Code       Code   `json:"code"`
+	Key        string `json:"key,omitempty"`
 	Message    string `json:"message"`
 	HTTPStatus int    `json:"http_status"`
 	Err        error  `json:"-"`
@@ -36,11 +37,22 @@ func New(code Code, message string) *AppError {
 	return &AppError{Code: code, Message: message, HTTPStatus: defaultHTTPStatus(code)}
 }
 
+func NewWithKey(code Code, key, message string) *AppError {
+	return &AppError{Code: code, Key: key, Message: message, HTTPStatus: defaultHTTPStatus(code)}
+}
+
 func Wrap(err error, code Code, message string) *AppError {
 	if err == nil {
 		return New(code, message)
 	}
 	return &AppError{Code: code, Message: message, HTTPStatus: defaultHTTPStatus(code), Err: err}
+}
+
+func WrapWithKey(err error, code Code, key, message string) *AppError {
+	if err == nil {
+		return NewWithKey(code, key, message)
+	}
+	return &AppError{Code: code, Key: key, Message: message, HTTPStatus: defaultHTTPStatus(code), Err: err}
 }
 
 func Resolve(err error) *AppError {

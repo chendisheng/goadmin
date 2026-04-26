@@ -1,0 +1,8 @@
+translation:
+  codegen.download.service_required: download service is not configured
+  codegen.download.dsl_required: DSL content is required
+  codegen.download.database_required: database connection is required
+  codegen.download.task_id_required: task id is required
+  codegen.download.artifact_expired: generated artifact expired
+  codegen.download.artifact_not_found: generated artifact not found
+  codegen.download.load_artifact_failed: failed to load generated artifact

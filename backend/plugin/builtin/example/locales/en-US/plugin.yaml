@@ -1,0 +1,5 @@
+translation:
+  plugin.example.title: Example Plugin
+  plugin.example.home: Home
+  plugin.example.description: Example plugin description
+  plugin.example.ping: Example plugin response

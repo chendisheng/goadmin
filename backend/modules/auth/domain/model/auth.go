@@ -12,6 +12,7 @@ type Identity struct {
 	TenantID    string
 	Username    string
 	DisplayName string
+	Language    string
 	Roles       []string
 	Permissions []string
 }

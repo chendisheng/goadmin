@@ -1,0 +1,8 @@
+translation:
+  menu.id_required: 菜单ID不能为空
+  menu.name_required: 菜单名称不能为空
+  menu.path_required: 菜单路径不能为空
+  menu.not_found: 菜单不存在
+  menu.conflict: 菜单已存在
+  menu.operation_failed: 菜单操作失败
+  menu.service_not_configured: 菜单服务未配置

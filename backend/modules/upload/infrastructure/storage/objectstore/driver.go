@@ -2,11 +2,11 @@ package objectstore
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 
 	"goadmin/core/config"
+	apperrors "goadmin/core/errors"
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
 )
 
@@ -74,7 +74,7 @@ func NewMinIODriver(cfg config.MinIOStorageConfig) (*Driver, error) {
 
 func newDriver(name string, cfg storageConfig) (*Driver, error) {
 	if strings.TrimSpace(name) == "" {
-		return nil, fmt.Errorf("object storage driver name is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.object_storage_driver_name_required", "object storage driver name is required")
 	}
 	client, err := newFileClient(name, cfg, cfg.PublicBaseURL)
 	if err != nil {

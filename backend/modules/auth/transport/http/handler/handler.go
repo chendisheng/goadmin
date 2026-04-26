@@ -56,6 +56,7 @@ func (h *Handler) Login(c coretransport.Context) {
 			TenantID:    session.Identity.TenantID,
 			Username:    session.Identity.Username,
 			DisplayName: session.Identity.DisplayName,
+			Language:    session.Identity.Language,
 			Roles:       append([]string(nil), session.Identity.Roles...),
 			Permissions: append([]string(nil), session.Identity.Permissions...),
 		},
@@ -95,6 +96,7 @@ func (h *Handler) Me(c coretransport.Context) {
 		TenantID:    identity.TenantID,
 		Username:    identity.Username,
 		DisplayName: identity.DisplayName,
+		Language:    identity.Language,
 		Roles:       append([]string(nil), identity.Roles...),
 		Permissions: append([]string(nil), identity.Permissions...),
 	}, requestID(c)))

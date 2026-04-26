@@ -8,6 +8,7 @@ export interface AuthUser {
   tenant_id?: string;
   username: string;
   display_name?: string;
+  language?: string;
   roles?: string[];
   permissions?: string[];
 }

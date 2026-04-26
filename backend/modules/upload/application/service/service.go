@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"goadmin/core/config"
+	apperrors "goadmin/core/errors"
 	"goadmin/modules/upload/domain/model"
 	uploadrepo "goadmin/modules/upload/domain/repository"
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
@@ -41,10 +42,10 @@ type UploadRequest struct {
 
 func New(repo uploadrepo.Repository, driver storagecontract.Driver, policy config.StoragePolicyConfig) (*Service, error) {
 	if repo == nil {
-		return nil, fmt.Errorf("upload repository is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_required", "upload repository is required")
 	}
 	if driver == nil {
-		return nil, fmt.Errorf("upload storage driver is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.storage_driver_required", "upload storage driver is required")
 	}
 	policy = normalizePolicy(policy)
 	return &Service{repo: repo, driver: driver, policy: policy}, nil
@@ -52,10 +53,10 @@ func New(repo uploadrepo.Repository, driver storagecontract.Driver, policy confi
 
 func (s *Service) Upload(ctx context.Context, req UploadRequest) (*model.FileAsset, error) {
 	if s == nil || s.repo == nil || s.driver == nil {
-		return nil, fmt.Errorf("upload service is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	if req.File == nil {
-		return nil, fmt.Errorf("upload file stream is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.file_required", "upload file stream is required")
 	}
 	originalName, ext, err := normalizeFilename(req.Filename)
 	if err != nil {
@@ -82,7 +83,7 @@ func (s *Service) Upload(ctx context.Context, req UploadRequest) (*model.FileAss
 		visibility = string(model.FileVisibilityPrivate)
 	}
 	if visibility != string(model.FileVisibilityPrivate) && visibility != string(model.FileVisibilityPublic) {
-		return nil, fmt.Errorf("invalid upload visibility %q", visibility)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.visibility_invalid", fmt.Sprintf("invalid upload visibility %q", visibility))
 	}
 
 	key := buildStorageKey(s.policy.PathPrefix, ext)
@@ -136,7 +137,7 @@ func (s *Service) Upload(ctx context.Context, req UploadRequest) (*model.FileAss
 			publicURL, err = s.driver.PublicURL(ctx, putResult.Key)
 			if err != nil {
 				_ = s.driver.Delete(ctx, putResult.Key)
-				return nil, err
+				return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.public_url_failed", "resolve upload public url")
 			}
 		}
 		asset.PublicURL = publicURL
@@ -144,35 +145,35 @@ func (s *Service) Upload(ctx context.Context, req UploadRequest) (*model.FileAss
 	created, err := s.repo.Create(ctx, asset)
 	if err != nil {
 		_ = s.driver.Delete(ctx, putResult.Key)
-		return nil, err
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.persist_failed", "store upload metadata")
 	}
 	return created, nil
 }
 
 func (s *Service) Get(ctx context.Context, id string) (*model.FileAsset, error) {
 	if s == nil || s.repo == nil {
-		return nil, fmt.Errorf("upload service is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	return s.repo.Get(ctx, id)
 }
 
 func (s *Service) Open(ctx context.Context, id string) (io.ReadCloser, *storagecontract.ObjectInfo, *model.FileAsset, error) {
 	if s == nil || s.repo == nil || s.driver == nil {
-		return nil, nil, nil, fmt.Errorf("upload service is not configured")
+		return nil, nil, nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	item, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	if item == nil {
-		return nil, nil, nil, fmt.Errorf("upload file asset %s not found", strings.TrimSpace(id))
+		return nil, nil, nil, apperrors.NewWithKey(apperrors.CodeNotFound, "upload.file_not_found", fmt.Sprintf("upload file asset %s not found", strings.TrimSpace(id)))
 	}
 	key := strings.TrimSpace(item.StorageKey)
 	if key == "" {
 		key = strings.TrimSpace(item.StoragePath)
 	}
 	if key == "" {
-		return nil, nil, nil, fmt.Errorf("upload storage key is empty for %s", item.Id)
+		return nil, nil, nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.storage_key_required", fmt.Sprintf("upload storage key is empty for %s", item.Id))
 	}
 	reader, info, err := s.driver.Get(ctx, key)
 	if err != nil {
@@ -183,14 +184,14 @@ func (s *Service) Open(ctx context.Context, id string) (io.ReadCloser, *storagec
 
 func (s *Service) List(ctx context.Context, filter uploadrepo.ListFilter) ([]model.FileAsset, int64, error) {
 	if s == nil || s.repo == nil {
-		return nil, 0, fmt.Errorf("upload service is not configured")
+		return nil, 0, apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	return s.repo.List(ctx, filter)
 }
 
 func (s *Service) Delete(ctx context.Context, id string) error {
 	if s == nil || s.repo == nil || s.driver == nil {
-		return fmt.Errorf("upload service is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	asset, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -204,38 +205,38 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 
 func (s *Service) Bind(ctx context.Context, id string, binding model.FileBinding) (*model.FileAsset, error) {
 	if s == nil || s.repo == nil {
-		return nil, fmt.Errorf("upload service is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	return s.repo.Bind(ctx, id, binding)
 }
 
 func (s *Service) Unbind(ctx context.Context, id string) (*model.FileAsset, error) {
 	if s == nil || s.repo == nil {
-		return nil, fmt.Errorf("upload service is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	return s.repo.Unbind(ctx, id)
 }
 
 func (s *Service) DefaultStorageDriver(ctx context.Context) (string, error) {
 	if s == nil || s.repo == nil || s.driver == nil {
-		return "", fmt.Errorf("upload service is not configured")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	return s.repo.DefaultStorageDriver(ctx, s.driver.Name())
 }
 
 func (s *Service) SetDefaultStorageDriver(ctx context.Context, driver string) error {
 	if s == nil || s.repo == nil {
-		return fmt.Errorf("upload service is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.service_not_configured", "upload service is not configured")
 	}
 	driver = strings.ToLower(strings.TrimSpace(driver))
 	if driver == "" {
-		return fmt.Errorf("default storage driver is required")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.default_storage_driver_required", "default storage driver is required")
 	}
 	switch driver {
 	case "local", "db", "database", "s3-compatible", "oss", "cos", "qiniu", "minio":
 		return s.repo.SetDefaultStorageDriver(ctx, driver)
 	default:
-		return fmt.Errorf("unsupported upload storage driver %q", driver)
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.unsupported_storage_driver", fmt.Sprintf("unsupported upload storage driver %q", driver))
 	}
 }
 
@@ -261,14 +262,14 @@ func normalizePolicy(policy config.StoragePolicyConfig) config.StoragePolicyConf
 func normalizeFilename(name string) (string, string, error) {
 	trimmed := strings.TrimSpace(name)
 	if trimmed == "" {
-		return "", "", fmt.Errorf("upload filename is required")
+		return "", "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.filename_required", "upload filename is required")
 	}
 	trimmed = strings.ReplaceAll(trimmed, "\\", "/")
 	if strings.Contains(trimmed, "/") {
 		trimmed = filepath.Base(trimmed)
 	}
 	if trimmed == "." || trimmed == ".." || trimmed == "" {
-		return "", "", fmt.Errorf("upload filename is invalid")
+		return "", "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.filename_invalid", "upload filename is invalid")
 	}
 	ext := strings.ToLower(filepath.Ext(trimmed))
 	return trimmed, ext, nil
@@ -283,7 +284,7 @@ func validateSize(size int64, maxSize string) error {
 		return err
 	}
 	if size > limit {
-		return fmt.Errorf("upload file size %d exceeds limit %d", size, limit)
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.file_size_exceeded", fmt.Sprintf("upload file size %d exceeds limit %d", size, limit))
 	}
 	return nil
 }
@@ -298,7 +299,7 @@ func validateExt(ext string, allowed []string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("upload extension %q is not allowed", ext)
+	return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.extension_not_allowed", fmt.Sprintf("upload extension %q is not allowed", ext))
 }
 
 func validateMIME(contentType string, allowed []string) error {
@@ -307,14 +308,14 @@ func validateMIME(contentType string, allowed []string) error {
 	}
 	contentType = strings.TrimSpace(contentType)
 	if contentType == "" {
-		return fmt.Errorf("upload content type is required")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.content_type_required", "upload content type is required")
 	}
 	for _, candidate := range allowed {
 		if strings.EqualFold(strings.TrimSpace(candidate), contentType) {
 			return nil
 		}
 	}
-	return fmt.Errorf("upload content type %q is not allowed", contentType)
+	return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.content_type_not_allowed", fmt.Sprintf("upload content type %q is not allowed", contentType))
 }
 
 func buildStorageKey(prefix, ext string) string {
@@ -349,7 +350,7 @@ func randomToken(n int) string {
 func parseByteSize(raw string) (int64, error) {
 	trimmed := strings.TrimSpace(strings.ToLower(raw))
 	if trimmed == "" {
-		return 0, fmt.Errorf("empty byte size")
+		return 0, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.byte_size_required", "empty byte size")
 	}
 	type unit struct {
 		suffix string
@@ -360,18 +361,18 @@ func parseByteSize(raw string) (int64, error) {
 		if strings.HasSuffix(trimmed, u.suffix) {
 			value := strings.TrimSpace(strings.TrimSuffix(trimmed, u.suffix))
 			if value == "" {
-				return 0, fmt.Errorf("invalid byte size %q", raw)
+				return 0, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.byte_size_invalid", fmt.Sprintf("invalid byte size %q", raw))
 			}
 			num, err := strconv.ParseFloat(value, 64)
 			if err != nil {
-				return 0, fmt.Errorf("invalid byte size %q: %w", raw, err)
+				return 0, apperrors.WrapWithKey(err, apperrors.CodeBadRequest, "upload.byte_size_invalid", fmt.Sprintf("invalid byte size %q", raw))
 			}
 			return int64(num * float64(u.mul)), nil
 		}
 	}
 	num, err := strconv.ParseFloat(trimmed, 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid byte size %q: %w", raw, err)
+		return 0, apperrors.WrapWithKey(err, apperrors.CodeBadRequest, "upload.byte_size_invalid", fmt.Sprintf("invalid byte size %q", raw))
 	}
 	return int64(num), nil
 }

@@ -38,6 +38,10 @@ export function normalizeMenuRoots(nodes: BackendMenuRoute[]): BackendMenuRoute[
   return nodes;
 }
 
+function resolveTitleKey(meta: Pick<BackendMenuRoute['meta'], 'title' | 'titleKey' | 'titleDefault'>): string {
+  return (meta.titleKey || meta.title || '').trim();
+}
+
 function componentNameToModulePath(componentName: string): string | null {
   const normalized = componentName.trim();
   if (normalized === '') {
@@ -132,11 +136,16 @@ function buildSidebarNodes(nodes: BackendMenuRoute[]): SidebarMenuNode[] {
       name: node.name,
       path: normalizePath(node.path),
       title: node.meta.title,
+      titleKey: node.meta.titleKey,
+      titleDefault: node.meta.titleDefault,
       icon: node.meta.icon,
       component: node.component,
       redirect: node.redirect,
       permission: node.meta.permission,
       hidden: node.hidden,
+      subtitle: node.meta.subtitle,
+      subtitleKey: node.meta.subtitleKey,
+      subtitleDefault: node.meta.subtitleDefault,
       children,
     });
   }
@@ -172,9 +181,10 @@ function buildRouteRecord(node: BackendMenuRoute, parentPath = '/'): RouteRecord
     component: componentName === 'Layout' || hasChildren ? RouteGroupView : resolveLeafComponent(componentName),
     redirect: node.redirect || undefined,
     meta: {
-      title: node.meta.title,
+      title: resolveTitleKey(node.meta),
+      titleKey: node.meta.titleKey,
+      titleDefault: node.meta.titleDefault,
       icon: node.meta.icon,
-      componentName,
       permission: node.meta.permission,
       link: node.meta.link,
       hidden: node.hidden,
@@ -221,12 +231,17 @@ export function mapPluginMenusToBackendRoutes(items: PluginMenu[]): BackendMenuR
     alwaysShow: item.type === 'directory',
     meta: {
       title: item.name,
+      titleKey: item.titleKey,
+      titleDefault: item.titleDefault,
       icon: item.icon,
       permission: item.permission,
       hidden: !item.visible || !item.enabled,
       noCache: false,
       affix: false,
       link: item.external_url,
+      subtitle: item.subtitle,
+      subtitleKey: item.subtitleKey,
+      subtitleDefault: item.subtitleDefault,
     },
     children: mapPluginMenusToBackendRoutes(item.children ?? []),
   }));

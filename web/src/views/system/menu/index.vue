@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
+import { useAppI18n } from '@/i18n';
 import { createMenu, deleteMenu, fetchMenuTree, fetchMenus, updateMenu } from '@/api/system-menus';
 import type { MenuFormState, MenuItem } from '@/types/admin';
 import { flattenMenuItems, formatDateTime, menuTypeTagType, statusTagType } from '@/utils/admin';
@@ -16,6 +17,7 @@ const rows = ref<MenuItem[]>([]);
 const total = ref(0);
 const menuTree = ref<MenuItem[]>([]);
 const editingId = ref('');
+const { t } = useAppI18n();
 
 const query = reactive({
   keyword: '',
@@ -41,9 +43,13 @@ const defaultForm = (): MenuFormState => ({
 
 const form = reactive<MenuFormState>(defaultForm());
 
+function getMenuDisplayTitle(item: Pick<MenuItem, 'name' | 'titleKey' | 'titleDefault'>): string {
+  return t(item.titleKey || '', item.titleDefault || item.name);
+}
+
 const parentOptions = computed(() =>
   flattenMenuItems(menuTree.value).map((item) => ({
-    label: `${item.path} - ${item.name}`,
+    label: `${item.path} - ${getMenuDisplayTitle(item)}`,
     value: item.id,
   })),
 );
@@ -102,21 +108,21 @@ function openEdit(row: MenuItem) {
 function typeLabel(type: string): string {
   switch (type) {
     case 'directory':
-      return '目录';
+      return t('menu.type.directory', '目录');
     case 'button':
-      return '按钮';
+      return t('menu.type.button', '按钮');
     default:
-      return '菜单';
+      return t('menu.type.menu', '菜单');
   }
 }
 
 function statusLabel(flag: boolean): string {
-  return flag ? '启用' : '禁用';
+  return flag ? t('menu.status.active', '启用') : t('menu.status.inactive', '禁用');
 }
 
 async function submitForm() {
   if (form.name.trim() === '' || form.path.trim() === '') {
-    ElMessage.warning('请输入菜单名称和路径');
+    ElMessage.warning(t('menu.validate_required', '请输入菜单名称和路径'));
     return;
   }
   dialogLoading.value = true;
@@ -139,10 +145,10 @@ async function submitForm() {
 
     if (editingId.value) {
       await updateMenu(editingId.value, payload);
-      ElMessage.success('菜单已更新');
+      ElMessage.success(t('menu.updated', '菜单已更新'));
     } else {
       await createMenu(payload);
-      ElMessage.success('菜单已创建');
+      ElMessage.success(t('menu.created', '菜单已创建'));
     }
 
     dialogVisible.value = false;
@@ -153,13 +159,13 @@ async function submitForm() {
 }
 
 async function removeRow(row: MenuItem) {
-  await ElMessageBox.confirm(`确认删除菜单 ${row.name} 吗？`, '删除菜单', {
+  await ElMessageBox.confirm(t('menu.confirm_delete', '确认删除菜单 {name} 吗？', { name: row.name }), t('menu.delete_title', '删除菜单'), {
     type: 'warning',
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
+    confirmButtonText: t('menu.delete_confirm', '删除'),
+    cancelButtonText: t('menu.delete_cancel', '取消'),
   });
   await deleteMenu(row.id);
-  ElMessage.success('菜单已删除');
+  ElMessage.success(t('menu.deleted', '菜单已删除'));
   await Promise.all([loadMenus(), loadMenuTree()]);
 }
 
@@ -193,67 +199,71 @@ onMounted(() => {
 
 <template>
   <div class="admin-page">
-    <AdminTable title="菜单管理" description="维护系统菜单、路由和权限元数据。" :loading="tableLoading">
+    <AdminTable :title="t('menu.title', '菜单管理')" :description="t('menu.description', '维护系统菜单、路由和权限元数据。')" :loading="tableLoading">
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadMenus">刷新</el-button>
-        <el-button v-permission="'menu:create'" type="primary" @click="openCreate">新增菜单</el-button>
+        <el-button :loading="tableLoading" @click="loadMenus">{{ t('menu.refresh', '刷新') }}</el-button>
+        <el-button v-permission="'menu:create'" type="primary" @click="openCreate">{{ t('menu.create', '新增菜单') }}</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
-          <el-form-item label="关键字">
-            <el-input v-model="query.keyword" clearable placeholder="菜单名称 / 路径 / 权限" />
+          <el-form-item :label="t('common.search', '查询')">
+            <el-input v-model="query.keyword" clearable :placeholder="t('menu.keyword_placeholder', '菜单名称 / 路径 / 权限')" />
           </el-form-item>
-          <el-form-item label="父级菜单">
-            <el-select v-model="query.parent_id" clearable filterable :loading="parentLoading" placeholder="全部父级" style="width: 220px">
-              <el-option label="顶级菜单" value="" />
+          <el-form-item :label="t('menu.parent', '父级菜单')">
+            <el-select v-model="query.parent_id" clearable filterable :loading="parentLoading" :placeholder="t('menu.parent_placeholder', '全部父级')" style="width: 220px">
+              <el-option :label="t('menu.top_level', '顶级菜单')" value="" />
               <el-option v-for="menu in parentOptions" :key="menu.value" :label="menu.label" :value="menu.value" />
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="handleReset">重置</el-button>
+            <el-button type="primary" @click="handleSearch">{{ t('common.search', '查询') }}</el-button>
+            <el-button @click="handleReset">{{ t('common.reset', '重置') }}</el-button>
           </el-form-item>
         </el-form>
       </template>
 
       <el-table :data="rows" border row-key="id" v-loading="tableLoading">
-        <el-table-column prop="name" label="名称" min-width="140" />
-        <el-table-column prop="path" label="路径" min-width="160" />
-        <el-table-column prop="component" label="组件" min-width="180" show-overflow-tooltip />
-        <el-table-column label="类型" width="100">
+        <el-table-column :label="t('menu.name', '名称')" min-width="140">
+          <template #default="{ row }">
+            {{ getMenuDisplayTitle(row) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="path" :label="t('menu.path', '路径')" min-width="160" />
+        <el-table-column prop="component" :label="t('menu.component', '组件')" min-width="180" show-overflow-tooltip />
+        <el-table-column :label="t('menu.type', '类型')" width="100">
           <template #default="{ row }">
             <el-tag :type="menuTypeTagType(row.type)" effect="plain">{{ typeLabel(row.type) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="权限" min-width="160">
+        <el-table-column :label="t('menu.permission', '权限')" min-width="160">
           <template #default="{ row }">
             {{ row.permission || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="可见" width="90">
+        <el-table-column :label="t('menu.visible', '可见')" width="90">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.visible ? 'active' : 'inactive')" effect="plain">
               {{ statusLabel(row.visible) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="启用" width="90">
+        <el-table-column :label="t('menu.enabled', '启用')" width="90">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.enabled ? 'active' : 'inactive')" effect="plain">
               {{ statusLabel(row.enabled) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column :label="t('menu.created_at', '创建时间')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column :label="t('menu.actions', '操作')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'menu:update'" link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button v-permission="'menu:delete'" link type="danger" @click="removeRow(row)">删除</el-button>
+            <el-button v-permission="'menu:update'" link type="primary" @click="openEdit(row)">{{ t('menu.edit', '编辑') }}</el-button>
+            <el-button v-permission="'menu:delete'" link type="danger" @click="removeRow(row)">{{ t('menu.delete', '删除') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -276,53 +286,53 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑菜单' : '新增菜单'"
+      :title="editingId ? t('menu.edit_title', '编辑菜单') : t('menu.create_title', '新增菜单')"
       :loading="dialogLoading"
       width="860px"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form admin-form--two-col">
-        <el-form-item label="父级菜单">
-          <el-select v-model="form.parent_id" clearable filterable :loading="parentLoading" placeholder="选择父级菜单">
-            <el-option label="顶级菜单" value="" />
+        <el-form-item :label="t('menu.parent', '父级菜单')">
+          <el-select v-model="form.parent_id" clearable filterable :loading="parentLoading" :placeholder="t('menu.parent_placeholder', '选择父级菜单')">
+            <el-option :label="t('menu.top_level', '顶级菜单')" value="" />
             <el-option v-for="menu in parentOptions" :key="menu.value" :label="menu.label" :value="menu.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="菜单名称" required>
-          <el-input v-model="form.name" placeholder="请输入菜单名称" />
+        <el-form-item :label="t('menu.name', '菜单名称')" required>
+          <el-input v-model="form.name" :placeholder="t('menu.name_placeholder', '请输入菜单名称')" />
         </el-form-item>
-        <el-form-item label="路径" required>
-          <el-input v-model="form.path" placeholder="请输入路由路径" />
+        <el-form-item :label="t('menu.path', '路径')" required>
+          <el-input v-model="form.path" :placeholder="t('menu.path_placeholder', '请输入路由路径')" />
         </el-form-item>
-        <el-form-item label="组件路径">
-          <el-input v-model="form.component" placeholder="例如 view/system/user/index" />
+        <el-form-item :label="t('menu.component', '组件路径')">
+          <el-input v-model="form.component" :placeholder="t('menu.component_placeholder', '例如 view/system/user/index')" />
         </el-form-item>
-        <el-form-item label="图标">
-          <el-input v-model="form.icon" placeholder="例如 user / setting" />
+        <el-form-item :label="t('menu.icon', '图标')">
+          <el-input v-model="form.icon" :placeholder="t('menu.icon_placeholder', '例如 user / setting')" />
         </el-form-item>
-        <el-form-item label="排序">
+        <el-form-item :label="t('menu.sort', '排序')">
           <el-input-number v-model="form.sort" :min="0" :step="1" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="权限标识">
-          <el-input v-model="form.permission" placeholder="例如 user:list" />
+        <el-form-item :label="t('menu.permission', '权限标识')">
+          <el-input v-model="form.permission" :placeholder="t('menu.permission_placeholder', '例如 user:list')" />
         </el-form-item>
-        <el-form-item label="类型">
+        <el-form-item :label="t('menu.type', '类型')">
           <el-select v-model="form.type" style="width: 100%">
-            <el-option label="目录" value="directory" />
-            <el-option label="菜单" value="menu" />
-            <el-option label="按钮" value="button" />
+            <el-option :label="t('menu.type.directory', '目录')" value="directory" />
+            <el-option :label="t('menu.type.menu', '菜单')" value="menu" />
+            <el-option :label="t('menu.type.button', '按钮')" value="button" />
           </el-select>
         </el-form-item>
-        <el-form-item label="重定向">
-          <el-input v-model="form.redirect" placeholder="例如 /system/users" />
+        <el-form-item :label="t('menu.redirect', '重定向')">
+          <el-input v-model="form.redirect" :placeholder="t('menu.redirect_placeholder', '例如 /system/users')" />
         </el-form-item>
-        <el-form-item label="外链地址">
-          <el-input v-model="form.external_url" placeholder="外部链接时填写" />
+        <el-form-item :label="t('menu.external_url', '外链地址')">
+          <el-input v-model="form.external_url" :placeholder="t('menu.external_url_placeholder', '外部链接时填写')" />
         </el-form-item>
-        <el-form-item label="可见">
+        <el-form-item :label="t('menu.visible', '可见')">
           <el-switch v-model="form.visible" />
         </el-form-item>
-        <el-form-item label="启用">
+        <el-form-item :label="t('menu.enabled', '启用')">
           <el-switch v-model="form.enabled" />
         </el-form-item>
       </el-form>

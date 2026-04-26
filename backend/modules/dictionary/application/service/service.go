@@ -46,7 +46,7 @@ func (s *Service) GetCategory(ctx context.Context, id string) (*dictmodel.Catego
 	}
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "dictionary category id is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.category.id_required", "dictionary category id is required")
 	}
 	item, err := s.categoryRepo.Get(ctx, id)
 	if err != nil {
@@ -60,10 +60,10 @@ func (s *Service) CreateCategory(ctx context.Context, input command.CreateCatego
 		return nil, fmt.Errorf("dictionary service is not configured")
 	}
 	if strings.TrimSpace(input.Code) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "code is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.category.code_required", "code is required")
 	}
 	if strings.TrimSpace(input.Name) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "name is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.category.name_required", "name is required")
 	}
 	entity := &dictmodel.Category{
 		ID:          strings.TrimSpace(input.ID),
@@ -123,7 +123,7 @@ func (s *Service) DeleteCategory(ctx context.Context, id string) error {
 	}
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return apperrors.New(apperrors.CodeBadRequest, "dictionary category id is required")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.category.id_required", "dictionary category id is required")
 	}
 	if err := s.categoryRepo.Delete(ctx, id); err != nil {
 		return mapCategoryError(err)
@@ -151,7 +151,7 @@ func (s *Service) GetItem(ctx context.Context, id string) (*dictmodel.Item, erro
 	}
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "dictionary item id is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.item.id_required", "dictionary item id is required")
 	}
 	item, err := s.itemRepo.Get(ctx, id)
 	if err != nil {
@@ -165,13 +165,13 @@ func (s *Service) CreateItem(ctx context.Context, input command.CreateItem) (*di
 		return nil, fmt.Errorf("dictionary service is not configured")
 	}
 	if strings.TrimSpace(input.CategoryID) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "category id is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.item.category_id_required", "category id is required")
 	}
 	if strings.TrimSpace(input.Value) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "value is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.item.value_required", "value is required")
 	}
 	if strings.TrimSpace(input.Label) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "label is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.item.label_required", "label is required")
 	}
 	entity := &dictmodel.Item{
 		ID:         strings.TrimSpace(input.ID),
@@ -245,7 +245,7 @@ func (s *Service) DeleteItem(ctx context.Context, id string) error {
 	}
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return apperrors.New(apperrors.CodeBadRequest, "dictionary item id is required")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.item.id_required", "dictionary item id is required")
 	}
 	if err := s.itemRepo.Delete(ctx, id); err != nil {
 		return mapItemError(err)
@@ -259,7 +259,7 @@ func (s *Service) LookupItems(ctx context.Context, q query.LookupItems) ([]dictm
 	}
 	code := strings.TrimSpace(q.CategoryCode)
 	if code == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "dictionary category code is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.category.code_required", "dictionary category code is required")
 	}
 	items, err := s.itemRepo.ListByCategoryCode(ctx, code)
 	if err != nil {
@@ -274,11 +274,11 @@ func (s *Service) LookupItem(ctx context.Context, q query.LookupItem) (*dictmode
 	}
 	code := strings.TrimSpace(q.CategoryCode)
 	if code == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "dictionary category code is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.category.code_required", "dictionary category code is required")
 	}
 	value := strings.TrimSpace(q.Value)
 	if value == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "dictionary item value is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "dictionary.item.value_required", "dictionary item value is required")
 	}
 	item, err := s.itemRepo.GetByCategoryCodeAndValue(ctx, code, value)
 	if err != nil {
@@ -290,22 +290,22 @@ func (s *Service) LookupItem(ctx context.Context, q query.LookupItem) (*dictmode
 func mapCategoryError(err error) error {
 	switch {
 	case errors.Is(err, dictrepo.ErrCategoryNotFound):
-		return apperrors.New(apperrors.CodeNotFound, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeNotFound, "dictionary.category.not_found", err.Error())
 	case errors.Is(err, dictrepo.ErrCategoryConflict):
-		return apperrors.New(apperrors.CodeConflict, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeConflict, "dictionary.category.conflict", err.Error())
 	default:
-		return apperrors.Wrap(err, apperrors.CodeInternal, "dictionary category operation failed")
+		return apperrors.WrapWithKey(err, apperrors.CodeInternal, "dictionary.category.operation_failed", "dictionary category operation failed")
 	}
 }
 
 func mapItemError(err error) error {
 	switch {
 	case errors.Is(err, dictrepo.ErrItemNotFound):
-		return apperrors.New(apperrors.CodeNotFound, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeNotFound, "dictionary.item.not_found", err.Error())
 	case errors.Is(err, dictrepo.ErrItemConflict):
-		return apperrors.New(apperrors.CodeConflict, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeConflict, "dictionary.item.conflict", err.Error())
 	default:
-		return apperrors.Wrap(err, apperrors.CodeInternal, "dictionary item operation failed")
+		return apperrors.WrapWithKey(err, apperrors.CodeInternal, "dictionary.item.operation_failed", "dictionary item operation failed")
 	}
 }
 

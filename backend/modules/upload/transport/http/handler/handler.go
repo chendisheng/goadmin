@@ -38,7 +38,7 @@ func New(service *uploadservice.Service, logger *zap.Logger) *Handler {
 func (h *Handler) List(c coretransport.Context) {
 	var req uploadreq.ListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		status, body := response.Failure(apperrors.Wrap(err, apperrors.CodeBadRequest, "invalid list request"), requestID(c))
+		status, body := response.Failure(apperrors.WrapWithKey(err, apperrors.CodeBadRequest, "upload.invalid_list_request", "invalid list request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
@@ -74,13 +74,13 @@ func (h *Handler) Get(c coretransport.Context) {
 func (h *Handler) Upload(c coretransport.Context) {
 	header, err := c.FormFile("file")
 	if err != nil {
-		status, body := response.Failure(apperrors.Wrap(err, apperrors.CodeBadRequest, "upload file is required"), requestID(c))
+		status, body := response.Failure(apperrors.WrapWithKey(err, apperrors.CodeBadRequest, "upload.file_required", "upload file is required"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
 	file, err := header.Open()
 	if err != nil {
-		status, body := response.Failure(apperrors.Wrap(err, apperrors.CodeInternal, "open upload file"), requestID(c))
+		status, body := response.Failure(apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.open_file_failed", "open upload file"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
@@ -88,7 +88,7 @@ func (h *Handler) Upload(c coretransport.Context) {
 
 	var req uploadreq.UploadRequest
 	if err := c.ShouldBind(&req); err != nil {
-		status, body := response.Failure(apperrors.Wrap(err, apperrors.CodeBadRequest, "invalid upload request"), requestID(c))
+		status, body := response.Failure(apperrors.WrapWithKey(err, apperrors.CodeBadRequest, "upload.invalid_upload_request", "invalid upload request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
@@ -175,7 +175,7 @@ func (h *Handler) Preview(c coretransport.Context) {
 func (h *Handler) Bind(c coretransport.Context) {
 	var req uploadreq.BindRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		status, body := response.Failure(apperrors.Wrap(err, apperrors.CodeBadRequest, "invalid bind request"), requestID(c))
+		status, body := response.Failure(apperrors.WrapWithKey(err, apperrors.CodeBadRequest, "upload.invalid_bind_request", "invalid bind request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
@@ -216,7 +216,7 @@ func (h *Handler) GetDefaultStorage(c coretransport.Context) {
 func (h *Handler) SetDefaultStorage(c coretransport.Context) {
 	var req uploadreq.StorageSettingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		status, body := response.Failure(apperrors.Wrap(err, apperrors.CodeBadRequest, "invalid storage setting request"), requestID(c))
+		status, body := response.Failure(apperrors.WrapWithKey(err, apperrors.CodeBadRequest, "upload.invalid_storage_setting_request", "invalid storage setting request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}

@@ -1,0 +1,15 @@
+translation:
+  dictionary.category.id_required: 字典分类ID不能为空
+  dictionary.category.code_required: 字典分类编码不能为空
+  dictionary.category.name_required: 字典分类名称不能为空
+  dictionary.category.not_found: 字典分类不存在
+  dictionary.category.conflict: 字典分类已存在
+  dictionary.category.operation_failed: 字典分类操作失败
+  dictionary.item.id_required: 字典项ID不能为空
+  dictionary.item.category_id_required: 字典分类ID不能为空
+  dictionary.item.value_required: 字典项值不能为空
+  dictionary.item.label_required: 字典项标签不能为空
+  dictionary.item.not_found: 字典项不存在
+  dictionary.item.conflict: 字典项已存在
+  dictionary.item.operation_failed: 字典项操作失败
+  dictionary.service_not_configured: 字典服务未配置

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { Close, MoreFilled, RefreshRight } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
+import { useAppI18n } from '@/i18n';
 import { useTabsStore } from '@/store/tabs';
 import type { WorkspaceTabRecord } from '@/types/tabs';
 
@@ -14,6 +15,7 @@ const contextMenuX = ref(0);
 const contextMenuY = ref(0);
 const contextMenuTabId = ref('');
 const tabItemRefs = new Map<string, HTMLElement>();
+const { t } = useAppI18n();
 
 type TabCommand = 'refresh' | 'close' | 'close-others' | 'close-left' | 'close-right' | 'close-all';
 
@@ -23,6 +25,10 @@ const canCloseContextMenuOthers = computed(() => (contextMenuTab.value ? hasClos
 const canCloseContextMenuLeft = computed(() => (contextMenuTab.value ? hasClosableLeft(contextMenuTab.value.id) : false));
 const canCloseContextMenuRight = computed(() => (contextMenuTab.value ? hasClosableRight(contextMenuTab.value.id) : false));
 const canCloseContextMenuAll = computed(() => tabsStore.tabs.some((tab: WorkspaceTabRecord) => !tab.fixed));
+
+function getTabTitle(tab: WorkspaceTabRecord): string {
+  return t(tab.titleKey || '', tab.titleDefault || tab.title || t('tabs.page', '页面'));
+}
 
 function isActive(tabId: string): boolean {
   return tabsStore.activeId === tabId;
@@ -94,7 +100,7 @@ async function onTabClose(tabId: string): Promise<void> {
   closeContextMenu();
   const closedTab = tabsStore.closeTab(tabId);
   if (!closedTab) {
-    ElMessage.warning('该标签页不可关闭');
+    ElMessage.warning(t('tabs.not_closable', '该标签页不可关闭'));
     return;
   }
 
@@ -246,7 +252,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="tabs-bar">
     <div class="tabs-bar__scroll">
-      <div class="tabs-bar__list" role="tablist" aria-label="已打开页面">
+      <div class="tabs-bar__list" role="tablist" :aria-label="t('tabs.aria', '已打开页面')">
         <div
           v-for="tab in tabsStore.tabs"
           :key="tab.id"
@@ -255,13 +261,13 @@ onBeforeUnmount(() => {
           :class="{ 'is-active': isActive(tab.id), 'is-fixed': tab.fixed }"
           role="tab"
           :aria-selected="isActive(tab.id)"
-          :title="tab.title"
+          :title="getTabTitle(tab)"
           @contextmenu="onTabContextMenu($event, tab.id)"
           @click="void onTabClick(tab.id)"
         >
-          <span class="tabs-bar__title">{{ tab.title }}</span>
+          <span class="tabs-bar__title">{{ getTabTitle(tab) }}</span>
           <div class="tabs-bar__actions">
-            <button class="tabs-bar__more" type="button" :aria-label="`更多操作 ${tab.title}`" @click.stop="onTabMenuButtonClick($event, tab.id)">
+            <button class="tabs-bar__more" type="button" :aria-label="t('tabs.more', '更多操作 {title}', { title: getTabTitle(tab) })" @click.stop="onTabMenuButtonClick($event, tab.id)">
               <el-icon><MoreFilled /></el-icon>
             </button>
 
@@ -269,7 +275,7 @@ onBeforeUnmount(() => {
               v-if="tab.closable"
               class="tabs-bar__close"
               type="button"
-              :aria-label="`关闭 ${tab.title}`"
+              :aria-label="t('tabs.close', '关闭 {title}', { title: getTabTitle(tab) })"
               @click.stop="void onTabClose(tab.id)"
             >
               <el-icon><Close /></el-icon>
@@ -288,24 +294,24 @@ onBeforeUnmount(() => {
     >
       <button class="tabs-bar__context-menu-item" type="button" @click="void onTabCommand(contextMenuTab.id, 'refresh')">
         <el-icon><RefreshRight /></el-icon>
-        <span>刷新当前页</span>
+        <span>{{ t('common.refresh_current', '刷新当前页') }}</span>
       </button>
       <div class="tabs-bar__context-menu-divider" />
       <button class="tabs-bar__context-menu-item" type="button" :disabled="!canCloseContextMenuTab" @click="void onTabCommand(contextMenuTab.id, 'close')">
         <el-icon><Close /></el-icon>
-        <span>关闭当前</span>
+        <span>{{ t('common.close_current', '关闭当前') }}</span>
       </button>
       <button class="tabs-bar__context-menu-item" type="button" :disabled="!canCloseContextMenuOthers" @click="void onTabCommand(contextMenuTab.id, 'close-others')">
-        <span>关闭其他</span>
+        <span>{{ t('common.close_others', '关闭其他') }}</span>
       </button>
       <button class="tabs-bar__context-menu-item" type="button" :disabled="!canCloseContextMenuLeft" @click="void onTabCommand(contextMenuTab.id, 'close-left')">
-        <span>关闭左侧</span>
+        <span>{{ t('common.close_left', '关闭左侧') }}</span>
       </button>
       <button class="tabs-bar__context-menu-item" type="button" :disabled="!canCloseContextMenuRight" @click="void onTabCommand(contextMenuTab.id, 'close-right')">
-        <span>关闭右侧</span>
+        <span>{{ t('common.close_right', '关闭右侧') }}</span>
       </button>
       <button class="tabs-bar__context-menu-item" type="button" :disabled="!canCloseContextMenuAll" @click="void onTabCommand(contextMenuTab.id, 'close-all')">
-        <span>关闭全部</span>
+        <span>{{ t('common.close_all', '关闭全部') }}</span>
       </button>
     </div>
   </div>

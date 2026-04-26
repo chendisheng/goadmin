@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"goadmin/core/config"
+	corei18n "goadmin/core/i18n"
 )
 
 type stubAuthorizationRuntime struct {
@@ -86,5 +87,29 @@ func TestServiceWithoutRuntimeStillReturnsGenericStatus(t *testing.T) {
 	}
 	if status.Enabled {
 		t.Fatal("expected disabled authorization status")
+	}
+}
+
+func TestServiceUsesLocalizedSummaryWhenAvailable(t *testing.T) {
+	t.Parallel()
+
+	if err := corei18n.LoadResourceRoots("../../.."); err != nil {
+		t.Fatalf("LoadResourceRoots: %v", err)
+	}
+
+	cfg := &config.Config{}
+	cfg.Auth.Casbin.Enabled = false
+	cfg.Auth.Casbin.Source = "file"
+	cfg.Auth.Casbin.ModelPath = "core/auth/casbin/model/rbac.conf"
+	cfg.Auth.Casbin.PolicyPath = "core/auth/casbin/adapter/policy.csv"
+
+	service, err := New(Config{Config: cfg})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	status := service.Status()
+	if status.Summary != "授权模块未配置" {
+		t.Fatalf("expected localized summary, got %q", status.Summary)
 	}
 }

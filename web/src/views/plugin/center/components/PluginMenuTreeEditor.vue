@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { useAppI18n } from '@/i18n';
 import type { PluginMenu } from '@/types/plugin';
 import { createPluginMenuNode } from '@/utils/plugin';
 
@@ -15,6 +16,7 @@ const props = defineProps<{
   pluginName: string;
 }>();
 
+const { t } = useAppI18n();
 const mutableMenus = props.menus as PluginMenu[];
 const draggingId = ref('');
 const dropHint = ref<{ targetId: string; position: 'before' | 'after' | 'inside' } | null>(null);
@@ -75,10 +77,10 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
 <template>
   <div class="plugin-menu-tree-editor">
     <div class="admin-table__actions mb-12">
-      <el-button type="primary" plain @click="addRootMenu">新增根菜单</el-button>
+      <el-button type="primary" plain @click="addRootMenu">{{ t('plugin.add_root_menu', '新增根菜单') }}</el-button>
     </div>
 
-    <el-empty v-if="mutableMenus.length === 0" description="暂无菜单，请先新增根菜单" />
+    <el-empty v-if="mutableMenus.length === 0" :description="t('plugin.no_menus', '暂无菜单，请先新增根菜单')" />
 
     <div v-else class="plugin-menu-tree-editor__list">
       <div
@@ -93,7 +95,7 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
           @dragleave="clearDropHint"
           @drop="onDrop($event, menu.id, 'before')"
         >
-          拖到这里，放在 <strong>{{ menu.name || menu.id || '当前菜单' }}</strong> 之前
+          {{ t('plugin.drop_before', '拖到这里，放在 {name} 之前', { name: menu.name || menu.id || t('plugin.current_menu', '当前菜单') }) }}
         </div>
 
         <el-card
@@ -105,12 +107,12 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
         >
         <template #header>
           <div class="page-card__header">
-            <span>{{ menu.name || menu.id || '未命名菜单' }}</span>
+            <span>{{ menu.name || menu.id || t('plugin.menu_unnamed', '未命名菜单') }}</span>
             <el-space wrap>
-              <el-tag effect="plain">{{ menu.type || 'menu' }}</el-tag>
-              <el-tag effect="plain" type="info">拖拽排序</el-tag>
-              <el-button size="small" type="primary" plain @click="addChildMenu(menu)">新增子菜单</el-button>
-              <el-button size="small" type="danger" plain @click="removeMenu(mutableMenus, index)">删除</el-button>
+              <el-tag effect="plain">{{ menu.type || t('plugin.menu_type_menu', '菜单') }}</el-tag>
+              <el-tag effect="plain" type="info">{{ t('plugin.drag_sorting', '拖拽排序') }}</el-tag>
+              <el-button size="small" type="primary" plain @click="addChildMenu(menu)">{{ t('plugin.add_child_menu', '新增子菜单') }}</el-button>
+              <el-button size="small" type="danger" plain @click="removeMenu(mutableMenus, index)">{{ t('common.delete', '删除') }}</el-button>
             </el-space>
           </div>
         </template>
@@ -122,51 +124,51 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
           @dragleave="clearDropHint"
           @drop="onDrop($event, menu.id, 'inside')"
         >
-          拖到这里，作为 <strong>{{ menu.name || menu.id || '当前菜单' }}</strong> 的子级
+          {{ t('plugin.drop_inside', '拖到这里，作为 {name} 的子级', { name: menu.name || menu.id || t('plugin.current_menu', '当前菜单') }) }}
         </div>
 
         <el-form label-width="96px" class="admin-form admin-form--two-col">
-          <el-form-item label="菜单 ID">
-            <el-input v-model="menu.id" placeholder="唯一 ID" />
+          <el-form-item :label="t('plugin.menu_id', '菜单 ID')">
+            <el-input v-model="menu.id" :placeholder="t('plugin.menu_id_placeholder', '唯一 ID')" />
           </el-form-item>
-          <el-form-item label="父级 ID">
-            <el-input v-model="menu.parent_id" placeholder="父级菜单 ID" />
+          <el-form-item :label="t('plugin.parent_id', '父级 ID')">
+            <el-input v-model="menu.parent_id" :placeholder="t('plugin.parent_id_placeholder', '父级菜单 ID')" />
           </el-form-item>
-          <el-form-item label="名称" required>
-            <el-input v-model="menu.name" placeholder="菜单名称" />
+          <el-form-item :label="t('plugin.menu_name', '名称')" required>
+            <el-input v-model="menu.name" :placeholder="t('plugin.menu_name_placeholder', '菜单名称')" />
           </el-form-item>
-          <el-form-item label="路径" required>
-            <el-input v-model="menu.path" placeholder="/plugin/example/home" />
+          <el-form-item :label="t('plugin.path', '路径')" required>
+            <el-input v-model="menu.path" :placeholder="t('plugin.menu_path_placeholder', '/plugin/example/home')" />
           </el-form-item>
-          <el-form-item label="组件">
-            <el-input v-model="menu.component" placeholder="view/plugin/example/index" />
+          <el-form-item :label="t('plugin.component', '组件')">
+            <el-input v-model="menu.component" :placeholder="t('plugin.menu_component_placeholder_detail', 'view/plugin/example/index')" />
           </el-form-item>
-          <el-form-item label="图标">
-            <el-input v-model="menu.icon" placeholder="sparkles" />
+          <el-form-item :label="t('plugin.icon', '图标')">
+            <el-input v-model="menu.icon" :placeholder="t('plugin.icon_placeholder', 'sparkles')" />
           </el-form-item>
-          <el-form-item label="权限标识">
-            <el-input v-model="menu.permission" placeholder="plugin:example:view" />
+          <el-form-item :label="t('plugin.permission_key', '权限标识')">
+            <el-input v-model="menu.permission" :placeholder="t('plugin.permission_key_placeholder', 'plugin:example:view')" />
           </el-form-item>
-          <el-form-item label="类型">
+          <el-form-item :label="t('plugin.type', '类型')">
             <el-select v-model="menu.type" style="width: 100%">
-              <el-option label="目录" value="directory" />
-              <el-option label="菜单" value="menu" />
-              <el-option label="按钮" value="button" />
+              <el-option :label="t('plugin.menu_type_directory', '目录')" value="directory" />
+              <el-option :label="t('plugin.menu_type_menu', '菜单')" value="menu" />
+              <el-option :label="t('plugin.menu_type_button', '按钮')" value="button" />
             </el-select>
           </el-form-item>
-          <el-form-item label="排序">
+          <el-form-item :label="t('plugin.sort', '排序')">
             <el-input-number v-model="menu.sort" :min="0" :step="1" style="width: 100%" />
           </el-form-item>
-          <el-form-item label="重定向">
-            <el-input v-model="menu.redirect" placeholder="/plugin/example/home" />
+          <el-form-item :label="t('plugin.redirect', '重定向')">
+            <el-input v-model="menu.redirect" :placeholder="t('plugin.redirect_placeholder', '/plugin/example/home')" />
           </el-form-item>
-          <el-form-item label="外链地址">
-            <el-input v-model="menu.external_url" placeholder="可选" />
+          <el-form-item :label="t('plugin.external_url', '外链地址')">
+            <el-input v-model="menu.external_url" :placeholder="t('plugin.optional', '可选')" />
           </el-form-item>
-          <el-form-item label="可见">
+          <el-form-item :label="t('plugin.visible', '可见')">
             <el-switch v-model="menu.visible" />
           </el-form-item>
-          <el-form-item label="启用">
+          <el-form-item :label="t('plugin.enabled', '启用')">
             <el-switch v-model="menu.enabled" />
           </el-form-item>
         </el-form>
@@ -182,7 +184,7 @@ function onDrop(event: DragEvent, targetId: string, position: 'before' | 'after'
           @dragleave="clearDropHint"
           @drop="onDrop($event, menu.id, 'after')"
         >
-          拖到这里，放在 <strong>{{ menu.name || menu.id || '当前菜单' }}</strong> 之后
+          {{ t('plugin.drop_after', '拖到这里，放在 {name} 之后', { name: menu.name || menu.id || t('plugin.current_menu', '当前菜单') }) }}
         </div>
       </el-card>
       </div>

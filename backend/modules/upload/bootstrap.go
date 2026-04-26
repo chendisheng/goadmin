@@ -2,9 +2,9 @@ package upload
 
 import (
 	"context"
-	"fmt"
 
 	corebootstrapcontract "goadmin/core/bootstrap/contract"
+	apperrors "goadmin/core/errors"
 	coretransport "goadmin/core/transport"
 	uploadservice "goadmin/modules/upload/application/service"
 	uploadpersist "goadmin/modules/upload/infrastructure/persistence/gorm"
@@ -34,13 +34,13 @@ func (Bootstrap) Migrate(db *gorm.DB) error {
 
 func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error {
 	if group == nil {
-		return fmt.Errorf("upload bootstrap requires route registrar")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.bootstrap_route_registrar_required", "upload bootstrap requires route registrar")
 	}
 	if deps.DB == nil {
-		return fmt.Errorf("upload bootstrap requires db")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.bootstrap_db_required", "upload bootstrap requires db")
 	}
 	if deps.Config == nil {
-		return fmt.Errorf("upload bootstrap requires config")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.bootstrap_config_required", "upload bootstrap requires config")
 	}
 	repo, err := uploadpersist.New(deps.DB)
 	if err != nil {

@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 
 import { login } from '@/api/auth';
+import { useAppI18n } from '@/i18n';
+import { useLocaleStore } from '@/store/locale';
 import { useMenuStore } from '@/store/menu';
 import { useSessionStore } from '@/store/session';
 
@@ -15,7 +17,9 @@ interface LoginForm {
 const router = useRouter();
 const route = useRoute();
 const sessionStore = useSessionStore();
+const localeStore = useLocaleStore();
 const menuStore = useMenuStore();
+const { t } = useAppI18n();
 const formRef = ref<FormInstance>();
 const loading = ref(false);
 const appTitle = import.meta.env.VITE_APP_TITLE || 'GoAdmin';
@@ -34,10 +38,10 @@ const redirectTarget = computed(() => {
   return '/dashboard';
 });
 
-const rules: FormRules<LoginForm> = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-};
+const rules = computed<FormRules<LoginForm>>(() => ({
+  username: [{ required: true, message: t('login.form.username_required', '请输入用户名'), trigger: 'blur' }],
+  password: [{ required: true, message: t('login.form.password_required', '请输入密码'), trigger: 'blur' }],
+}));
 
 async function onSubmit() {
   if (!formRef.value) {
@@ -51,11 +55,12 @@ async function onSubmit() {
     try {
       const response = await login({ username: form.username.trim(), password: form.password });
       sessionStore.applyLoginResponse(response);
+      localeStore.syncFromUser(response.user);
       await menuStore.ensureLoaded(router);
-      ElMessage.success('登录成功');
+      ElMessage.success(t('login.success', '登录成功'));
       await router.replace(redirectTarget.value);
     } catch (error) {
-      const message = error instanceof Error ? error.message : '登录失败';
+      const message = error instanceof Error ? error.message : t('login.failure', '登录失败');
       ElMessage.error(message);
     } finally {
       loading.value = false;
@@ -73,36 +78,34 @@ async function onSubmit() {
         <div class="login-card__brand-top">
           <div class="login-card__logo">G</div>
           <div>
-            <h1>{{ appTitle }}</h1>
-            <p>Frontend Core · Vue 3 + TypeScript + Vite</p>
+            <h1>{{ t('app.title', appTitle) }}</h1>
+            <p>{{ t('app.subtitle', 'Frontend Core') }} · Vue 3 + TypeScript + Vite</p>
           </div>
         </div>
 
         <div class="login-card__brand-body">
-          <el-tag effect="plain" round type="success">Phase 11 Auth</el-tag>
-          <h2>欢迎使用 GoAdmin</h2>
-          <p>
-            参考 Gin-vue-admin 的登录页布局，左侧展示品牌信息与系统能力，右侧用于账号登录和快速进入工作台。
-          </p>
+          <el-tag effect="plain" round type="success">{{ t('login.title', '登录') }}</el-tag>
+          <h2>{{ t('login.welcome', '欢迎使用 GoAdmin') }}</h2>
+          <p>{{ t('login.description', '请输入后端创建的账号登录系统。') }}</p>
 
           <ul class="login-card__highlights">
-            <li>JWT 登录与会话管理</li>
-            <li>动态菜单与权限驱动</li>
-            <li>Element Plus 统一视觉风格</li>
+            <li>{{ t('login.highlight.jwt_session', 'JWT 登录与会话管理') }}</li>
+            <li>{{ t('login.highlight.dynamic_menu', '动态菜单与权限驱动') }}</li>
+            <li>{{ t('login.highlight.element_plus', 'Element Plus 统一视觉风格') }}</li>
           </ul>
 
           <div class="login-card__stats">
             <div>
               <strong>{{ apiBaseUrl }}</strong>
-              <span>API 基址</span>
+              <span>{{ t('login.api_base_url', 'API 基址') }}</span>
             </div>
             <div>
               <strong>admin</strong>
-              <span>默认用户名</span>
+              <span>{{ t('login.username', '用户名') }}</span>
             </div>
             <div>
               <strong>admin123</strong>
-              <span>默认密码</span>
+              <span>{{ t('login.default_account', '默认账号：admin / admin123') }}</span>
             </div>
           </div>
         </div>
@@ -110,8 +113,8 @@ async function onSubmit() {
 
       <section class="login-card__panel">
         <div class="login-card__panel-header">
-          <h2>登录系统</h2>
-          <p>请输入后端创建的账号登录系统。</p>
+          <h2>{{ t('login.title', '登录') }}</h2>
+          <p>{{ t('login.description', '请输入后端创建的账号登录系统。') }}</p>
         </div>
 
         <el-form
@@ -122,27 +125,27 @@ async function onSubmit() {
           label-position="top"
           @keyup.enter="onSubmit"
         >
-          <el-form-item label="用户名" prop="username">
-            <el-input v-model="form.username" autocomplete="username" placeholder="请输入用户名" />
+          <el-form-item :label="t('login.username', '用户名')" prop="username">
+            <el-input v-model="form.username" autocomplete="username" :placeholder="t('login.username_placeholder', '请输入用户名')" />
           </el-form-item>
 
-          <el-form-item label="密码" prop="password">
+          <el-form-item :label="t('login.password', '密码')" prop="password">
             <el-input
               v-model="form.password"
               autocomplete="current-password"
-              placeholder="请输入密码"
+              :placeholder="t('login.password_placeholder', '请输入密码')"
               type="password"
               show-password
             />
           </el-form-item>
 
           <div class="login-form__meta">
-            <el-tag effect="plain" round type="info">API 基址：{{ apiBaseUrl }}</el-tag>
-            <span>默认账号：admin / admin123</span>
+            <el-tag effect="plain" round type="info">{{ t('login.api_base_url', 'API 基址') }}: {{ apiBaseUrl }}</el-tag>
+            <span>{{ t('login.default_account', '默认账号：admin / admin123') }}</span>
           </div>
 
           <el-button class="login-form__submit" type="primary" :loading="loading" @click="onSubmit">
-            登录系统
+            {{ t('login.submit', '登录') }}
           </el-button>
         </el-form>
       </section>

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	apperrors "goadmin/core/errors"
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
 
 	minio "github.com/minio/minio-go/v7"
@@ -67,10 +68,10 @@ func normalizeMinIOEndpoint(raw string, forceSSL bool) (string, bool, error) {
 	if strings.Contains(raw, "://") {
 		parsed, err := url.Parse(raw)
 		if err != nil {
-			return "", false, fmt.Errorf("parse upload.storage.minio.endpoint: %w", err)
+			return "", false, apperrors.WrapWithKey(err, apperrors.CodeBadRequest, "upload.minio_endpoint_parse_failed", "parse upload.storage.minio.endpoint")
 		}
 		if parsed.Host == "" {
-			return "", false, fmt.Errorf("upload.storage.minio.endpoint must include a host")
+			return "", false, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.minio_endpoint_invalid", "upload.storage.minio.endpoint must include a host")
 		}
 		switch strings.ToLower(parsed.Scheme) {
 		case "https":
@@ -107,10 +108,10 @@ func (c *minioObjectBackend) Name() string {
 
 func (c *minioObjectBackend) PutObject(ctx context.Context, req storagecontract.PutObjectRequest) (*storagecontract.PutObjectResult, error) {
 	if c == nil || c.client == nil {
-		return nil, fmt.Errorf("minio backend is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_backend_not_configured", "minio backend is not configured")
 	}
 	if req.Reader == nil {
-		return nil, fmt.Errorf("upload reader is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.reader_required", "upload reader is required")
 	}
 	key, err := normalizeKey(req.Key)
 	if err != nil {
@@ -125,7 +126,7 @@ func (c *minioObjectBackend) PutObject(ctx context.Context, req storagecontract.
 		return nil, err
 	}
 	if req.Size > 0 && int64(len(payload)) != req.Size {
-		return nil, fmt.Errorf("upload file size mismatch: got %d want %d", len(payload), req.Size)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.file_size_mismatch", fmt.Sprintf("upload file size mismatch: got %d want %d", len(payload), req.Size))
 	}
 	hasher := sha256.Sum256(payload)
 	info, err := c.client.PutObject(ctx, c.bucket, key, bytes.NewReader(payload), int64(len(payload)), minio.PutObjectOptions{
@@ -141,7 +142,7 @@ func (c *minioObjectBackend) PutObject(ctx context.Context, req storagecontract.
 	c.storeMetadata(key, buildMinIOUserMetadata(req))
 	checksum := hex.EncodeToString(hasher[:])
 	if expected := strings.TrimSpace(req.ChecksumSHA256); expected != "" && !strings.EqualFold(expected, checksum) {
-		return nil, fmt.Errorf("upload checksum mismatch: got %s want %s", checksum, expected)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.checksum_mismatch", fmt.Sprintf("upload checksum mismatch: got %s want %s", checksum, expected))
 	}
 	return &storagecontract.PutObjectResult{
 		Key:            key,
@@ -155,7 +156,7 @@ func (c *minioObjectBackend) PutObject(ctx context.Context, req storagecontract.
 
 func (c *minioObjectBackend) GetObject(ctx context.Context, key string) (io.ReadCloser, *storagecontract.ObjectInfo, error) {
 	if c == nil || c.client == nil {
-		return nil, nil, fmt.Errorf("minio backend is not configured")
+		return nil, nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_backend_not_configured", "minio backend is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -175,7 +176,7 @@ func (c *minioObjectBackend) GetObject(ctx context.Context, key string) (io.Read
 
 func (c *minioObjectBackend) HeadObject(ctx context.Context, key string) (*storagecontract.ObjectInfo, error) {
 	if c == nil || c.client == nil {
-		return nil, fmt.Errorf("minio backend is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_backend_not_configured", "minio backend is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -190,7 +191,7 @@ func (c *minioObjectBackend) HeadObject(ctx context.Context, key string) (*stora
 
 func (c *minioObjectBackend) DeleteObject(ctx context.Context, key string) error {
 	if c == nil || c.client == nil {
-		return fmt.Errorf("minio backend is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_backend_not_configured", "minio backend is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -202,7 +203,7 @@ func (c *minioObjectBackend) DeleteObject(ctx context.Context, key string) error
 
 func (c *minioObjectBackend) Exists(ctx context.Context, key string) (bool, error) {
 	if c == nil || c.client == nil {
-		return false, fmt.Errorf("minio backend is not configured")
+		return false, apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_backend_not_configured", "minio backend is not configured")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -220,10 +221,10 @@ func (c *minioObjectBackend) Exists(ctx context.Context, key string) (bool, erro
 
 func (c *minioObjectBackend) PublicURL(ctx context.Context, key string) (string, error) {
 	if c == nil || c.client == nil {
-		return "", fmt.Errorf("minio backend is not configured")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_backend_not_configured", "minio backend is not configured")
 	}
 	if strings.TrimSpace(c.publicBaseURL) == "" {
-		return "", fmt.Errorf("minio public_base_url is required for public urls")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_public_base_url_required", "minio public_base_url is required for public urls")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -231,17 +232,17 @@ func (c *minioObjectBackend) PublicURL(ctx context.Context, key string) (string,
 	}
 	publicURL := c.buildPublicURL(key)
 	if strings.TrimSpace(publicURL) == "" {
-		return "", fmt.Errorf("minio public_base_url is required for public urls")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_public_base_url_required", "minio public_base_url is required for public urls")
 	}
 	return publicURL, nil
 }
 
 func (c *minioObjectBackend) SignedURL(ctx context.Context, key string, opts storagecontract.SignedURLOptions) (string, error) {
 	if c == nil || c.client == nil {
-		return "", fmt.Errorf("minio backend is not configured")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_backend_not_configured", "minio backend is not configured")
 	}
 	if strings.TrimSpace(c.publicBaseURL) == "" {
-		return "", fmt.Errorf("minio public_base_url is required for signed urls")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_public_base_url_required", "minio public_base_url is required for signed urls")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -284,17 +285,17 @@ func (c *minioObjectBackend) SignedURL(ctx context.Context, key string, opts sto
 		}
 		return presigned.String(), nil
 	default:
-		return "", fmt.Errorf("unsupported signed url method %q for minio backend", opts.Method)
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.minio_signed_url_method_unsupported", fmt.Sprintf("unsupported signed url method %q for minio backend", opts.Method))
 	}
 }
 
 func (c *minioObjectBackend) ensureBucket(ctx context.Context) error {
 	if c == nil || c.client == nil {
-		return fmt.Errorf("minio backend is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.minio_backend_not_configured", "minio backend is not configured")
 	}
 	bucket := strings.TrimSpace(c.bucket)
 	if bucket == "" {
-		return fmt.Errorf("minio bucket is required")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.minio_bucket_required", "minio bucket is required")
 	}
 	exists, err := c.client.BucketExists(ctx, bucket)
 	if err != nil {

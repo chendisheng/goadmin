@@ -1,0 +1,15 @@
+translation:
+  dictionary.category.id_required: dictionary category id is required
+  dictionary.category.code_required: dictionary category code is required
+  dictionary.category.name_required: dictionary category name is required
+  dictionary.category.not_found: dictionary category not found
+  dictionary.category.conflict: dictionary category already exists
+  dictionary.category.operation_failed: dictionary category operation failed
+  dictionary.item.id_required: dictionary item id is required
+  dictionary.item.category_id_required: dictionary category id is required
+  dictionary.item.value_required: dictionary item value is required
+  dictionary.item.label_required: dictionary item label is required
+  dictionary.item.not_found: dictionary item not found
+  dictionary.item.conflict: dictionary item already exists
+  dictionary.item.operation_failed: dictionary item operation failed
+  dictionary.service_not_configured: dictionary service is not configured

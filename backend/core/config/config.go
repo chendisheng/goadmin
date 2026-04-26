@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	corei18n "goadmin/core/i18n"
+
 	"github.com/spf13/viper"
 )
 
@@ -25,6 +27,7 @@ type Config struct {
 	Database   DatabaseConfig `mapstructure:"database"`
 	CodeGen    CodeGenConfig  `mapstructure:"codegen"`
 	Tenant     TenantConfig   `mapstructure:"tenant"`
+	I18n       I18nConfig     `mapstructure:"i18n"`
 	Auth       AuthConfig     `mapstructure:"auth"`
 	Upload     UploadConfig   `mapstructure:"upload"`
 	LoadedAt   string         `mapstructure:"-"`
@@ -79,6 +82,11 @@ type TenantConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
+type I18nConfig struct {
+	DefaultLanguage    string   `mapstructure:"default_language"`
+	SupportedLanguages []string `mapstructure:"supported_languages"`
+}
+
 type AuthConfig struct {
 	JWT       JWTConfig       `mapstructure:"jwt"`
 	Casbin    CasbinConfig    `mapstructure:"casbin"`
@@ -110,6 +118,7 @@ type BootstrapUser struct {
 	PasswordHash string   `mapstructure:"password_hash"`
 	TenantID     string   `mapstructure:"tenant_id"`
 	DisplayName  string   `mapstructure:"display_name"`
+	Language     string   `mapstructure:"language"`
 	Roles        []string `mapstructure:"roles"`
 	Permissions  []string `mapstructure:"permissions"`
 }
@@ -153,6 +162,10 @@ func Default() Config {
 		},
 		Tenant: TenantConfig{
 			Enabled: true,
+		},
+		I18n: I18nConfig{
+			DefaultLanguage:    "zh-CN",
+			SupportedLanguages: []string{"zh-CN", "en-US"},
 		},
 		Auth: AuthConfig{
 			JWT: JWTConfig{
@@ -238,6 +251,12 @@ func Load() (*Config, error) {
 	if !cfg.Tenant.Enabled {
 		cfg.Tenant.Enabled = false
 	}
+	if strings.TrimSpace(cfg.I18n.DefaultLanguage) == "" {
+		cfg.I18n.DefaultLanguage = "zh-CN"
+	}
+	if len(cfg.I18n.SupportedLanguages) == 0 {
+		cfg.I18n.SupportedLanguages = []string{"zh-CN", "en-US"}
+	}
 	if cfg.Auth.JWT.Secret == "" {
 		cfg.Auth.JWT.Secret = "change-me-in-production"
 	}
@@ -285,6 +304,17 @@ func Load() (*Config, error) {
 	}
 
 	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	corei18n.Configure(cfg.I18n.DefaultLanguage, cfg.I18n.SupportedLanguages)
+	projectRoot := filepath.Dir(cfgDir)
+	if err := corei18n.LoadResourceRoots(
+		filepath.Join(projectRoot, "core", "i18n", "locales"),
+		filepath.Join(projectRoot, "modules"),
+		filepath.Join(projectRoot, "plugin", "builtin"),
+		filepath.Join(projectRoot, "codegen", "locales"),
+	); err != nil {
 		return nil, err
 	}
 
@@ -337,6 +367,12 @@ func (c Config) Validate() error {
 	if err := c.Upload.Validate(); err != nil {
 		return err
 	}
+	if strings.TrimSpace(c.I18n.DefaultLanguage) == "" {
+		return fmt.Errorf("i18n.default_language is required")
+	}
+	if len(c.I18n.SupportedLanguages) == 0 {
+		return fmt.Errorf("i18n.supported_languages must not be empty")
+	}
 	if c.CodeGen.Artifact.Enabled {
 		if strings.TrimSpace(c.CodeGen.Artifact.BaseDir) == "" {
 			return fmt.Errorf("codegen.artifact.base_dir is required")
@@ -388,6 +424,10 @@ func (c Config) Public() map[string]any {
 				"ttl":      c.CodeGen.Artifact.TTL,
 			},
 			"generated_modules_auto_migrate": c.CodeGen.GeneratedModulesAutoMigrate,
+		},
+		"i18n": map[string]any{
+			"default_language":    c.I18n.DefaultLanguage,
+			"supported_languages": append([]string(nil), c.I18n.SupportedLanguages...),
 		},
 		"auth": map[string]any{
 			"jwt": map[string]any{
@@ -598,6 +638,8 @@ func applyDefaults(v *viper.Viper, cfg Config) {
 	v.SetDefault("codegen.artifact.ttl", cfg.CodeGen.Artifact.TTL)
 	v.SetDefault("codegen.generated_modules_auto_migrate", cfg.CodeGen.GeneratedModulesAutoMigrate)
 	v.SetDefault("tenant.enabled", cfg.Tenant.Enabled)
+	v.SetDefault("i18n.default_language", cfg.I18n.DefaultLanguage)
+	v.SetDefault("i18n.supported_languages", cfg.I18n.SupportedLanguages)
 	v.SetDefault("auth.jwt.secret", cfg.Auth.JWT.Secret)
 	v.SetDefault("auth.jwt.issuer", cfg.Auth.JWT.Issuer)
 	v.SetDefault("auth.jwt.audience", cfg.Auth.JWT.Audience)

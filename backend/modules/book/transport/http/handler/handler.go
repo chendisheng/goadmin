@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"go.uber.org/zap"
 	coreerrors "goadmin/core/errors"
 	coremiddleware "goadmin/core/middleware"
 	"goadmin/core/response"
@@ -14,6 +13,8 @@ import (
 	"goadmin/modules/book/domain/model"
 	bookreq "goadmin/modules/book/transport/http/request"
 	bookresp "goadmin/modules/book/transport/http/response"
+
+	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -31,7 +32,7 @@ func New(service *bookservice.Service, logger *zap.Logger) *Handler {
 func (h *Handler) List(c coretransport.Context) {
 	var req bookreq.ListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		status, body := response.Failure(coreerrors.Wrap(err, coreerrors.CodeBadRequest, "invalid list request"), requestID(c))
+		status, body := response.Failure(coreerrors.WrapWithKey(err, coreerrors.CodeBadRequest, "book.invalid_list_request", "invalid list request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
@@ -64,7 +65,7 @@ func (h *Handler) Get(c coretransport.Context) {
 func (h *Handler) Create(c coretransport.Context) {
 	var req bookreq.CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		status, body := response.Failure(coreerrors.Wrap(err, coreerrors.CodeBadRequest, "invalid create request"), requestID(c))
+		status, body := response.Failure(coreerrors.WrapWithKey(err, coreerrors.CodeBadRequest, "book.invalid_create_request", "invalid create request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}
@@ -80,7 +81,7 @@ func (h *Handler) Create(c coretransport.Context) {
 func (h *Handler) Update(c coretransport.Context) {
 	var req bookreq.UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		status, body := response.Failure(coreerrors.Wrap(err, coreerrors.CodeBadRequest, "invalid update request"), requestID(c))
+		status, body := response.Failure(coreerrors.WrapWithKey(err, coreerrors.CodeBadRequest, "book.invalid_update_request", "invalid update request"), requestID(c))
 		c.JSON(status, body)
 		return
 	}

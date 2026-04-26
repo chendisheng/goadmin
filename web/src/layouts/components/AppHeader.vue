@@ -6,6 +6,7 @@ import { ArrowDown, Expand, Fold, RefreshRight, UserFilled } from '@element-plus
 import { ElMessage } from 'element-plus';
 
 import { logout as logoutApi } from '@/api/auth';
+import { resolveRouteLocaleMeta, useAppI18n } from '@/i18n';
 import { useAppStore } from '@/store/app';
 import { useMenuStore } from '@/store/menu';
 import { useSessionStore } from '@/store/session';
@@ -20,26 +21,26 @@ const sessionStore = useSessionStore();
 const tabsStore = useTabsStore();
 const router = useRouter();
 const route = useRoute();
+const { t } = useAppI18n();
 
 const pageTitle = computed(() => {
-  if (typeof route.meta.title === 'string' && route.meta.title.trim() !== '') {
-    return route.meta.title;
-  }
-  return appTitle;
+  const localized = resolveRouteLocaleMeta(route);
+  return localized.title.trim() !== '' ? localized.title : t('app.title', appTitle);
 });
 
 const pageSubtitle = computed(() => {
-  if (typeof route.meta.subtitle === 'string' && route.meta.subtitle.trim() !== '') {
-    return route.meta.subtitle;
+  const localized = resolveRouteLocaleMeta(route);
+  if (localized.subtitle.trim() !== '') {
+    return localized.subtitle;
   }
-  return 'Vue 3 + TypeScript + Vite + Pinia + Axios';
+  return t('app.subtitle', 'Vue 3 + TypeScript + Vite + Pinia + Axios');
 });
 
-const currentUserName = computed(() => sessionStore.displayName || 'System Admin');
+const currentUserName = computed(() => sessionStore.displayName || t('common.visitor', '访客'));
 
 const currentUserRole = computed(() => {
   const role = sessionStore.currentUser?.roles?.[0];
-  return typeof role === 'string' && role.trim() !== '' ? role : '管理员';
+  return typeof role === 'string' && role.trim() !== '' ? role : t('common.admin_role', '管理员');
 });
 
 const currentUserInitial = computed(() => {
@@ -63,7 +64,7 @@ async function onLogout() {
     menuStore.clear(router);
     tabsStore.clearTabs();
     sessionStore.clearSession();
-    ElMessage.success('已退出登录');
+    ElMessage.success(t('common.logged_out', '已退出登录'));
     await router.push({ path: '/login' });
   }
 }
@@ -115,10 +116,10 @@ function onCommand(command: string) {
           <el-dropdown-menu>
             <el-dropdown-item disabled>
               <el-icon><UserFilled /></el-icon>
-              个人中心
+              {{ t('common.personal_center', '个人中心') }}
             </el-dropdown-item>
-            <el-dropdown-item command="refresh">刷新页面</el-dropdown-item>
-            <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+            <el-dropdown-item command="refresh">{{ t('common.refresh_page', '刷新页面') }}</el-dropdown-item>
+            <el-dropdown-item command="logout" divided>{{ t('common.logout', '退出登录') }}</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>

@@ -36,6 +36,7 @@ type userTableRecord struct {
 	TenantID     string    `gorm:"column:tenant_id;size:64"`
 	Username     string    `gorm:"column:username;size:128"`
 	DisplayName  string    `gorm:"column:display_name;size:128"`
+	Language     string    `gorm:"column:language;size:32"`
 	PasswordHash string    `gorm:"column:password_hash;type:text"`
 	RoleCodesRaw string    `gorm:"column:role_codes;type:text;not null"`
 	CreatedAt    time.Time `gorm:"column:created_at"`
@@ -105,6 +106,7 @@ func (s *UserTableStore) Authenticate(ctx context.Context, username, password st
 		TenantID:    strings.TrimSpace(user.TenantID),
 		Username:    fallback(user.Username, key),
 		DisplayName: fallback(user.DisplayName, fallback(user.Username, key)),
+		Language:    strings.TrimSpace(user.Language),
 		Roles:       append([]string(nil), roles...),
 		Permissions: permissions,
 	}
@@ -119,6 +121,9 @@ func (s *UserTableStore) Authenticate(ctx context.Context, username, password st
 	}
 	if len(identity.Roles) == 0 {
 		identity.Roles = []string{"user"}
+	}
+	if strings.TrimSpace(identity.Language) == "" {
+		identity.Language = "zh-CN"
 	}
 	return identity, nil
 }

@@ -2,13 +2,13 @@
 package casbin_rule
 
 import (
-	"fmt"
-
 	corebootstrapcontract "goadmin/core/bootstrap/contract"
+	apperrors "goadmin/core/errors"
 	coretransport "goadmin/core/transport"
 	casbin_ruleservice "goadmin/modules/casbin_rule/application/service"
 	casbin_rulerepo "goadmin/modules/casbin_rule/infrastructure/repo"
 	casbin_rulehttp "goadmin/modules/casbin_rule/transport/http"
+
 	"gorm.io/gorm"
 )
 
@@ -32,10 +32,10 @@ func (Bootstrap) Migrate(db *gorm.DB) error {
 
 func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error {
 	if group == nil {
-		return fmt.Errorf("casbin_rule bootstrap requires route registrar")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "casbin_rule.bootstrap_route_registrar_required", "casbin_rule bootstrap requires route registrar")
 	}
 	if deps.DB == nil {
-		return fmt.Errorf("casbin_rule bootstrap requires db")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "casbin_rule.bootstrap_db_required", "casbin_rule bootstrap requires db")
 	}
 	repo, err := casbin_rulerepo.NewGormRepository(deps.DB)
 	if err != nil {

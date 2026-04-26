@@ -119,13 +119,14 @@ describe('menu permission filtering', () => {
     expect(filtered).toHaveLength(2);
     expect(filtered[0].name).toBe('dashboard');
     expect(filtered[1].name).toBe('system');
-    expect(filtered[1].hidden).toBe(true);
+    expect(filtered[1].hidden).toBe(false);
     expect(filtered[1].children).toHaveLength(1);
     expect(filtered[1].children[0].name).toBe('system-user');
     expect(filtered[1].children[0].hidden).toBe(false);
 
-    expect(sidebarMenus.map((item) => item.path)).toEqual(['/dashboard', '/system/user']);
-    expect(sidebarMenus.map((item) => item.title)).toEqual(['工作台', '用户管理']);
+    expect(sidebarMenus.map((item) => item.path)).toEqual(['/dashboard', '/system']);
+    expect(sidebarMenus.map((item) => item.title)).toEqual(['工作台', '系统管理']);
+    expect(sidebarMenus[1].children.map((item) => item.path)).toEqual(['/system/user']);
   });
 
   it('ignores button-type menu children when building page routes', () => {

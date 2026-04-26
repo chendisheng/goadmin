@@ -31,7 +31,7 @@ func (s *Service) List(ctx context.Context, q query.ListRoles) ([]model.Role, in
 	}
 	tenantID, err := coretenant.ResolveTenantID(ctx, q.TenantID)
 	if err != nil {
-		return nil, 0, apperrors.New(apperrors.CodeForbidden, err.Error())
+		return nil, 0, apperrors.NewWithKey(apperrors.CodeForbidden, "role.tenant_mismatch", err.Error())
 	}
 	return s.repo.List(ctx, rolerepo.ListFilter{
 		TenantID: tenantID,
@@ -48,7 +48,7 @@ func (s *Service) Get(ctx context.Context, id string) (*model.Role, error) {
 	}
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "role id is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "role.id_required", "role id is required")
 	}
 	item, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -62,14 +62,14 @@ func (s *Service) Create(ctx context.Context, input command.CreateRole) (*model.
 		return nil, fmt.Errorf("role service is not configured")
 	}
 	if strings.TrimSpace(input.Name) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "name is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "role.name_required", "name is required")
 	}
 	if strings.TrimSpace(input.Code) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "code is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "role.code_required", "code is required")
 	}
 	tenantID, err := coretenant.ResolveTenantID(ctx, input.TenantID)
 	if err != nil {
-		return nil, apperrors.New(apperrors.CodeForbidden, err.Error())
+		return nil, apperrors.NewWithKey(apperrors.CodeForbidden, "role.tenant_mismatch", err.Error())
 	}
 	entity := &model.Role{
 		TenantID: tenantID,
@@ -99,7 +99,7 @@ func (s *Service) Update(ctx context.Context, id string, input command.UpdateRol
 	}
 	tenantID, err := coretenant.ResolveTenantID(ctx, input.TenantID)
 	if err != nil {
-		return nil, apperrors.New(apperrors.CodeForbidden, err.Error())
+		return nil, apperrors.NewWithKey(apperrors.CodeForbidden, "role.tenant_mismatch", err.Error())
 	}
 	current.TenantID = tenantID
 	if strings.TrimSpace(input.Name) != "" {
@@ -126,10 +126,11 @@ func (s *Service) Update(ctx context.Context, id string, input command.UpdateRol
 
 func (s *Service) Delete(ctx context.Context, id string) error {
 	if s == nil || s.repo == nil {
-		return fmt.Errorf("role service is not configured")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "role.service_not_configured", "role service is not configured")
 	}
-	if strings.TrimSpace(id) == "" {
-		return apperrors.New(apperrors.CodeBadRequest, "role id is required")
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "role.id_required", "role id is required")
 	}
 	if err := s.repo.Delete(ctx, strings.TrimSpace(id)); err != nil {
 		return mapRepositoryError(err)
@@ -140,13 +141,13 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 func mapRepositoryError(err error) error {
 	switch {
 	case errors.Is(err, coretenant.ErrTenantMismatch):
-		return apperrors.New(apperrors.CodeForbidden, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeForbidden, "role.tenant_mismatch", err.Error())
 	case errors.Is(err, rolerepo.ErrNotFound):
-		return apperrors.New(apperrors.CodeNotFound, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeNotFound, "role.not_found", err.Error())
 	case errors.Is(err, rolerepo.ErrConflict):
-		return apperrors.New(apperrors.CodeConflict, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeConflict, "role.conflict", err.Error())
 	default:
-		return apperrors.Wrap(err, apperrors.CodeInternal, "role operation failed")
+		return apperrors.WrapWithKey(err, apperrors.CodeInternal, "role.operation_failed", "role operation failed")
 	}
 }
 

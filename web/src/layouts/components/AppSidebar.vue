@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
 
+import { useAppI18n } from '@/i18n';
 import { useAppStore } from '@/store/app';
 import { useMenuStore } from '@/store/menu';
 import MenuTreeNode from './MenuTreeNode.vue';
 
 const appTitle = import.meta.env.VITE_APP_TITLE || 'GoAdmin';
+const { t } = useAppI18n();
 const route = useRoute();
 const appStore = useAppStore();
 const menuStore = useMenuStore();
@@ -16,8 +18,8 @@ const menuStore = useMenuStore();
     <div class="app-sidebar__brand">
       <div class="app-sidebar__logo">G</div>
       <div v-if="!appStore.sidebarCollapsed" class="app-sidebar__brand-text">
-        <strong>{{ appTitle }}</strong>
-        <span>Frontend Core</span>
+        <strong>{{ t('app.title', appTitle) }}</strong>
+        <span>{{ t('app.subtitle', 'Frontend Core') }}</span>
       </div>
     </div>
 
@@ -38,7 +40,7 @@ const menuStore = useMenuStore();
 
     <div class="app-sidebar__footer">
       <el-button class="app-sidebar__toggle" text @click="appStore.toggleSidebar()">
-        {{ appStore.sidebarCollapsed ? '展开侧栏' : '收起侧栏' }}
+        {{ appStore.sidebarCollapsed ? t('common.expand_sidebar', '展开侧栏') : t('common.collapse_sidebar', '收起侧栏') }}
       </el-button>
     </div>
   </el-aside>

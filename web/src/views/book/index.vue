@@ -5,6 +5,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { createBook, deleteBook, listbooks, updateBook } from '@/api/book';
+import { useAppI18n } from '@/i18n';
 import { formatDateTime } from '@/utils/admin';
 
 type BookItem = {
@@ -48,6 +49,7 @@ const dialogVisible = ref(false);
 const rows = ref<BookItem[]>([]);
 const total = ref(0);
 const editingId = ref('');
+const { t } = useAppI18n();
 
 const query = reactive({
   keyword: '',
@@ -73,38 +75,6 @@ const defaultForm = (): BookFormState => ({
 
 const form = reactive<BookFormState>(defaultForm());
 
-type EnumOption = {
-  value: string;
-  label: string;
-  color?: string;
-  disabled?: boolean;
-  order?: number;
-};
-const categoryEnumLabelMap: Record<string, string> = {
-  ["tech"]: "技术",
-  ["novel"]: "小说",
-  ["history"]: "历史",
-  ["other"]: "其他",
-};
-
-const categoryEnumOptions: EnumOption[] = [
-  { value: "tech", label: "技术", color: "", disabled: false, order: 1 },
-  { value: "novel", label: "小说", color: "", disabled: false, order: 2 },
-  { value: "history", label: "历史", color: "", disabled: false, order: 3 },
-  { value: "other", label: "其他", color: "", disabled: false, order: 4 },
-];
-const statusEnumLabelMap: Record<string, string> = {
-  ["draft"]: "草稿",
-  ["published"]: "已发布",
-  ["off_shelf"]: "已下架",
-};
-
-const statusEnumOptions: EnumOption[] = [
-  { value: "draft", label: "草稿", color: "", disabled: false, order: 1 },
-  { value: "published", label: "已发布", color: "", disabled: false, order: 2 },
-  { value: "off_shelf", label: "已下架", color: "", disabled: false, order: 3 },
-];
-
 function formatEnumLabel(value: unknown, labelMap: Record<string, string>) {
   if (Array.isArray(value)) {
     if (value.length === 0) {
@@ -116,6 +86,23 @@ function formatEnumLabel(value: unknown, labelMap: Record<string, string>) {
     return '-';
   }
   return labelMap[String(value)] ?? String(value);
+}
+
+function categoryEnumLabel(value: unknown) {
+  return formatEnumLabel(value, {
+    tech: t('book.category.tech', '技术'),
+    novel: t('book.category.novel', '小说'),
+    history: t('book.category.history', '历史'),
+    other: t('book.category.other', '其他'),
+  });
+}
+
+function statusEnumLabel(value: unknown) {
+  return formatEnumLabel(value, {
+    draft: t('book.status.draft', '草稿'),
+    published: t('book.status.published', '已发布'),
+    off_shelf: t('book.status.off_shelf', '已下架'),
+  });
 }
 
 function resetForm() {
@@ -180,29 +167,29 @@ async function submitForm() {
 
     if (editingId.value) {
       await updateBook(editingId.value, payload);
-      ElMessage.success('Book 已更新');
+      ElMessage.success(t('book.updated', 'Book 已更新'));
     } else {
       await createBook(payload);
-      ElMessage.success('Book 已创建');
+      ElMessage.success(t('book.created', 'Book 已创建'));
     }
 
     dialogVisible.value = false;
     await loadItems();
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '保存失败');
+    ElMessage.error(error instanceof Error ? error.message : t('book.save_failed', '保存失败'));
   } finally {
     dialogLoading.value = false;
   }
 }
 
 async function removeRow(row: BookItem) {
-  await ElMessageBox.confirm('确认删除 Book ' + row.id + ' 吗？', '删除Book', {
+  await ElMessageBox.confirm(t('book.confirm_delete', '确认删除 Book {id} 吗？', { id: row.id }), t('book.delete_title', '删除Book'), {
     type: 'warning',
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
+    confirmButtonText: t('common.delete', '删除'),
+    cancelButtonText: t('common.cancel', '取消'),
   });
   await deleteBook(row.id);
-  ElMessage.success('Book 已删除');
+  ElMessage.success(t('book.deleted', 'Book 已删除'));
   await loadItems();
 }
 
@@ -240,32 +227,32 @@ onActivated(() => {
 <template>
   <div class="admin-page">
     <AdminTable
-      title="Book管理"
-      description="由 goadmin-cli 生成的 CRUD 页面，可直接用于列表、编辑和删除。"
+      :title="t('book.title', 'Book管理')"
+      :description="t('book.description', '由 goadmin-cli 生成的 CRUD 页面，可直接用于列表、编辑和删除。')"
       :loading="tableLoading"
     >
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadItems">刷新</el-button>
-        <el-button v-permission="'book:create'" type="primary" @click="openCreate">新增Book</el-button>
+        <el-button :loading="tableLoading" @click="loadItems">{{ t('common.refresh', '刷新') }}</el-button>
+        <el-button v-permission="'book:create'" type="primary" @click="openCreate">{{ t('book.create', '新增Book') }}</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
-          <el-form-item label="关键字">
-            <el-input v-model="query.keyword" clearable placeholder="搜索Book数据" />
+          <el-form-item :label="t('book.keyword', '关键字')">
+            <el-input v-model="query.keyword" clearable :placeholder="t('book.keyword_placeholder', '搜索Book数据')" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="handleReset">重置</el-button>
+            <el-button type="primary" @click="handleSearch">{{ t('common.search', '查询') }}</el-button>
+            <el-button @click="handleReset">{{ t('common.reset', '重置') }}</el-button>
           </el-form-item>
         </el-form>
       </template>
 
       <el-table :data="rows" border row-key="id" v-loading="tableLoading">
-        <el-table-column prop="id" label="ID" min-width="160" />
+        <el-table-column prop="id" :label="t('book.id', 'ID')" min-width="160" />
         <el-table-column
           prop="tenant_id"
-          label="Tenant Id"
+          :label="t('book.tenant_id', 'Tenant Id')"
           min-width="140"
           show-overflow-tooltip
         >
@@ -275,7 +262,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="title"
-          label="Title"
+          :label="t('book.title_field', 'Title')"
           min-width="140"
           show-overflow-tooltip
         >
@@ -285,7 +272,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="author"
-          label="Author"
+          :label="t('book.author', 'Author')"
           min-width="140"
           show-overflow-tooltip
         >
@@ -295,7 +282,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="isbn"
-          label="Isbn"
+          :label="t('book.isbn', 'Isbn')"
           min-width="140"
           show-overflow-tooltip
         >
@@ -305,7 +292,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="publisher"
-          label="Publisher"
+          :label="t('book.publisher', 'Publisher')"
           min-width="140"
           show-overflow-tooltip
         >
@@ -315,7 +302,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="publish_date"
-          label="Publish Date"
+          :label="t('book.publish_date', 'Publish Date')"
           min-width="180"
         >
           <template #default="{ row }">
@@ -324,16 +311,16 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="category"
-          label="Category"
+          :label="t('book.category', 'Category')"
           min-width="140"
         >
           <template #default="{ row }">
-            {{ formatEnumLabel(row.category, categoryEnumLabelMap) }}
+            {{ categoryEnumLabel(row.category) }}
           </template>
         </el-table-column>
         <el-table-column
           prop="description"
-          label="Description"
+          :label="t('book.description_field', 'Description')"
           min-width="220"
           show-overflow-tooltip
         >
@@ -343,16 +330,16 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="status"
-          label="Status"
+          :label="t('book.status', 'Status')"
           min-width="140"
         >
           <template #default="{ row }">
-            {{ formatEnumLabel(row.status, statusEnumLabelMap) }}
+            {{ statusEnumLabel(row.status) }}
           </template>
         </el-table-column>
         <el-table-column
           prop="price"
-          label="Price"
+          :label="t('book.price', 'Price')"
           min-width="120"
         >
           <template #default="{ row }">
@@ -361,7 +348,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="stock_quantity"
-          label="Stock Quantity"
+          :label="t('book.stock_quantity', 'Stock Quantity')"
           min-width="120"
         >
           <template #default="{ row }">
@@ -370,7 +357,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="cover_image_url"
-          label="Cover Image Url"
+          :label="t('book.cover_image_url', 'Cover Image Url')"
           min-width="140"
           show-overflow-tooltip
         >
@@ -380,7 +367,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column
           prop="tags"
-          label="Tags"
+          :label="t('book.tags', 'Tags')"
           min-width="140"
           show-overflow-tooltip
         >
@@ -388,20 +375,20 @@ onActivated(() => {
             {{ row.tags || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column :label="t('book.created_at', '创建时间')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="更新时间" min-width="180">
+        <el-table-column :label="t('book.updated_at', '更新时间')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.updated_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column :label="t('common.actions', '操作')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'book:update'" link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button v-permission="'book:delete'" link type="danger" @click="removeRow(row)">删除</el-button>
+            <el-button v-permission="'book:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', '编辑') }}</el-button>
+            <el-button v-permission="'book:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', '删除') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -424,65 +411,65 @@ onActivated(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑Book' : '新增Book'"
+      :title="editingId ? t('book.edit_title', '编辑Book') : t('book.create_title', '新增Book')"
       :loading="dialogLoading"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form">
-        <el-form-item label="Tenant Id">
-          <el-input v-model="form.tenant_id" :placeholder="'请输入Tenant Id'" />
+        <el-form-item :label="t('book.tenant_id', 'Tenant Id')">
+          <el-input v-model="form.tenant_id" :placeholder="t('book.tenant_id_placeholder', '请输入Tenant Id')" />
         </el-form-item>
-        <el-form-item label="Title">
-          <el-input v-model="form.title" :placeholder="'请输入Title'" />
+        <el-form-item :label="t('book.title_field', 'Title')">
+          <el-input v-model="form.title" :placeholder="t('book.title_placeholder', '请输入Title')" />
         </el-form-item>
-        <el-form-item label="Author">
-          <el-input v-model="form.author" :placeholder="'请输入Author'" />
+        <el-form-item :label="t('book.author', 'Author')">
+          <el-input v-model="form.author" :placeholder="t('book.author_placeholder', '请输入Author')" />
         </el-form-item>
-        <el-form-item label="Isbn">
-          <el-input v-model="form.isbn" :placeholder="'请输入Isbn'" />
+        <el-form-item :label="t('book.isbn', 'Isbn')">
+          <el-input v-model="form.isbn" :placeholder="t('book.isbn_placeholder', '请输入Isbn')" />
         </el-form-item>
-        <el-form-item label="Publisher">
-          <el-input v-model="form.publisher" :placeholder="'请输入Publisher'" />
+        <el-form-item :label="t('book.publisher', 'Publisher')">
+          <el-input v-model="form.publisher" :placeholder="t('book.publisher_placeholder', '请输入Publisher')" />
         </el-form-item>
-        <el-form-item label="Publish Date">
+        <el-form-item :label="t('book.publish_date', 'Publish Date')">
           <el-date-picker
             v-model="form.publish_date"
             type="datetime"
             format="YYYY-MM-DD HH:mm:ss"
             value-format="YYYY-MM-DDTHH:mm:ssZ"
-            placeholder="请选择Publish Date"
+            :placeholder="t('book.publish_date_placeholder', '请选择Publish Date')"
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="Category">
-          <el-select v-model="form.category" filterable clearable :multiple="false" placeholder="请选择Category" style="width: 100%">
-            <el-option :label="'技术'" :value="'tech'" :disabled="false" />
-            <el-option :label="'小说'" :value="'novel'" :disabled="false" />
-            <el-option :label="'历史'" :value="'history'" :disabled="false" />
-            <el-option :label="'其他'" :value="'other'" :disabled="false" />
+        <el-form-item :label="t('book.category', 'Category')">
+          <el-select v-model="form.category" filterable clearable :multiple="false" :placeholder="t('book.category_placeholder', '请选择Category')" style="width: 100%">
+            <el-option :label="t('book.category.tech', '技术')" :value="'tech'" :disabled="false" />
+            <el-option :label="t('book.category.novel', '小说')" :value="'novel'" :disabled="false" />
+            <el-option :label="t('book.category.history', '历史')" :value="'history'" :disabled="false" />
+            <el-option :label="t('book.category.other', '其他')" :value="'other'" :disabled="false" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Description">
-          <el-input v-model="form.description" type="textarea" :rows="4" :placeholder="'请输入Description'" />
+        <el-form-item :label="t('book.description_field', 'Description')">
+          <el-input v-model="form.description" type="textarea" :rows="4" :placeholder="t('book.description_placeholder', '请输入Description')" />
         </el-form-item>
-        <el-form-item label="Status">
-          <el-select v-model="form.status" filterable clearable :multiple="false" placeholder="请选择Status" style="width: 100%">
-            <el-option :label="'草稿'" :value="'draft'" :disabled="false" />
-            <el-option :label="'已发布'" :value="'published'" :disabled="false" />
-            <el-option :label="'已下架'" :value="'off_shelf'" :disabled="false" />
+        <el-form-item :label="t('book.status', 'Status')">
+          <el-select v-model="form.status" filterable clearable :multiple="false" :placeholder="t('book.status_placeholder', '请选择Status')" style="width: 100%">
+            <el-option :label="t('book.status.draft', '草稿')" :value="'draft'" :disabled="false" />
+            <el-option :label="t('book.status.published', '已发布')" :value="'published'" :disabled="false" />
+            <el-option :label="t('book.status.off_shelf', '已下架')" :value="'off_shelf'" :disabled="false" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Price">
+        <el-form-item :label="t('book.price', 'Price')">
           <el-input-number v-model="form.price" :controls="false" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="Stock Quantity">
+        <el-form-item :label="t('book.stock_quantity', 'Stock Quantity')">
           <el-input-number v-model="form.stock_quantity" :controls="false" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="Cover Image Url">
-          <el-input v-model="form.cover_image_url" :placeholder="'请输入Cover Image Url'" />
+        <el-form-item :label="t('book.cover_image_url', 'Cover Image Url')">
+          <el-input v-model="form.cover_image_url" :placeholder="t('book.cover_image_url_placeholder', '请输入Cover Image Url')" />
         </el-form-item>
-        <el-form-item label="Tags">
-          <el-input v-model="form.tags" :placeholder="'请输入Tags'" />
+        <el-form-item :label="t('book.tags', 'Tags')">
+          <el-input v-model="form.tags" :placeholder="t('book.tags_placeholder', '请输入Tags')" />
         </el-form-item>
       </el-form>
     </AdminFormDialog>

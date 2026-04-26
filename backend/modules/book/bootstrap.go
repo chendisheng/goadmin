@@ -2,13 +2,13 @@
 package book
 
 import (
-	"fmt"
-
 	corebootstrapcontract "goadmin/core/bootstrap/contract"
+	apperrors "goadmin/core/errors"
 	coretransport "goadmin/core/transport"
 	bookservice "goadmin/modules/book/application/service"
 	bookrepo "goadmin/modules/book/infrastructure/repo"
 	bookhttp "goadmin/modules/book/transport/http"
+
 	"gorm.io/gorm"
 )
 
@@ -32,10 +32,10 @@ func (Bootstrap) Migrate(db *gorm.DB) error {
 
 func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error {
 	if group == nil {
-		return fmt.Errorf("book bootstrap requires route registrar")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "book.bootstrap_route_registrar_required", "book bootstrap requires route registrar")
 	}
 	if deps.DB == nil {
-		return fmt.Errorf("book bootstrap requires db")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "book.bootstrap_db_required", "book bootstrap requires db")
 	}
 	repo, err := bookrepo.NewGormRepository(deps.DB)
 	if err != nil {

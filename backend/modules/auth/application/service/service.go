@@ -58,6 +58,7 @@ func (s *Service) Login(ctx context.Context, input model.Credentials) (*model.Se
 		TenantID:    identity.TenantID,
 		Username:    identity.Username,
 		DisplayName: identity.DisplayName,
+		Language:    identity.Language,
 		Roles:       append([]string(nil), identity.Roles...),
 		Permissions: append([]string(nil), identity.Permissions...),
 	})
@@ -87,6 +88,7 @@ func (s *Service) Me(_ context.Context, claims *coreauthjwt.Claims) (*model.Iden
 		TenantID:    tenantID,
 		Username:    claims.Username,
 		DisplayName: claims.DisplayName,
+		Language:    claims.Language,
 		Roles:       append([]string(nil), claims.Roles...),
 		Permissions: append([]string(nil), claims.Permissions...),
 	}

@@ -1,0 +1,14 @@
+translation:
+  casbin_rule.repository_required: casbin_rule repository is required
+  casbin_rule.service_not_configured: casbin_rule service is not configured
+  casbin_rule.not_found: casbin_rule not found
+  casbin_rule.operation_failed: casbin_rule operation failed
+  casbin_rule.invalid_list_request: invalid casbin_rule list request
+  casbin_rule.invalid_create_request: invalid casbin_rule create request
+  casbin_rule.invalid_update_request: invalid casbin_rule update request
+  casbin_rule.gorm_repository_required: casbin_rule gorm repository requires db
+  casbin_rule.migrate_requires_db: casbin_rule migrate requires db
+  casbin_rule.gorm_repository_not_configured: casbin_rule gorm repository is not configured
+  casbin_rule.item_nil: casbin_rule item is nil
+  casbin_rule.bootstrap_route_registrar_required: casbin_rule bootstrap requires route registrar
+  casbin_rule.bootstrap_db_required: casbin_rule bootstrap requires db

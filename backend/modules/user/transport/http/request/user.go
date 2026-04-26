@@ -12,6 +12,7 @@ type CreateRequest struct {
 	TenantID     string   `json:"tenant_id"`
 	Username     string   `json:"username" binding:"required"`
 	DisplayName  string   `json:"display_name"`
+	Language     string   `json:"language"`
 	Mobile       string   `json:"mobile"`
 	Email        string   `json:"email"`
 	Status       string   `json:"status"`
@@ -23,6 +24,7 @@ type UpdateRequest struct {
 	TenantID     string   `json:"tenant_id"`
 	Username     string   `json:"username"`
 	DisplayName  string   `json:"display_name"`
+	Language     string   `json:"language"`
 	Mobile       string   `json:"mobile"`
 	Email        string   `json:"email"`
 	Status       string   `json:"status"`

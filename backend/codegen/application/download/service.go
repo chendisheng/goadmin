@@ -48,21 +48,21 @@ func NewService(deps Dependencies) *Service {
 
 func (s *Service) Generate(req GenerateRequest) (ArtifactInfo, error) {
 	if s == nil {
-		return ArtifactInfo{}, apperrors.New(apperrors.CodeInternal, "download service is required")
+		return ArtifactInfo{}, apperrors.NewWithKey(apperrors.CodeInternal, "codegen.download.service_required", "download service is required")
 	}
 	if strings.TrimSpace(req.DSL) == "" {
-		return ArtifactInfo{}, apperrors.New(apperrors.CodeBadRequest, "dsl is required")
+		return ArtifactInfo{}, apperrors.NewWithKey(apperrors.CodeBadRequest, "codegen.download.dsl_required", "dsl is required")
 	}
 	if err := s.storage.CleanupExpired(time.Now().UTC()); err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "cleanup expired artifacts")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.cleanup_expired_failed", "cleanup expired artifacts")
 	}
 	taskID, err := newTaskID()
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "create download task id")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.create_task_id_failed", "create download task id")
 	}
 	workspaceRoot, err := s.workspaces.Create(taskID)
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "create codegen workspace")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.create_workspace_failed", "create codegen workspace")
 	}
 	defer func() {
 		_ = s.workspaces.Remove(taskID)
@@ -73,31 +73,31 @@ func (s *Service) Generate(req GenerateRequest) (ArtifactInfo, error) {
 	}
 	generatedFiles, err := listFiles(workspaceRoot)
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "collect generated files")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.collect_files_failed", "collect generated files")
 	}
 	if err := writeSupportFiles(workspaceRoot, req, report, generatedFiles); err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "prepare download package")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.prepare_package_failed", "prepare download package")
 	}
 	filename := buildFilename(req.PackageName, report)
 	tempPackage, err := os.CreateTemp("", taskID+"-*.zip")
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "create temporary package file")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.create_package_file_failed", "create temporary package file")
 	}
 	tempPackagePath := tempPackage.Name()
 	if err := tempPackage.Close(); err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "close temporary package file")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.close_package_file_failed", "close temporary package file")
 	}
 	defer func() {
 		_ = os.Remove(tempPackagePath)
 	}()
 	sizeBytes, err := s.packager.Package(workspaceRoot, tempPackagePath)
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "package generated artifact")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.package_artifact_failed", "package generated artifact")
 	}
 	expiresAt := time.Now().UTC().Add(s.ttl)
 	meta, err := s.storage.Save(taskID, filename, tempPackagePath, sizeBytes, len(generatedFiles), expiresAt)
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "store generated artifact")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.store_artifact_failed", "store generated artifact")
 	}
 	return ArtifactInfo{
 		TaskID:      meta.TaskID,
@@ -111,24 +111,24 @@ func (s *Service) Generate(req GenerateRequest) (ArtifactInfo, error) {
 
 func (s *Service) GenerateDatabase(db *gorm.DB, req codegencli.DatabaseExecutionRequest) (ArtifactInfo, error) {
 	if s == nil {
-		return ArtifactInfo{}, apperrors.New(apperrors.CodeInternal, "download service is required")
+		return ArtifactInfo{}, apperrors.NewWithKey(apperrors.CodeInternal, "codegen.download.service_required", "download service is required")
 	}
 	if db == nil {
-		return ArtifactInfo{}, apperrors.New(apperrors.CodeBadRequest, "database connection is required")
+		return ArtifactInfo{}, apperrors.NewWithKey(apperrors.CodeBadRequest, "codegen.download.database_required", "database connection is required")
 	}
 	if err := req.Validate(); err != nil {
 		return ArtifactInfo{}, err
 	}
 	if err := s.storage.CleanupExpired(time.Now().UTC()); err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "cleanup expired artifacts")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.cleanup_expired_failed", "cleanup expired artifacts")
 	}
 	taskID, err := newTaskID()
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "create download task id")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.create_task_id_failed", "create download task id")
 	}
 	workspaceRoot, err := s.workspaces.Create(taskID)
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "create codegen workspace")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.create_workspace_failed", "create codegen workspace")
 	}
 	defer func() {
 		_ = s.workspaces.Remove(taskID)
@@ -139,31 +139,31 @@ func (s *Service) GenerateDatabase(db *gorm.DB, req codegencli.DatabaseExecution
 	}
 	generatedFiles, err := listFiles(workspaceRoot)
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "collect generated files")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.collect_files_failed", "collect generated files")
 	}
 	if err := writeDatabaseSupportFiles(workspaceRoot, req, report, generatedFiles); err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "prepare download package")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.prepare_package_failed", "prepare download package")
 	}
 	filename := buildDatabaseFilename(req, report)
 	tempPackage, err := os.CreateTemp("", taskID+"-*.zip")
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "create temporary package file")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.create_package_file_failed", "create temporary package file")
 	}
 	tempPackagePath := tempPackage.Name()
 	if err := tempPackage.Close(); err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "close temporary package file")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.close_package_file_failed", "close temporary package file")
 	}
 	defer func() {
 		_ = os.Remove(tempPackagePath)
 	}()
 	sizeBytes, err := s.packager.Package(workspaceRoot, tempPackagePath)
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "package generated artifact")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.package_artifact_failed", "package generated artifact")
 	}
 	expiresAt := time.Now().UTC().Add(s.ttl)
 	meta, err := s.storage.Save(taskID, filename, tempPackagePath, sizeBytes, len(generatedFiles), expiresAt)
 	if err != nil {
-		return ArtifactInfo{}, apperrors.Wrap(err, apperrors.CodeInternal, "store generated artifact")
+		return ArtifactInfo{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.store_artifact_failed", "store generated artifact")
 	}
 	return ArtifactInfo{
 		TaskID:      meta.TaskID,
@@ -177,23 +177,23 @@ func (s *Service) GenerateDatabase(db *gorm.DB, req codegencli.DatabaseExecution
 
 func (s *Service) Resolve(taskID string) (ResolvedArtifact, error) {
 	if s == nil {
-		return ResolvedArtifact{}, apperrors.New(apperrors.CodeInternal, "download service is required")
+		return ResolvedArtifact{}, apperrors.NewWithKey(apperrors.CodeInternal, "codegen.download.service_required", "download service is required")
 	}
 	if strings.TrimSpace(taskID) == "" {
-		return ResolvedArtifact{}, apperrors.New(apperrors.CodeBadRequest, "task id is required")
+		return ResolvedArtifact{}, apperrors.NewWithKey(apperrors.CodeBadRequest, "codegen.download.task_id_required", "task id is required")
 	}
 	if err := s.storage.CleanupExpired(time.Now().UTC()); err != nil {
-		return ResolvedArtifact{}, apperrors.Wrap(err, apperrors.CodeInternal, "cleanup expired artifacts")
+		return ResolvedArtifact{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.cleanup_expired_failed", "cleanup expired artifacts")
 	}
 	meta, err := s.storage.Load(taskID)
 	if err != nil {
 		switch {
 		case errors.Is(err, artifactstore.ErrArtifactExpired):
-			return ResolvedArtifact{}, apperrors.New(apperrors.CodeGone, "artifact expired")
+			return ResolvedArtifact{}, apperrors.NewWithKey(apperrors.CodeGone, "codegen.download.artifact_expired", "artifact expired")
 		case errors.Is(err, os.ErrNotExist):
-			return ResolvedArtifact{}, apperrors.New(apperrors.CodeNotFound, "artifact not found")
+			return ResolvedArtifact{}, apperrors.NewWithKey(apperrors.CodeNotFound, "codegen.download.artifact_not_found", "artifact not found")
 		default:
-			return ResolvedArtifact{}, apperrors.Wrap(err, apperrors.CodeInternal, "load artifact")
+			return ResolvedArtifact{}, apperrors.WrapWithKey(err, apperrors.CodeInternal, "codegen.download.load_artifact_failed", "load artifact")
 		}
 	}
 	return ResolvedArtifact{Filename: meta.Filename, PackagePath: meta.PackagePath}, nil

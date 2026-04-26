@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	apperrors "goadmin/core/errors"
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
 )
 
@@ -46,7 +47,7 @@ type Client struct {
 
 func New(name string, cfg Config) (*Client, error) {
 	if strings.TrimSpace(name) == "" {
-		return nil, fmt.Errorf("object storage driver name is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.object_storage_driver_name_required", "object storage driver name is required")
 	}
 	if strings.TrimSpace(name) == "minio" {
 		backend, enabled, err := newMinIOBackend(cfg)
@@ -77,13 +78,13 @@ func (c *Client) Name() string {
 
 func (c *Client) PutObject(ctx context.Context, req storagecontract.PutObjectRequest) (*storagecontract.PutObjectResult, error) {
 	if c == nil {
-		return nil, fmt.Errorf("object storage client is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_client_not_configured", "object storage client is not configured")
 	}
 	if c.minio != nil {
 		return c.minio.PutObject(ctx, req)
 	}
 	if req.Reader == nil {
-		return nil, fmt.Errorf("upload reader is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.reader_required", "upload reader is required")
 	}
 	key, err := normalizeKey(req.Key)
 	if err != nil {
@@ -97,12 +98,12 @@ func (c *Client) PutObject(ctx context.Context, req storagecontract.PutObjectReq
 		return nil, err
 	}
 	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
-		return nil, fmt.Errorf("create object directory: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.object_create_dir_failed", "create object directory")
 	}
 
 	tmp, err := os.CreateTemp(filepath.Dir(absPath), ".upload-*")
 	if err != nil {
-		return nil, fmt.Errorf("create object temp file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.object_create_temp_failed", "create object temp file")
 	}
 	tmpPath := tmp.Name()
 	defer func() {
@@ -113,23 +114,23 @@ func (c *Client) PutObject(ctx context.Context, req storagecontract.PutObjectReq
 	hasher := sha256.New()
 	written, err := io.Copy(io.MultiWriter(tmp, hasher), req.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("write object file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.object_write_file_failed", "write object file")
 	}
 	if req.Size > 0 && written != req.Size {
-		return nil, fmt.Errorf("upload file size mismatch: got %d want %d", written, req.Size)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.file_size_mismatch", fmt.Sprintf("upload file size mismatch: got %d want %d", written, req.Size))
 	}
 	checksum := hex.EncodeToString(hasher.Sum(nil))
 	if expected := strings.TrimSpace(req.ChecksumSHA256); expected != "" && !strings.EqualFold(expected, checksum) {
-		return nil, fmt.Errorf("upload checksum mismatch: got %s want %s", checksum, expected)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.checksum_mismatch", fmt.Sprintf("upload checksum mismatch: got %s want %s", checksum, expected))
 	}
 	if err := tmp.Sync(); err != nil {
-		return nil, fmt.Errorf("sync object file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.object_sync_file_failed", "sync object file")
 	}
 	if err := tmp.Close(); err != nil {
-		return nil, fmt.Errorf("close object temp file: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.object_close_temp_failed", "close object temp file")
 	}
 	if err := os.Rename(tmpPath, absPath); err != nil {
-		return nil, fmt.Errorf("move object file into place: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.object_move_file_failed", "move object file into place")
 	}
 
 	contentType := strings.TrimSpace(req.ContentType)
@@ -155,7 +156,7 @@ func (c *Client) PutObject(ctx context.Context, req storagecontract.PutObjectReq
 	}
 	if err := writeJSON(metaPath, info); err != nil {
 		_ = os.Remove(absPath)
-		return nil, fmt.Errorf("write object metadata: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.object_write_metadata_failed", "write object metadata")
 	}
 	return &storagecontract.PutObjectResult{
 		Key:            key,
@@ -169,7 +170,7 @@ func (c *Client) PutObject(ctx context.Context, req storagecontract.PutObjectReq
 
 func (c *Client) GetObject(ctx context.Context, key string) (io.ReadCloser, *storagecontract.ObjectInfo, error) {
 	if c == nil {
-		return nil, nil, fmt.Errorf("object storage client is not configured")
+		return nil, nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_client_not_configured", "object storage client is not configured")
 	}
 	if c.minio != nil {
 		return c.minio.GetObject(ctx, key)
@@ -187,7 +188,7 @@ func (c *Client) GetObject(ctx context.Context, key string) (io.ReadCloser, *sto
 
 func (c *Client) HeadObject(ctx context.Context, key string) (*storagecontract.ObjectInfo, error) {
 	if c == nil {
-		return nil, fmt.Errorf("object storage client is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_client_not_configured", "object storage client is not configured")
 	}
 	if c.minio != nil {
 		return c.minio.HeadObject(ctx, key)
@@ -198,7 +199,7 @@ func (c *Client) HeadObject(ctx context.Context, key string) (*storagecontract.O
 
 func (c *Client) DeleteObject(ctx context.Context, key string) error {
 	if c == nil {
-		return fmt.Errorf("object storage client is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_client_not_configured", "object storage client is not configured")
 	}
 	if c.minio != nil {
 		return c.minio.DeleteObject(ctx, key)
@@ -222,7 +223,7 @@ func (c *Client) DeleteObject(ctx context.Context, key string) error {
 
 func (c *Client) Exists(ctx context.Context, key string) (bool, error) {
 	if c == nil {
-		return false, fmt.Errorf("object storage client is not configured")
+		return false, apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_client_not_configured", "object storage client is not configured")
 	}
 	if c.minio != nil {
 		return c.minio.Exists(ctx, key)
@@ -247,13 +248,13 @@ func (c *Client) Exists(ctx context.Context, key string) (bool, error) {
 
 func (c *Client) PublicURL(ctx context.Context, key string) (string, error) {
 	if c == nil {
-		return "", fmt.Errorf("object storage client is not configured")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_client_not_configured", "object storage client is not configured")
 	}
 	if c.minio != nil {
 		return c.minio.PublicURL(ctx, key)
 	}
 	if strings.TrimSpace(c.publicBaseURL) == "" {
-		return "", fmt.Errorf("object storage public_base_url is required for public urls")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_public_base_url_required", "object storage public_base_url is required for public urls")
 	}
 	key, err := normalizeKey(key)
 	if err != nil {
@@ -264,13 +265,13 @@ func (c *Client) PublicURL(ctx context.Context, key string) (string, error) {
 
 func (c *Client) SignedURL(ctx context.Context, key string, opts storagecontract.SignedURLOptions) (string, error) {
 	if c == nil {
-		return "", fmt.Errorf("object storage client is not configured")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_client_not_configured", "object storage client is not configured")
 	}
 	if c.minio != nil {
 		return c.minio.SignedURL(ctx, key, opts)
 	}
 	if strings.TrimSpace(c.publicBaseURL) == "" {
-		return "", fmt.Errorf("object storage public_base_url is required for signed urls")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.object_storage_public_base_url_required", "object storage public_base_url is required for signed urls")
 	}
 	base, err := c.PublicURL(ctx, key)
 	if err != nil {
@@ -298,7 +299,7 @@ func (c *Client) inspectObject(key string) (string, *storagecontract.ObjectInfo,
 
 func (c *Client) ensureBaseDir() error {
 	if err := os.MkdirAll(c.baseDir, 0o755); err != nil {
-		return fmt.Errorf("ensure object storage base dir: %w", err)
+		return apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.object_storage_ensure_base_dir_failed", "ensure object storage base dir")
 	}
 	return nil
 }
@@ -310,7 +311,7 @@ func (c *Client) resolvePaths(key string) (string, string, error) {
 	}
 	absPath := filepath.Clean(filepath.Join(c.baseDir, filepath.FromSlash(cleaned)))
 	if absPath != c.baseDir && !strings.HasPrefix(absPath, c.baseDir+string(os.PathSeparator)) {
-		return "", "", fmt.Errorf("object storage key escapes base dir")
+		return "", "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.object_storage_key_escapes_base_dir", "object storage key escapes base dir")
 	}
 	return absPath, absPath + ".meta.json", nil
 }

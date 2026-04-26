@@ -6,7 +6,7 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "allowSyntheticDefaultImports": true,
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "types": ["node"]
   },
   "include": ["vite.config.ts"]

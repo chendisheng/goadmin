@@ -1,0 +1,9 @@
+translation:
+  common.ok: ok
+  common.created: created successfully
+  common.deleted: deleted successfully
+  common.invalid_request: invalid request
+  common.permission_denied: permission denied
+  common.authentication_required: authentication required
+  common.internal_error: internal server error
+  common.route_not_found: route not found

@@ -7,6 +7,7 @@ type Item struct {
 	TenantID    string    `json:"tenant_id,omitempty"`
 	Username    string    `json:"username"`
 	DisplayName string    `json:"display_name,omitempty"`
+	Language    string    `json:"language,omitempty"`
 	Mobile      string    `json:"mobile,omitempty"`
 	Email       string    `json:"email,omitempty"`
 	Status      string    `json:"status"`

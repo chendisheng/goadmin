@@ -1,0 +1,2 @@
+translation:
+  casbin.summary.not_configured: authorization module is not configured

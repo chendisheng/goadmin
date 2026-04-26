@@ -230,7 +230,7 @@
       </el-col>
 
       <el-col :xs="24" :lg="13" :xl="13">
-        <el-space direction="vertical" size="16" fill class="side-stack">
+        <el-space direction="vertical" :size="16" fill class="side-stack">
           <el-card shadow="never" class="codegen-card">
             <template #header>
               <div class="card-header compact">
@@ -797,7 +797,7 @@ const deleteMessages = computed(() => {
   const messages: string[] = [];
   if (deletePreviewPlan.value) {
     messages.push(...(deletePreviewPlan.value.warnings ?? []).map((message) => `预览提示：${message}`));
-    if ((deletePreviewPlan.value.warnings ?? []).length === 0 && deletePreviewPlan.value.conflicts.length === 0) {
+    if ((deletePreviewPlan.value.warnings ?? []).length === 0 && (deletePreviewPlan.value.conflicts?.length ?? 0) === 0) {
       messages.push('预览提示：未发现额外风险提示。');
     }
   }

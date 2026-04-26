@@ -1,0 +1,8 @@
+translation:
+  user.id_required: 用户ID不能为空
+  user.username_required: 用户名不能为空
+  user.tenant_mismatch: 租户不匹配
+  user.not_found: 用户不存在
+  user.conflict: 用户已存在
+  user.operation_failed: 用户操作失败
+  user.service_not_configured: 用户服务未配置

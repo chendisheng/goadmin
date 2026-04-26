@@ -32,6 +32,8 @@ export interface MenuItem {
   id: string;
   parent_id?: string;
   name: string;
+  titleKey?: string;
+  titleDefault?: string;
   path: string;
   component?: string;
   icon?: string;
@@ -42,6 +44,9 @@ export interface MenuItem {
   enabled: boolean;
   redirect?: string;
   external_url?: string;
+  subtitle?: string;
+  subtitleKey?: string;
+  subtitleDefault?: string;
   children?: MenuItem[];
   created_at: string;
   updated_at: string;

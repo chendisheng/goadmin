@@ -1,9 +1,8 @@
 package casbin
 
 import (
-	"fmt"
-
 	corebootstrapcontract "goadmin/core/bootstrap/contract"
+	apperrors "goadmin/core/errors"
 	coretransport "goadmin/core/transport"
 	casbinservice "goadmin/modules/casbin/application/service"
 	casbinhttp "goadmin/modules/casbin/transport/http"
@@ -36,10 +35,10 @@ func (Bootstrap) Migrate(db *gorm.DB) error {
 
 func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrapcontract.Dependencies) error {
 	if group == nil {
-		return fmt.Errorf("casbin bootstrap requires route registrar")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "casbin.bootstrap_route_registrar_required", "casbin bootstrap requires route registrar")
 	}
 	if deps.DB == nil {
-		return fmt.Errorf("casbin bootstrap requires db")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "casbin.bootstrap_db_required", "casbin bootstrap requires db")
 	}
 
 	service, err := casbinservice.New(casbinservice.Config{

@@ -8,6 +8,8 @@ export interface WorkspaceTabRecord {
   routePath: string;
   routeFullPath: string;
   title: string;
+  titleKey?: string;
+  titleDefault?: string;
   icon: string | null;
   componentKey: string;
   fixed: boolean;

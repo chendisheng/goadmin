@@ -44,7 +44,7 @@ func (s *Service) Get(ctx context.Context, id string) (*model.Menu, error) {
 	}
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "menu id is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "menu.id_required", "menu id is required")
 	}
 	item, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -58,10 +58,10 @@ func (s *Service) Create(ctx context.Context, input command.CreateMenu) (*model.
 		return nil, fmt.Errorf("menu service is not configured")
 	}
 	if strings.TrimSpace(input.Name) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "name is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "menu.name_required", "name is required")
 	}
 	if strings.TrimSpace(input.Path) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "path is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "menu.path_required", "path is required")
 	}
 	entity := &model.Menu{
 		ParentID:    strings.TrimSpace(input.ParentID),
@@ -139,7 +139,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("menu service is not configured")
 	}
 	if strings.TrimSpace(id) == "" {
-		return apperrors.New(apperrors.CodeBadRequest, "menu id is required")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "menu.id_required", "menu id is required")
 	}
 	if err := s.repo.Delete(ctx, strings.TrimSpace(id)); err != nil {
 		return mapRepositoryError(err)
@@ -157,11 +157,11 @@ func (s *Service) Tree(ctx context.Context) ([]model.Menu, error) {
 func mapRepositoryError(err error) error {
 	switch {
 	case errors.Is(err, menurepo.ErrNotFound):
-		return apperrors.New(apperrors.CodeNotFound, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeNotFound, "menu.not_found", err.Error())
 	case errors.Is(err, menurepo.ErrConflict):
-		return apperrors.New(apperrors.CodeConflict, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeConflict, "menu.conflict", err.Error())
 	default:
-		return apperrors.Wrap(err, apperrors.CodeInternal, "menu operation failed")
+		return apperrors.WrapWithKey(err, apperrors.CodeInternal, "menu.operation_failed", "menu operation failed")
 	}
 }
 

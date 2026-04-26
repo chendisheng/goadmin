@@ -1,0 +1,8 @@
+translation:
+  user.id_required: user id is required
+  user.username_required: username is required
+  user.tenant_mismatch: tenant mismatch
+  user.not_found: user not found
+  user.conflict: user already exists
+  user.operation_failed: user operation failed
+  user.service_not_configured: user service is not configured

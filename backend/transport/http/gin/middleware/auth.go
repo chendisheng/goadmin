@@ -9,6 +9,7 @@ import (
 	coreauthbootstrap "goadmin/core/auth/bootstrap"
 	coreauthjwt "goadmin/core/auth/jwt"
 	apperrors "goadmin/core/errors"
+	corei18n "goadmin/core/i18n"
 	"goadmin/core/response"
 	coretenant "goadmin/core/tenant"
 	coretransport "goadmin/core/transport"
@@ -44,9 +45,17 @@ func JWTAuth(manager interface {
 			}
 
 			reqCtx := coreauth.ContextWithClaims(c.RequestContext(), claims)
+			requestID := requestIDFromTransportContext(c)
+			language := corei18n.ResolveLanguage(claims.Language)
+			if language == "" {
+				language = corei18n.LanguageOrDefault(reqCtx)
+			}
+			corei18n.BindRequestLanguage(requestID, language)
+			reqCtx = corei18n.ContextWithLanguage(reqCtx, language)
 			reqCtx = coretenant.ContextWithTenant(reqCtx, coretenant.FromClaims(claims))
 			c.SetRequestContext(reqCtx)
 			c.Set("auth.claims", claims)
+			c.Set("i18n.language", language)
 			c.Set("tenant", coretenant.FromClaims(claims))
 			next(c)
 		}

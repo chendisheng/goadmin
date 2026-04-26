@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"goadmin/core/config"
+	apperrors "goadmin/core/errors"
 	"goadmin/modules/upload/domain/model"
 	uploadrepo "goadmin/modules/upload/domain/repository"
 	"goadmin/modules/upload/infrastructure/storage/local"
@@ -224,5 +225,12 @@ func TestUploadRejectsDisallowedExtension(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected upload rejection for extension")
+	}
+	appErr, ok := err.(*apperrors.AppError)
+	if !ok {
+		t.Fatalf("expected *AppError, got %T", err)
+	}
+	if appErr.Key != "upload.extension_not_allowed" {
+		t.Fatalf("unexpected error key: %q", appErr.Key)
 	}
 }

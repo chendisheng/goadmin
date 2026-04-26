@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	apperrors "goadmin/core/errors"
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
 
 	"gorm.io/gorm"
@@ -47,7 +48,7 @@ func NewDatabaseDriver() *DatabaseDriver {
 
 func (d *DatabaseDriver) SetDB(db *gorm.DB) error {
 	if db == nil {
-		return fmt.Errorf("upload storage db driver requires db")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.storage.db_driver_required", "upload storage db driver requires db")
 	}
 	d.db = db
 	return d.db.AutoMigrate(&databaseObjectRecord{})
@@ -57,10 +58,10 @@ func (d *DatabaseDriver) Name() string { return "db" }
 
 func (d *DatabaseDriver) Put(ctx context.Context, req storagecontract.PutObjectRequest) (*storagecontract.PutObjectResult, error) {
 	if d == nil || d.db == nil {
-		return nil, fmt.Errorf("database storage driver is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.storage.db_driver_not_configured", "database storage driver is not configured")
 	}
 	if req.Reader == nil {
-		return nil, fmt.Errorf("upload reader is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.reader_required", "upload reader is required")
 	}
 	key, err := normalizeDatabaseStorageKey(req.Key)
 	if err != nil {
@@ -68,15 +69,15 @@ func (d *DatabaseDriver) Put(ctx context.Context, req storagecontract.PutObjectR
 	}
 	data, err := io.ReadAll(req.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("read upload stream: %w", err)
+		return nil, apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.read_stream_failed", "read upload stream")
 	}
 	if req.Size > 0 && int64(len(data)) != req.Size {
-		return nil, fmt.Errorf("upload file size mismatch: got %d want %d", len(data), req.Size)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.file_size_mismatch", fmt.Sprintf("upload file size mismatch: got %d want %d", len(data), req.Size))
 	}
 	hash := sha256.Sum256(data)
 	checksum := hex.EncodeToString(hash[:])
 	if expected := strings.TrimSpace(req.ChecksumSHA256); expected != "" && !strings.EqualFold(expected, checksum) {
-		return nil, fmt.Errorf("upload checksum mismatch: got %s want %s", checksum, expected)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.checksum_mismatch", fmt.Sprintf("upload checksum mismatch: got %s want %s", checksum, expected))
 	}
 	contentType := strings.TrimSpace(req.ContentType)
 	if contentType == "" {
@@ -121,7 +122,7 @@ func (d *DatabaseDriver) Put(ctx context.Context, req storagecontract.PutObjectR
 
 func (d *DatabaseDriver) Get(ctx context.Context, key string) (io.ReadCloser, *storagecontract.ObjectInfo, error) {
 	if d == nil || d.db == nil {
-		return nil, nil, fmt.Errorf("database storage driver is not configured")
+		return nil, nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.storage.db_driver_not_configured", "database storage driver is not configured")
 	}
 	rec, err := d.loadRecord(ctx, key)
 	if err != nil {
@@ -145,7 +146,7 @@ func (d *DatabaseDriver) Get(ctx context.Context, key string) (io.ReadCloser, *s
 
 func (d *DatabaseDriver) Delete(ctx context.Context, key string) error {
 	if d == nil || d.db == nil {
-		return fmt.Errorf("database storage driver is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.storage.db_driver_not_configured", "database storage driver is not configured")
 	}
 	key, err := normalizeDatabaseStorageKey(key)
 	if err != nil {
@@ -159,7 +160,7 @@ func (d *DatabaseDriver) Delete(ctx context.Context, key string) error {
 
 func (d *DatabaseDriver) Exists(ctx context.Context, key string) (bool, error) {
 	if d == nil || d.db == nil {
-		return false, fmt.Errorf("database storage driver is not configured")
+		return false, apperrors.NewWithKey(apperrors.CodeInternal, "upload.storage.db_driver_not_configured", "database storage driver is not configured")
 	}
 	_, err := d.loadRecord(ctx, key)
 	if err != nil {
@@ -173,7 +174,7 @@ func (d *DatabaseDriver) Exists(ctx context.Context, key string) (bool, error) {
 
 func (d *DatabaseDriver) PublicURL(ctx context.Context, key string) (string, error) {
 	if d == nil || d.db == nil {
-		return "", fmt.Errorf("database storage driver is not configured")
+		return "", apperrors.NewWithKey(apperrors.CodeInternal, "upload.storage.db_driver_not_configured", "database storage driver is not configured")
 	}
 	rec, err := d.loadRecord(ctx, key)
 	if err != nil {
@@ -194,7 +195,7 @@ func (d *DatabaseDriver) loadRecord(ctx context.Context, key string) (*databaseO
 	var rec databaseObjectRecord
 	if err := d.db.WithContext(ctx).First(&rec, "storage_key = ?", key).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("upload file asset %s not found: %w", key, gorm.ErrRecordNotFound)
+			return nil, apperrors.WrapWithKey(err, apperrors.CodeNotFound, "upload.file_not_found", fmt.Sprintf("upload file asset %s not found", key))
 		}
 		return nil, err
 	}
@@ -204,15 +205,15 @@ func (d *DatabaseDriver) loadRecord(ctx context.Context, key string) (*databaseO
 func normalizeDatabaseStorageKey(key string) (string, error) {
 	trimmed := strings.TrimSpace(key)
 	if trimmed == "" {
-		return "", fmt.Errorf("upload storage key is required")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_required", "upload storage key is required")
 	}
 	trimmed = strings.ReplaceAll(trimmed, "\\", "/")
 	trimmed = filepath.Clean(trimmed)
 	if trimmed == "." || trimmed == "" {
-		return "", fmt.Errorf("upload storage key is invalid")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_invalid", "upload storage key is invalid")
 	}
 	if strings.HasPrefix(trimmed, "../") || trimmed == ".." || strings.Contains(trimmed, "/../") {
-		return "", fmt.Errorf("upload storage key contains path traversal")
+		return "", apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.storage_key_traversal", "upload storage key contains path traversal")
 	}
 	return strings.TrimPrefix(trimmed, "/"), nil
 }
@@ -233,7 +234,7 @@ func encodeDatabaseMetadata(metadata map[string]string) (string, error) {
 	}
 	data, err := json.Marshal(filtered)
 	if err != nil {
-		return "", fmt.Errorf("encode upload metadata: %w", err)
+		return "", apperrors.WrapWithKey(err, apperrors.CodeInternal, "upload.encode_metadata_failed", "encode upload metadata")
 	}
 	return string(data), nil
 }

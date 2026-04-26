@@ -7,6 +7,7 @@ import (
 
 	"time"
 
+	apperrors "goadmin/core/errors"
 	"goadmin/modules/book/domain/model"
 
 	"gorm.io/gorm"
@@ -18,21 +19,21 @@ type GormRepository struct {
 
 func NewGormRepository(db *gorm.DB) (*GormRepository, error) {
 	if db == nil {
-		return nil, fmt.Errorf("book gorm repository requires db")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "book.gorm_repository_required", "book gorm repository requires db")
 	}
 	return &GormRepository{db: db}, nil
 }
 
 func Migrate(db *gorm.DB) error {
 	if db == nil {
-		return fmt.Errorf("book migrate requires db")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "book.migrate_requires_db", "book migrate requires db")
 	}
 	return db.AutoMigrate(&model.Book{})
 }
 
 func (r *GormRepository) List(ctx context.Context, keyword string, page int, pageSize int) ([]model.Book, int64, error) {
 	if r == nil || r.db == nil {
-		return nil, 0, fmt.Errorf("book gorm repository is not configured")
+		return nil, 0, apperrors.NewWithKey(apperrors.CodeInternal, "book.gorm_repository_not_configured", "book gorm repository is not configured")
 	}
 	base := r.db.WithContext(ctx).Model(&model.Book{})
 	if kw := strings.TrimSpace(strings.ToLower(keyword)); kw != "" {
@@ -66,7 +67,7 @@ func (r *GormRepository) List(ctx context.Context, keyword string, page int, pag
 
 func (r *GormRepository) Get(ctx context.Context, id string) (*model.Book, error) {
 	if r == nil || r.db == nil {
-		return nil, fmt.Errorf("book gorm repository is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "book.gorm_repository_not_configured", "book gorm repository is not configured")
 	}
 	var item model.Book
 	if err := r.db.WithContext(ctx).First(&item, "id = ?", id).Error; err != nil {
@@ -77,10 +78,10 @@ func (r *GormRepository) Get(ctx context.Context, id string) (*model.Book, error
 
 func (r *GormRepository) Create(ctx context.Context, item *model.Book) (*model.Book, error) {
 	if r == nil || r.db == nil {
-		return nil, fmt.Errorf("book gorm repository is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "book.gorm_repository_not_configured", "book gorm repository is not configured")
 	}
 	if item == nil {
-		return nil, fmt.Errorf("book item is nil")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "book.item_nil", "book item is nil")
 	}
 
 	if strings.TrimSpace(item.Id) == "" {
@@ -95,10 +96,10 @@ func (r *GormRepository) Create(ctx context.Context, item *model.Book) (*model.B
 
 func (r *GormRepository) Update(ctx context.Context, item *model.Book) (*model.Book, error) {
 	if r == nil || r.db == nil {
-		return nil, fmt.Errorf("book gorm repository is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "book.gorm_repository_not_configured", "book gorm repository is not configured")
 	}
 	if item == nil {
-		return nil, fmt.Errorf("book item is nil")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "book.item_nil", "book item is nil")
 	}
 	if err := r.db.WithContext(ctx).Save(item).Error; err != nil {
 		return nil, err
@@ -108,7 +109,7 @@ func (r *GormRepository) Update(ctx context.Context, item *model.Book) (*model.B
 
 func (r *GormRepository) Delete(ctx context.Context, id string) error {
 	if r == nil || r.db == nil {
-		return fmt.Errorf("book gorm repository is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "book.gorm_repository_not_configured", "book gorm repository is not configured")
 	}
 	if err := r.db.WithContext(ctx).Delete(&model.Book{}, "id = ?", id).Error; err != nil {
 		return err

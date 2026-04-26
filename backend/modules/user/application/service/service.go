@@ -35,7 +35,7 @@ func (s *Service) List(ctx context.Context, q query.ListUsers) ([]model.User, in
 	}
 	tenantID, err := coretenant.ResolveTenantID(ctx, q.TenantID)
 	if err != nil {
-		return nil, 0, apperrors.New(apperrors.CodeForbidden, err.Error())
+		return nil, 0, apperrors.NewWithKey(apperrors.CodeForbidden, "user.tenant_mismatch", err.Error())
 	}
 	return s.repo.List(ctx, userrepo.ListFilter{
 		TenantID: tenantID,
@@ -52,7 +52,7 @@ func (s *Service) Get(ctx context.Context, id string) (*model.User, error) {
 	}
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "user id is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "user.id_required", "user id is required")
 	}
 	item, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -66,16 +66,17 @@ func (s *Service) Create(ctx context.Context, input command.CreateUser) (*model.
 		return nil, fmt.Errorf("user service is not configured")
 	}
 	if strings.TrimSpace(input.Username) == "" {
-		return nil, apperrors.New(apperrors.CodeBadRequest, "username is required")
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "user.username_required", "username is required")
 	}
 	tenantID, err := coretenant.ResolveTenantID(ctx, input.TenantID)
 	if err != nil {
-		return nil, apperrors.New(apperrors.CodeForbidden, err.Error())
+		return nil, apperrors.NewWithKey(apperrors.CodeForbidden, "user.tenant_mismatch", err.Error())
 	}
 	entity := &model.User{
 		TenantID:     tenantID,
 		Username:     strings.TrimSpace(input.Username),
 		DisplayName:  strings.TrimSpace(input.DisplayName),
+		Language:     strings.TrimSpace(input.Language),
 		Mobile:       strings.TrimSpace(input.Mobile),
 		Email:        strings.TrimSpace(input.Email),
 		Status:       normalizeStatus(input.Status),
@@ -112,7 +113,7 @@ func (s *Service) Update(ctx context.Context, id string, input command.UpdateUse
 	}
 	tenantID, err := coretenant.ResolveTenantID(ctx, input.TenantID)
 	if err != nil {
-		return nil, apperrors.New(apperrors.CodeForbidden, err.Error())
+		return nil, apperrors.NewWithKey(apperrors.CodeForbidden, "user.tenant_mismatch", err.Error())
 	}
 	current.TenantID = tenantID
 	if strings.TrimSpace(input.Username) != "" {
@@ -120,6 +121,9 @@ func (s *Service) Update(ctx context.Context, id string, input command.UpdateUse
 	}
 	if strings.TrimSpace(input.DisplayName) != "" {
 		current.DisplayName = strings.TrimSpace(input.DisplayName)
+	}
+	if strings.TrimSpace(input.Language) != "" {
+		current.Language = strings.TrimSpace(input.Language)
 	}
 	if strings.TrimSpace(input.Mobile) != "" {
 		current.Mobile = strings.TrimSpace(input.Mobile)
@@ -145,10 +149,11 @@ func (s *Service) Update(ctx context.Context, id string, input command.UpdateUse
 
 func (s *Service) Delete(ctx context.Context, id string) error {
 	if s == nil || s.repo == nil {
-		return fmt.Errorf("user service is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "user.service_not_configured", "user service is not configured")
 	}
-	if strings.TrimSpace(id) == "" {
-		return apperrors.New(apperrors.CodeBadRequest, "user id is required")
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "user.id_required", "user id is required")
 	}
 	if err := s.repo.Delete(ctx, strings.TrimSpace(id)); err != nil {
 		return mapRepositoryError(err)
@@ -159,13 +164,13 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 func mapRepositoryError(err error) error {
 	switch {
 	case errors.Is(err, coretenant.ErrTenantMismatch):
-		return apperrors.New(apperrors.CodeForbidden, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeForbidden, "user.tenant_mismatch", err.Error())
 	case errors.Is(err, userrepo.ErrNotFound):
-		return apperrors.New(apperrors.CodeNotFound, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeNotFound, "user.not_found", err.Error())
 	case errors.Is(err, userrepo.ErrConflict):
-		return apperrors.New(apperrors.CodeConflict, err.Error())
+		return apperrors.NewWithKey(apperrors.CodeConflict, "user.conflict", err.Error())
 	default:
-		return apperrors.Wrap(err, apperrors.CodeInternal, "user operation failed")
+		return apperrors.WrapWithKey(err, apperrors.CodeInternal, "user.operation_failed", "user operation failed")
 	}
 }
 

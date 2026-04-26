@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client", "./src/types/worker-patch.d.ts"]
+    "types": ["vite/client", "element-plus/global", "./src/types/worker-patch.d.ts"]
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/types/worker-patch.d.ts"]
 }

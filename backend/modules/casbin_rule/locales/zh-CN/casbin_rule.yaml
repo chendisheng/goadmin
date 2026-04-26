@@ -1,0 +1,14 @@
+translation:
+  casbin_rule.repository_required: 授权策略仓储未配置
+  casbin_rule.service_not_configured: 授权策略服务未配置
+  casbin_rule.not_found: 授权策略不存在
+  casbin_rule.operation_failed: 授权策略操作失败
+  casbin_rule.invalid_list_request: 无效的授权策略列表请求
+  casbin_rule.invalid_create_request: 无效的授权策略创建请求
+  casbin_rule.invalid_update_request: 无效的授权策略更新请求
+  casbin_rule.gorm_repository_required: 授权策略 GORM 仓储未配置数据库
+  casbin_rule.migrate_requires_db: 授权策略迁移需要数据库
+  casbin_rule.gorm_repository_not_configured: 授权策略 GORM 仓储未配置
+  casbin_rule.item_nil: 授权策略对象不能为空
+  casbin_rule.bootstrap_route_registrar_required: 授权策略模块注册需要路由注册器
+  casbin_rule.bootstrap_db_required: 授权策略模块注册需要数据库

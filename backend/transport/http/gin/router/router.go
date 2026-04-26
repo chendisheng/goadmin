@@ -55,6 +55,7 @@ func Register(engine *gin.Engine, deps Dependencies) {
 	h := handler.NewHealthHandler(deps.Config, deps.Logger, deps.Started)
 
 	engine.Use(ginmiddleware.RequestID())
+	engine.Use(ginmiddleware.Language(deps.Config.I18n.DefaultLanguage))
 	engine.Use(ginmiddleware.AccessLog(deps.Logger))
 	engine.Use(ginmiddleware.Recovery(deps.Logger))
 	engine.Use(ginmiddleware.CORS())

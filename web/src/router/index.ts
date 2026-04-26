@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteLocationNormalized } from 'vue-router';
 
 import { appRoutes } from './routes';
+import { resolveRouteLocaleMeta } from '@/i18n';
 import { useMenuStore } from '@/store/menu';
 import { useTabsStore } from '@/store/tabs';
 import { useSessionStore } from '@/store/session';
@@ -19,7 +20,8 @@ const router = createRouter({
 router.beforeEach(async (to: RouteLocationNormalized) => {
   const sessionStore = useSessionStore();
   const menuStore = useMenuStore();
-  const pageTitle = typeof to.meta.title === 'string' && to.meta.title.trim() !== '' ? to.meta.title : appTitle;
+  const localized = resolveRouteLocaleMeta(to);
+  const pageTitle = localized.title.trim() !== '' ? localized.title : (typeof to.meta.title === 'string' && to.meta.title.trim() !== '' ? to.meta.title : appTitle);
   document.title = `${pageTitle} | ${appTitle}`;
 
   const publicRoute = to.meta.public === true || to.meta.requiresAuth === false || to.path === '/login';

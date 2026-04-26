@@ -1,0 +1,14 @@
+translation:
+  casbin_model.repository_required: 授权模型仓储未配置
+  casbin_model.service_not_configured: 授权模型服务未配置
+  casbin_model.not_found: 授权模型不存在
+  casbin_model.operation_failed: 授权模型操作失败
+  casbin_model.invalid_list_request: 无效的授权模型列表请求
+  casbin_model.invalid_create_request: 无效的授权模型创建请求
+  casbin_model.invalid_update_request: 无效的授权模型更新请求
+  casbin_model.gorm_repository_required: 授权模型 GORM 仓储未配置数据库
+  casbin_model.migrate_requires_db: 授权模型迁移需要数据库
+  casbin_model.gorm_repository_not_configured: 授权模型 GORM 仓储未配置
+  casbin_model.item_nil: 授权模型对象不能为空
+  casbin_model.bootstrap_route_registrar_required: 授权模型模块注册需要路由注册器
+  casbin_model.bootstrap_db_required: 授权模型模块注册需要数据库

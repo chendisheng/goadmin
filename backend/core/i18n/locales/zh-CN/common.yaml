@@ -1,0 +1,9 @@
+translation:
+  common.ok: 成功
+  common.created: 创建成功
+  common.deleted: 删除成功
+  common.invalid_request: 请求参数错误
+  common.permission_denied: 无权访问
+  common.authentication_required: 需要登录
+  common.internal_error: 服务器内部错误
+  common.route_not_found: 请求路由不存在

@@ -24,6 +24,7 @@ type userRecord struct {
 	TenantID     string    `gorm:"column:tenant_id;type:varchar(64);size:64;index:idx_users_tenant_username,priority:1"`
 	Username     string    `gorm:"column:username;size:128;not null;index:idx_users_tenant_username,priority:2"`
 	DisplayName  string    `gorm:"column:display_name;size:128"`
+	Language     string    `gorm:"column:language;size:32"`
 	Mobile       string    `gorm:"column:mobile;size:32"`
 	Email        string    `gorm:"column:email;size:128"`
 	Status       string    `gorm:"column:status;size:32;not null;index"`
@@ -54,6 +55,11 @@ func Migrate(db *gorm.DB) error {
 	if db.Dialector.Name() == "mysql" && db.Migrator().HasTable(&userRecord{}) {
 		if err := db.Exec("ALTER TABLE `user` MODIFY COLUMN tenant_id VARCHAR(64) NOT NULL").Error; err != nil {
 			return fmt.Errorf("ensure user.tenant_id column: %w", err)
+		}
+		if !db.Migrator().HasColumn(&userRecord{}, "language") {
+			if err := db.Exec("ALTER TABLE `user` ADD COLUMN `language` VARCHAR(32) NOT NULL DEFAULT 'zh-CN'").Error; err != nil {
+				return fmt.Errorf("ensure user.language column: %w", err)
+			}
 		}
 	}
 	return db.AutoMigrate(&userRecord{})
@@ -241,6 +247,7 @@ func toUserRecord(user model.User) (userRecord, error) {
 		TenantID:     strings.TrimSpace(user.TenantID),
 		Username:     strings.TrimSpace(user.Username),
 		DisplayName:  strings.TrimSpace(user.DisplayName),
+		Language:     strings.TrimSpace(user.Language),
 		Mobile:       strings.TrimSpace(user.Mobile),
 		Email:        strings.TrimSpace(user.Email),
 		Status:       status,
@@ -258,7 +265,7 @@ func (r userRecord) toModel() (model.User, error) {
 			return model.User{}, fmt.Errorf("unmarshal user role codes: %w", err)
 		}
 	}
-	return model.User{ID: strings.TrimSpace(r.ID), TenantID: strings.TrimSpace(r.TenantID), Username: strings.TrimSpace(r.Username), DisplayName: strings.TrimSpace(r.DisplayName), Mobile: strings.TrimSpace(r.Mobile), Email: strings.TrimSpace(r.Email), Status: model.Status(strings.TrimSpace(r.Status)), RoleCodes: append([]string(nil), codes...), PasswordHash: strings.TrimSpace(r.PasswordHash), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}, nil
+	return model.User{ID: strings.TrimSpace(r.ID), TenantID: strings.TrimSpace(r.TenantID), Username: strings.TrimSpace(r.Username), DisplayName: strings.TrimSpace(r.DisplayName), Language: strings.TrimSpace(r.Language), Mobile: strings.TrimSpace(r.Mobile), Email: strings.TrimSpace(r.Email), Status: model.Status(strings.TrimSpace(r.Status)), RoleCodes: append([]string(nil), codes...), PasswordHash: strings.TrimSpace(r.PasswordHash), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}, nil
 }
 
 func mapUserRecords(rows []userRecord) ([]model.User, error) {

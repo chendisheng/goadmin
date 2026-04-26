@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	apperrors "goadmin/core/errors"
 	"goadmin/modules/upload/domain/model"
 	uploadrepo "goadmin/modules/upload/domain/repository"
 
@@ -48,21 +49,21 @@ const storageSettingKeyDefaultDriver = "default_storage_driver"
 
 func New(db *gorm.DB) (*Repository, error) {
 	if db == nil {
-		return nil, fmt.Errorf("upload repository requires db")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_required", "upload repository requires db")
 	}
 	return &Repository{db: db}, nil
 }
 
 func Migrate(db *gorm.DB) error {
 	if db == nil {
-		return fmt.Errorf("upload migrate requires db")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.migrate_requires_db", "upload migrate requires db")
 	}
 	return db.AutoMigrate(&record{}, &model.StorageSetting{})
 }
 
 func (r *Repository) List(ctx context.Context, filter uploadrepo.ListFilter) ([]model.FileAsset, int64, error) {
 	if r == nil || r.db == nil {
-		return nil, 0, fmt.Errorf("upload repository is not configured")
+		return nil, 0, apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_not_configured", "upload repository is not configured")
 	}
 	base := r.db.WithContext(ctx).Model(&record{})
 	if kw := strings.TrimSpace(strings.ToLower(filter.Keyword)); kw != "" {
@@ -108,7 +109,7 @@ func (r *Repository) List(ctx context.Context, filter uploadrepo.ListFilter) ([]
 
 func (r *Repository) Get(ctx context.Context, id string) (*model.FileAsset, error) {
 	if r == nil || r.db == nil {
-		return nil, fmt.Errorf("upload repository is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_not_configured", "upload repository is not configured")
 	}
 	var row record
 	if err := r.db.WithContext(ctx).First(&row, "id = ?", strings.TrimSpace(id)).Error; err != nil {
@@ -120,10 +121,10 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.FileAsset, erro
 
 func (r *Repository) Create(ctx context.Context, item *model.FileAsset) (*model.FileAsset, error) {
 	if r == nil || r.db == nil {
-		return nil, fmt.Errorf("upload repository is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_not_configured", "upload repository is not configured")
 	}
 	if item == nil {
-		return nil, fmt.Errorf("upload file asset is nil")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.file_asset_nil", "upload file asset is nil")
 	}
 	rec := toRecord(*item)
 	if strings.TrimSpace(rec.Id) == "" {
@@ -138,10 +139,10 @@ func (r *Repository) Create(ctx context.Context, item *model.FileAsset) (*model.
 
 func (r *Repository) Update(ctx context.Context, item *model.FileAsset) (*model.FileAsset, error) {
 	if r == nil || r.db == nil {
-		return nil, fmt.Errorf("upload repository is not configured")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_not_configured", "upload repository is not configured")
 	}
 	if item == nil {
-		return nil, fmt.Errorf("upload file asset is nil")
+		return nil, apperrors.NewWithKey(apperrors.CodeInternal, "upload.file_asset_nil", "upload file asset is nil")
 	}
 	rec := toRecord(*item)
 	if err := r.db.WithContext(ctx).Save(&rec).Error; err != nil {
@@ -153,7 +154,7 @@ func (r *Repository) Update(ctx context.Context, item *model.FileAsset) (*model.
 
 func (r *Repository) Delete(ctx context.Context, id string) error {
 	if r == nil || r.db == nil {
-		return fmt.Errorf("upload repository is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_not_configured", "upload repository is not configured")
 	}
 	var row record
 	if err := r.db.WithContext(ctx).First(&row, "id = ?", strings.TrimSpace(id)).Error; err != nil {
@@ -192,7 +193,7 @@ func (r *Repository) Unbind(ctx context.Context, id string) (*model.FileAsset, e
 
 func (r *Repository) DefaultStorageDriver(ctx context.Context, fallback string) (string, error) {
 	if r == nil || r.db == nil {
-		return strings.TrimSpace(fallback), fmt.Errorf("upload repository is not configured")
+		return strings.TrimSpace(fallback), apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_not_configured", "upload repository is not configured")
 	}
 	var row model.StorageSetting
 	if err := r.db.WithContext(ctx).First(&row, "setting_key = ?", storageSettingKeyDefaultDriver).Error; err != nil {
@@ -213,11 +214,11 @@ func (r *Repository) DefaultStorageDriver(ctx context.Context, fallback string) 
 
 func (r *Repository) SetDefaultStorageDriver(ctx context.Context, driver string) error {
 	if r == nil || r.db == nil {
-		return fmt.Errorf("upload repository is not configured")
+		return apperrors.NewWithKey(apperrors.CodeInternal, "upload.repository_not_configured", "upload repository is not configured")
 	}
 	driver = strings.TrimSpace(driver)
 	if driver == "" {
-		return fmt.Errorf("upload default storage driver is required")
+		return apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.default_storage_driver_required", "upload default storage driver is required")
 	}
 	row := model.StorageSetting{}
 	if err := r.db.WithContext(ctx).First(&row, "setting_key = ?", storageSettingKeyDefaultDriver).Error; err != nil {

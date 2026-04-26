@@ -52,6 +52,12 @@ upload:
 tenant:
   enabled: true
 
+i18n:
+  default_language: zh-CN
+  supported_languages:
+    - zh-CN
+    - en-US
+
 auth:
   jwt:
     secret: dev-secret-change-me
@@ -65,5 +71,6 @@ auth:
         password: admin123
         tenant_id: system
         display_name: System Admin
+        language: zh-CN
         roles:
           - admin

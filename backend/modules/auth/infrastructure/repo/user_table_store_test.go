@@ -17,7 +17,7 @@ func TestUserTableStoreAuthenticateFromUserTable(t *testing.T) {
 
 	db := openTestDB(t)
 	createUserAuthTables(t, db)
-	insertUserRow(t, db, "u1", "system", "alice", "Alice", "sha256:"+sha256Hex("123456"), `["user"]`)
+	insertUserRow(t, db, "u1", "system", "alice", "Alice", "zh-CN", "sha256:"+sha256Hex("123456"), `["user"]`)
 	insertRoleRow(t, db, "r1", "system", "user", `["menu-users"]`)
 	insertMenuRow(t, db, "menu-users", "user:list")
 
@@ -42,7 +42,7 @@ func TestUserTableStoreAuthenticateAdminUsesWildcard(t *testing.T) {
 
 	db := openTestDB(t)
 	createUserAuthTables(t, db)
-	insertUserRow(t, db, "u1", "system", "admin", "Admin", "sha256:"+sha256Hex("123456"), `["admin"]`)
+	insertUserRow(t, db, "u1", "system", "admin", "Admin", "zh-CN", "sha256:"+sha256Hex("123456"), `["admin"]`)
 
 	store := NewUserTableStore(db, nil)
 	identity, err := store.Authenticate(context.Background(), "admin", "123456")
@@ -77,9 +77,12 @@ func TestUserTableStoreFallsBackToBootstrapCredentials(t *testing.T) {
 func openTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("file:auth_repo_test_"+t.Name()+"?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite db: %v", err)
+	}
+	if err := db.Exec(`PRAGMA foreign_keys = ON`).Error; err != nil {
+		t.Fatalf("enable sqlite foreign keys: %v", err)
 	}
 	return db
 }
@@ -88,23 +91,24 @@ func createUserAuthTables(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
 	statements := []string{
-		`CREATE TABLE user (
+		`CREATE TABLE IF NOT EXISTS user (
 			id TEXT PRIMARY KEY,
 			tenant_id TEXT,
 			username TEXT NOT NULL,
 			display_name TEXT,
+			language TEXT,
 			password_hash TEXT,
 			role_codes TEXT NOT NULL,
 			created_at DATETIME,
 			updated_at DATETIME
 		)`,
-		`CREATE TABLE role (
+		`CREATE TABLE IF NOT EXISTS role (
 			id TEXT PRIMARY KEY,
 			tenant_id TEXT,
 			code TEXT NOT NULL,
 			menu_ids TEXT NOT NULL
 		)`,
-		`CREATE TABLE menu (
+		`CREATE TABLE IF NOT EXISTS menu (
 			id TEXT PRIMARY KEY,
 			permission TEXT
 		)`,
@@ -116,10 +120,10 @@ func createUserAuthTables(t *testing.T, db *gorm.DB) {
 	}
 }
 
-func insertUserRow(t *testing.T, db *gorm.DB, id, tenantID, username, displayName, passwordHash, roleCodes string) {
+func insertUserRow(t *testing.T, db *gorm.DB, id, tenantID, username, displayName, language, passwordHash, roleCodes string) {
 	t.Helper()
 
-	if err := db.Exec(`INSERT INTO user (id, tenant_id, username, display_name, password_hash, role_codes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, id, tenantID, username, displayName, passwordHash, roleCodes).Error; err != nil {
+	if err := db.Exec(`INSERT INTO user (id, tenant_id, username, display_name, language, password_hash, role_codes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, id, tenantID, username, displayName, language, passwordHash, roleCodes).Error; err != nil {
 		t.Fatalf("insert user row: %v", err)
 	}
 }

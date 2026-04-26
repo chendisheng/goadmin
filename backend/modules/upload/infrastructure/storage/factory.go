@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"goadmin/core/config"
+	apperrors "goadmin/core/errors"
 	storagecontract "goadmin/modules/upload/infrastructure/storage/contract"
 	"goadmin/modules/upload/infrastructure/storage/local"
 	"goadmin/modules/upload/infrastructure/storage/objectstore"
@@ -58,6 +59,6 @@ func NewDriverWithDB(db *gorm.DB, cfg config.UploadStorageConfig) (storagecontra
 		}
 		return driver, nil
 	default:
-		return nil, fmt.Errorf("unsupported upload storage driver %q", cfg.Driver)
+		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "upload.unsupported_storage_driver", fmt.Sprintf("unsupported upload storage driver %q", cfg.Driver))
 	}
 }

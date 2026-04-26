@@ -3,7 +3,11 @@ import 'vue-router';
 declare module 'vue-router' {
   interface RouteMeta {
     title?: string;
+    titleKey?: string;
+    titleDefault?: string;
     subtitle?: string;
+    subtitleKey?: string;
+    subtitleDefault?: string;
     icon?: string;
     componentName?: string;
     alwaysShow?: boolean;

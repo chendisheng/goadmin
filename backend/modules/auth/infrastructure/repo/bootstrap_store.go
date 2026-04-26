@@ -91,6 +91,7 @@ func (s *BootstrapStore) Authenticate(_ context.Context, username, password stri
 		TenantID:    strings.TrimSpace(user.TenantID),
 		Username:    fallback(user.Username, key),
 		DisplayName: fallback(user.DisplayName, fallback(user.Username, key)),
+		Language:    strings.TrimSpace(user.Language),
 		Roles:       append([]string(nil), user.Roles...),
 		Permissions: resolvePermissions(user),
 	}
@@ -105,6 +106,9 @@ func (s *BootstrapStore) Authenticate(_ context.Context, username, password stri
 	}
 	if len(identity.Roles) == 0 {
 		identity.Roles = []string{"user"}
+	}
+	if strings.TrimSpace(identity.Language) == "" {
+		identity.Language = "zh-CN"
 	}
 	return identity, nil
 }

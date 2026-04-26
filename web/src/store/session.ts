@@ -8,9 +8,17 @@ const REFRESH_TOKEN_KEY = 'goadmin.refresh_token';
 const TOKEN_TYPE_KEY = 'goadmin.token_type';
 const ACCESS_EXPIRES_AT_KEY = 'goadmin.access_expires_at';
 const REFRESH_EXPIRES_AT_KEY = 'goadmin.refresh_expires_at';
+const LANGUAGE_KEY = 'goadmin.language';
 
 function canUseStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+function readLanguageValue(): string {
+  if (!canUseStorage()) {
+    return 'zh-CN';
+  }
+  return window.localStorage.getItem(LANGUAGE_KEY) || 'zh-CN';
 }
 
 function readAccessToken(): string {
@@ -69,6 +77,18 @@ function persistNumberValue(key: string, value: number): void {
   window.localStorage.setItem(key, String(value));
 }
 
+function persistLanguageValue(value: string): void {
+  if (!canUseStorage()) {
+    return;
+  }
+  const language = value.trim();
+  if (language === '') {
+    window.localStorage.removeItem(LANGUAGE_KEY);
+    return;
+  }
+  window.localStorage.setItem(LANGUAGE_KEY, language);
+}
+
 export function getStoredAccessToken(): string {
   return readAccessToken();
 }
@@ -79,6 +99,7 @@ export const useSessionStore = defineStore('session', () => {
   const tokenType = ref(readStringValue(TOKEN_TYPE_KEY) || 'Bearer');
   const accessExpiresAt = ref(readNumberValue(ACCESS_EXPIRES_AT_KEY));
   const refreshExpiresAt = ref(readNumberValue(REFRESH_EXPIRES_AT_KEY));
+  const language = ref(readLanguageValue());
   const currentUser = ref<AuthUser | null>(null);
 
   const isAuthenticated = computed(() => accessToken.value.trim().length > 0);
@@ -105,6 +126,7 @@ export const useSessionStore = defineStore('session', () => {
     tokenType.value = readStringValue(TOKEN_TYPE_KEY) || 'Bearer';
     accessExpiresAt.value = readNumberValue(ACCESS_EXPIRES_AT_KEY);
     refreshExpiresAt.value = readNumberValue(REFRESH_EXPIRES_AT_KEY);
+    language.value = readLanguageValue();
     currentUser.value = null;
   }
 
@@ -115,12 +137,14 @@ export const useSessionStore = defineStore('session', () => {
     accessExpiresAt.value = Math.max(0, Math.trunc(Date.now() / 1000) + Math.max(0, response.expires_in));
     refreshExpiresAt.value = Math.max(0, Math.trunc(Date.now() / 1000) + Math.max(0, response.refresh_expires_in));
     currentUser.value = response.user;
+    language.value = response.user.language?.trim() || language.value || 'zh-CN';
 
     persistAccessToken(accessToken.value);
     persistStringValue(REFRESH_TOKEN_KEY, refreshToken.value);
     persistStringValue(TOKEN_TYPE_KEY, tokenType.value);
     persistNumberValue(ACCESS_EXPIRES_AT_KEY, accessExpiresAt.value);
     persistNumberValue(REFRESH_EXPIRES_AT_KEY, refreshExpiresAt.value);
+    persistLanguageValue(language.value);
   }
 
   function setCurrentUser(user: AuthUser | null) {
@@ -146,12 +170,18 @@ export const useSessionStore = defineStore('session', () => {
     persistNumberValue(REFRESH_EXPIRES_AT_KEY, 0);
   }
 
+  function setLanguage(value: string) {
+    language.value = value.trim() || 'zh-CN';
+    persistLanguageValue(language.value);
+  }
+
   return {
     accessToken,
     refreshToken,
     tokenType,
     accessExpiresAt,
     refreshExpiresAt,
+    language,
     currentUser,
     isAuthenticated,
     displayName,
@@ -162,6 +192,7 @@ export const useSessionStore = defineStore('session', () => {
     applyLoginResponse,
     setCurrentUser,
     setAccessToken,
+    setLanguage,
     clearSession,
   };
 });

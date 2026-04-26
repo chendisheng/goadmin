@@ -13,6 +13,8 @@ export const appRoutes: RouteRecordRaw[] = [
     component: LoginView,
     meta: {
       title: '登录',
+      titleKey: 'route.login',
+      titleDefault: '登录',
       public: true,
       hideInMenu: true,
       requiresAuth: false,
@@ -28,6 +30,11 @@ export const appRoutes: RouteRecordRaw[] = [
     component: AppLayout,
     meta: {
       title: 'GoAdmin',
+      titleKey: 'app.title',
+      titleDefault: 'GoAdmin',
+      subtitle: 'Frontend Core',
+      subtitleKey: 'app.subtitle',
+      subtitleDefault: 'Frontend Core',
       requiresAuth: true,
       hideInMenu: true,
     },
@@ -38,6 +45,8 @@ export const appRoutes: RouteRecordRaw[] = [
         component: DashboardView,
         meta: {
           title: '工作台',
+          titleKey: 'route.dashboard',
+          titleDefault: '工作台',
           requiresAuth: true,
           hideInMenu: true,
         },
@@ -48,6 +57,8 @@ export const appRoutes: RouteRecordRaw[] = [
         component: PluginCenterDetailView,
         meta: {
           title: '插件详情',
+          titleKey: 'route.plugin_detail',
+          titleDefault: '插件详情',
           requiresAuth: true,
           hideInMenu: true,
         },
@@ -60,6 +71,8 @@ export const appRoutes: RouteRecordRaw[] = [
     component: NotFoundView,
     meta: {
       title: '页面不存在',
+      titleKey: 'route.not_found',
+      titleDefault: '页面不存在',
       hideInMenu: true,
     },
   },

@@ -1,0 +1,8 @@
+translation:
+  menu.id_required: menu id is required
+  menu.name_required: menu name is required
+  menu.path_required: menu path is required
+  menu.not_found: menu not found
+  menu.conflict: menu already exists
+  menu.operation_failed: menu operation failed
+  menu.service_not_configured: menu service is not configured

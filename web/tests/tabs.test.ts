@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { createMemoryHistory, createRouter, defineComponent, type RouteRecordRaw } from 'vue-router';
+import { defineComponent } from 'vue';
+import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router';
 
 import { useTabsStore } from '../src/store/tabs';
 import type { WorkspaceTabRecord, WorkspaceTabSnapshot } from '../src/types/tabs';

@@ -1,0 +1,8 @@
+translation:
+  codegen.download.service_required: 下载服务未配置
+  codegen.download.dsl_required: 需要 DSL 内容
+  codegen.download.database_required: 需要数据库连接
+  codegen.download.task_id_required: 任务 ID 不能为空
+  codegen.download.artifact_expired: 生成产物已过期
+  codegen.download.artifact_not_found: 未找到生成产物
+  codegen.download.load_artifact_failed: 加载生成产物失败

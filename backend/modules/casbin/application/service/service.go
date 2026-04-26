@@ -1,11 +1,13 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	corebootstrapcontract "goadmin/core/bootstrap/contract"
 	"goadmin/core/config"
+	corei18n "goadmin/core/i18n"
 )
 
 type Config struct {
@@ -41,6 +43,9 @@ func (s *Service) Status() Status {
 	}
 	casbinCfg := s.cfg.Auth.Casbin
 	summary := "authorization module is not configured"
+	if translated := corei18n.DefaultRegistry().MustTranslate(context.Background(), "casbin.summary.not_configured"); translated != "casbin.summary.not_configured" {
+		summary = translated
+	}
 	if s.authorizationRuntime != nil {
 		summary = s.authorizationRuntime.String()
 	}

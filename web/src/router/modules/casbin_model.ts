@@ -4,6 +4,8 @@ const route = {
   component: () => import('@/views/casbin_model/index.vue'),
   meta: {
     title: 'models',
+    titleKey: 'route.casbin_models',
+    titleDefault: 'Model management',
     icon: 'menu',
   },
 }

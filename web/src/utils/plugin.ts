@@ -66,26 +66,26 @@ const PLUGIN_PERMISSION_PRESET_KEY = 'goadmin.plugin.permission.presets';
 export const pluginPermissionTemplates: PluginPermissionTemplate[] = [
   {
     key: 'read_only',
-    label: '只读模板',
-    description: '为菜单批量生成查看权限',
+    label: 'Read-only template',
+    description: 'Batch-generate view permissions for menus',
     actions: ['view'],
   },
   {
     key: 'crud',
-    label: 'CRUD 模板',
-    description: '为菜单批量生成查看、创建、编辑和删除权限',
+    label: 'CRUD template',
+    description: 'Batch-generate view, create, edit, and delete permissions for menus',
     actions: ['view', 'create', 'update', 'delete'],
   },
   {
     key: 'manage',
-    label: '管理模板',
-    description: '为菜单批量生成查看、编辑和删除权限',
+    label: 'Management template',
+    description: 'Batch-generate view, edit, and delete permissions for menus',
     actions: ['view', 'update', 'delete'],
   },
   {
     key: 'button_ops',
-    label: '按钮模板',
-    description: '为按钮类菜单批量生成创建、编辑和删除权限',
+    label: 'Button template',
+    description: 'Batch-generate create, edit, and delete permissions for button menus',
     actions: ['create', 'update', 'delete'],
   },
 ];
@@ -128,7 +128,7 @@ export function removePluginPermissionPreset(id: string): PluginPermissionPreset
 export function groupPluginPermissionPresets(presets: PluginPermissionPreset[]): PluginPermissionPresetGroup[] {
   const groups = new Map<string, PluginPermissionPreset[]>();
   for (const preset of presets) {
-    const key = normalizeName(preset.pluginName) || '未分组';
+    const key = normalizeName(preset.pluginName) || 'Ungrouped';
     const current = groups.get(key) ?? [];
     current.push(preset);
     groups.set(key, current);

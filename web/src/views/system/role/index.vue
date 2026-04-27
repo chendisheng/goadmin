@@ -6,6 +6,7 @@ import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { fetchMenuTree } from '@/api/system-menus';
 import { createRole, deleteRole, fetchRoles, updateRole } from '@/api/roles';
+import { useAppI18n } from '@/i18n';
 import type { MenuItem, RoleFormState, RoleItem } from '@/types/admin';
 import { flattenMenuItems, formatDateTime, statusTagType } from '@/utils/admin';
 
@@ -17,6 +18,7 @@ const rows = ref<RoleItem[]>([]);
 const total = ref(0);
 const menuTree = ref<MenuItem[]>([]);
 const editingId = ref('');
+const { t } = useAppI18n();
 
 const query = reactive({
   keyword: '',
@@ -35,6 +37,10 @@ const defaultForm = (): RoleFormState => ({
 });
 
 const form = reactive<RoleFormState>(defaultForm());
+
+function getMenuDisplayTitle(item: Pick<MenuItem, 'name' | 'titleKey' | 'titleDefault'>): string {
+  return t(item.titleKey || '', item.titleDefault || item.name || t('menu.unnamed', 'Unnamed menu'));
+}
 
 const menuOptions = computed(() => flattenMenuItems(menuTree.value));
 
@@ -84,12 +90,12 @@ function openEdit(row: RoleItem) {
 }
 
 function statusLabel(status: string): string {
-  return status === 'inactive' ? '禁用' : '启用';
+  return status === 'inactive' ? t('role.status.inactive', 'Disabled') : t('role.status.active', 'Enabled');
 }
 
 async function submitForm() {
   if (form.name.trim() === '' || form.code.trim() === '') {
-    ElMessage.warning('请输入角色名称和编码');
+    ElMessage.warning(t('role.validation_required', 'Enter the role name and code'));
     return;
   }
   dialogLoading.value = true;
@@ -106,10 +112,10 @@ async function submitForm() {
 
     if (editingId.value) {
       await updateRole(editingId.value, payload);
-      ElMessage.success('角色已更新');
+      ElMessage.success(t('role.updated', 'Role updated'));
     } else {
       await createRole(payload);
-      ElMessage.success('角色已创建');
+      ElMessage.success(t('role.created', 'Role created'));
     }
 
     dialogVisible.value = false;
@@ -120,13 +126,13 @@ async function submitForm() {
 }
 
 async function removeRow(row: RoleItem) {
-  await ElMessageBox.confirm(`确认删除角色 ${row.name} 吗？`, '删除角色', {
+  await ElMessageBox.confirm(t('role.confirm_delete', 'Delete role {name}?', { name: row.name }), t('role.delete_title', 'Delete role'), {
     type: 'warning',
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
+    confirmButtonText: t('common.delete', 'Delete'),
+    cancelButtonText: t('common.cancel', 'Cancel'),
   });
   await deleteRole(row.id);
-  ElMessage.success('角色已删除');
+  ElMessage.success(t('role.deleted', 'Role deleted'));
   await loadRoles();
 }
 
@@ -160,53 +166,53 @@ onMounted(() => {
 
 <template>
   <div class="admin-page">
-    <AdminTable title="角色管理" description="维护角色基础信息和角色绑定菜单。" :loading="tableLoading">
+    <AdminTable :title="t('role.title', 'Role management')" :description="t('role.description', 'Maintain role basics and menu bindings.')" :loading="tableLoading">
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadRoles">刷新</el-button>
-        <el-button v-permission="'role:create'" type="primary" @click="openCreate">新增角色</el-button>
+        <el-button :loading="tableLoading" @click="loadRoles">{{ t('common.refresh', 'Refresh') }}</el-button>
+        <el-button v-permission="'role:create'" type="primary" @click="openCreate">{{ t('common.create', 'Create') }}</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
-          <el-form-item label="关键字">
-            <el-input v-model="query.keyword" clearable placeholder="角色名称 / 编码" />
+          <el-form-item :label="t('role.keyword_label', 'Keyword')">
+            <el-input v-model="query.keyword" clearable :placeholder="t('role.keyword_placeholder', 'Role name / code')" />
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="query.status" clearable placeholder="全部状态" style="width: 180px">
-              <el-option label="启用" value="active" />
-              <el-option label="禁用" value="inactive" />
+          <el-form-item :label="t('role.status_label', 'Status')">
+            <el-select v-model="query.status" clearable :placeholder="t('role.status_placeholder', 'All statuses')" style="width: 180px">
+              <el-option :label="t('role.status.active', 'Enabled')" value="active" />
+              <el-option :label="t('role.status.inactive', 'Disabled')" value="inactive" />
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="handleReset">重置</el-button>
+            <el-button type="primary" @click="handleSearch">{{ t('common.search', 'Search') }}</el-button>
+            <el-button @click="handleReset">{{ t('common.reset', 'Reset') }}</el-button>
           </el-form-item>
         </el-form>
       </template>
 
       <el-table :data="rows" border row-key="id" v-loading="tableLoading">
-        <el-table-column prop="name" label="角色名称" min-width="140" />
-        <el-table-column prop="code" label="角色编码" min-width="140" />
-        <el-table-column label="状态" width="100">
+        <el-table-column prop="name" :label="t('role.name', 'Role name')" min-width="140" />
+        <el-table-column prop="code" :label="t('role.code', 'Role code')" min-width="140" />
+        <el-table-column :label="t('role.status', 'Status')" width="100">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)" effect="plain">{{ statusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="220" show-overflow-tooltip />
-        <el-table-column label="菜单数量" width="110">
+        <el-table-column prop="remark" :label="t('role.remark', 'Remark')" min-width="220" show-overflow-tooltip />
+        <el-table-column :label="t('role.menu_count', 'Menu count')" width="110">
           <template #default="{ row }">
             {{ row.menu_ids?.length ?? 0 }}
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column :label="t('role.created_at', 'Created at')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column :label="t('role.actions', 'Actions')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'role:update'" link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button v-permission="'role:delete'" link type="danger" @click="removeRow(row)">删除</el-button>
+            <el-button v-permission="'role:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', 'Edit') }}</el-button>
+            <el-button v-permission="'role:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', 'Delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -229,39 +235,39 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑角色' : '新增角色'"
+      :title="editingId ? t('role.edit_title', 'Edit role') : t('role.create_title', 'New role')"
       :loading="dialogLoading"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form">
-        <el-form-item label="角色名称" required>
-          <el-input v-model="form.name" placeholder="请输入角色名称" />
+        <el-form-item :label="t('role.name', 'Role name')" required>
+          <el-input v-model="form.name" :placeholder="t('role.name_placeholder', 'Enter the role name')" />
         </el-form-item>
-        <el-form-item label="角色编码" required>
-          <el-input v-model="form.code" placeholder="请输入角色编码" />
+        <el-form-item :label="t('role.code', 'Role code')" required>
+          <el-input v-model="form.code" :placeholder="t('role.code_placeholder', 'Enter the role code')" />
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item :label="t('role.status', 'Status')">
           <el-select v-model="form.status" style="width: 100%">
-            <el-option label="启用" value="active" />
-            <el-option label="禁用" value="inactive" />
+            <el-option :label="t('role.status.active', 'Enabled')" value="active" />
+            <el-option :label="t('role.status.inactive', 'Disabled')" value="inactive" />
           </el-select>
         </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+        <el-form-item :label="t('role.remark', 'Remark')">
+          <el-input v-model="form.remark" type="textarea" :rows="3" :placeholder="t('role.remark_placeholder', 'Enter a remark')" />
         </el-form-item>
-        <el-form-item label="菜单权限">
+        <el-form-item :label="t('role.menu_permissions', 'Menu permissions')">
           <el-select
             v-model="form.menu_ids"
             multiple
             clearable
             filterable
             :loading="menuLoading"
-            placeholder="选择角色可访问的菜单"
+            :placeholder="t('role.menu_permissions_placeholder', 'Select the menus this role can access')"
           >
             <el-option
               v-for="menu in menuOptions"
               :key="menu.id"
-              :label="`${menu.name} (${menu.path})`"
+              :label="`${getMenuDisplayTitle(menu)} (${menu.path})`"
               :value="menu.id"
             />
           </el-select>

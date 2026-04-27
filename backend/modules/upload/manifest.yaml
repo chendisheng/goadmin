@@ -28,6 +28,8 @@ routes:
     path: /api/v1/uploads/files/:id/bind
 menus:
   - name: 文件管理
+    title_key: route.upload
+    title_default: File management
     path: /system/upload
     component: system/upload/index
     icon: upload
@@ -38,6 +40,8 @@ menus:
     enabled: true
     sort: 10
   - name: 文件列表
+    title_key: route.upload_files
+    title_default: File list
     path: /system/upload/files
     parent_path: /system/upload
     component: system/upload/index

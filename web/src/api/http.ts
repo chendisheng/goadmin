@@ -22,15 +22,15 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
 function resolveHttpErrorMessage(code: number, message = ''): string {
   const normalizedMessage = message.trim();
   if (code === 401) {
-    return normalizedMessage || translate('common.authentication_required', '需要登录');
+    return normalizedMessage || translate('common.authentication_required', 'Authentication required');
   }
   if (code === 403) {
-    return normalizedMessage || translate('common.permission_denied', '无权访问');
+    return normalizedMessage || translate('common.permission_denied', 'Access denied');
   }
   if (normalizedMessage !== '') {
     return normalizedMessage;
   }
-  return translate('common.request_failed', '请求失败');
+  return translate('common.request_failed', 'Request failed');
 }
 
 function resolveNetworkErrorMessage(message = ''): string {
@@ -38,7 +38,7 @@ function resolveNetworkErrorMessage(message = ''): string {
   if (normalizedMessage !== '') {
     return normalizedMessage;
   }
-  return translate('common.network_error', '网络错误');
+  return translate('common.network_error', 'Network error');
 }
 
 function isApiEnvelope<T = unknown>(value: unknown): value is ApiEnvelope<T> {

@@ -7,20 +7,22 @@ type Permission struct {
 }
 
 type Menu struct {
-	Plugin      string `json:"plugin,omitempty"`
-	ID          string `json:"id,omitempty"`
-	ParentID    string `json:"parent_id,omitempty"`
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	Component   string `json:"component,omitempty"`
-	Icon        string `json:"icon,omitempty"`
-	Sort        int    `json:"sort"`
-	Permission  string `json:"permission,omitempty"`
-	Type        string `json:"type,omitempty"`
-	Visible     bool   `json:"visible"`
-	Enabled     bool   `json:"enabled"`
-	Redirect    string `json:"redirect,omitempty"`
-	ExternalURL string `json:"external_url,omitempty"`
+	Plugin       string `json:"plugin,omitempty"`
+	ID           string `json:"id,omitempty"`
+	ParentID     string `json:"parent_id,omitempty"`
+	Name         string `json:"name"`
+	TitleKey     string `json:"titleKey,omitempty"`
+	TitleDefault string `json:"titleDefault,omitempty"`
+	Path         string `json:"path"`
+	Component    string `json:"component,omitempty"`
+	Icon         string `json:"icon,omitempty"`
+	Sort         int    `json:"sort"`
+	Permission   string `json:"permission,omitempty"`
+	Type         string `json:"type,omitempty"`
+	Visible      bool   `json:"visible"`
+	Enabled      bool   `json:"enabled"`
+	Redirect     string `json:"redirect,omitempty"`
+	ExternalURL  string `json:"external_url,omitempty"`
 }
 
 type CreateRequest struct {

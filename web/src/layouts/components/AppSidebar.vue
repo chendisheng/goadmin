@@ -40,7 +40,7 @@ const menuStore = useMenuStore();
 
     <div class="app-sidebar__footer">
       <el-button class="app-sidebar__toggle" text @click="appStore.toggleSidebar()">
-        {{ appStore.sidebarCollapsed ? t('common.expand_sidebar', '展开侧栏') : t('common.collapse_sidebar', '收起侧栏') }}
+        {{ appStore.sidebarCollapsed ? t('common.expand_sidebar', 'Expand sidebar') : t('common.collapse_sidebar', 'Collapse sidebar') }}
       </el-button>
     </div>
   </el-aside>

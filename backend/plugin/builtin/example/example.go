@@ -52,33 +52,37 @@ func (p *Plugin) Register(ctx *pluginiface.Context, registrar pluginiface.Regist
 	}
 
 	if err := registrar.AddMenu(pluginiface.Menu{
-		ID:         "plugin-example-root",
-		Name:       pluginTitle,
-		Path:       "/plugin/example",
-		Component:  "Layout",
-		Icon:       "plug",
-		Sort:       100,
-		Permission: "plugin:example:view",
-		Type:       pluginiface.MenuTypeDirectory,
-		Visible:    true,
-		Enabled:    true,
-		Redirect:   "/plugin/example/home",
+		ID:           "plugin-example-root",
+		Name:         pluginTitle,
+		TitleKey:     "route.plugin_example",
+		TitleDefault: "Plugin example",
+		Path:         "/plugin/example",
+		Component:    "Layout",
+		Icon:         "plug",
+		Sort:         100,
+		Permission:   "plugin:example:view",
+		Type:         pluginiface.MenuTypeDirectory,
+		Visible:      true,
+		Enabled:      true,
+		Redirect:     "/plugin/example/home",
 	}); err != nil {
 		return err
 	}
 
 	if err := registrar.AddMenu(pluginiface.Menu{
-		ID:         "plugin-example-home",
-		ParentID:   "plugin-example-root",
-		Name:       pluginHomeTitle,
-		Path:       "/plugin/example/home",
-		Component:  "view/plugin/example/index",
-		Icon:       "sparkles",
-		Sort:       1,
-		Permission: "plugin:example:view",
-		Type:       pluginiface.MenuTypeMenu,
-		Visible:    true,
-		Enabled:    true,
+		ID:           "plugin-example-home",
+		ParentID:     "plugin-example-root",
+		Name:         pluginHomeTitle,
+		TitleKey:     "route.plugin_example_home",
+		TitleDefault: "Home",
+		Path:         "/plugin/example/home",
+		Component:    "view/plugin/example/index",
+		Icon:         "sparkles",
+		Sort:         1,
+		Permission:   "plugin:example:view",
+		Type:         pluginiface.MenuTypeMenu,
+		Visible:      true,
+		Enabled:      true,
 	}); err != nil {
 		return err
 	}

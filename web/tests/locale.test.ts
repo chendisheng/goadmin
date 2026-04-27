@@ -22,6 +22,14 @@ describe('useLocaleStore', () => {
     expect(localStorage.getItem('goadmin.language')).toBe('en-US');
   });
 
+  it('translates the shared unnamed menu fallback in zh-CN', () => {
+    const localeStore = useLocaleStore();
+
+    localeStore.setLanguage('zh-CN');
+
+    expect(translate('menu.unnamed', 'Unnamed menu')).toBe('未命名菜单');
+  });
+
   it('syncs from the authenticated user language during session restore', () => {
     const localeStore = useLocaleStore();
     const sessionStore = useSessionStore();
@@ -39,6 +47,12 @@ describe('useLocaleStore', () => {
     localeStore.setLanguage('en-US');
 
     expect(translate('menu.title', 'Menu management')).toBe('Menu management');
+    expect(translate('route.book', 'Book')).toBe('Book management');
+    expect(translate('route.codegen_console', 'CodeGen console')).toBe('CodeGen console');
+    expect(translate('route.casbin_models', 'Model management')).toBe('Model management');
+    expect(translate('route.casbin_rules', 'Policy management')).toBe('Policy management');
+    expect(translate('role.title', 'Role management')).toBe('Role management');
+    expect(translate('codegen.mode.delete', 'Delete')).toBe('Delete');
     expect(
       resolveRouteLocaleMeta({
         path: '/dashboard',

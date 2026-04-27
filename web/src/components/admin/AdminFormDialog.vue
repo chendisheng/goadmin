@@ -11,8 +11,8 @@ withDefaults(
   {
     width: '720px',
     loading: false,
-    confirmText: '保存',
-    cancelText: '取消',
+    confirmText: 'Save',
+    cancelText: 'Cancel',
   },
 );
 

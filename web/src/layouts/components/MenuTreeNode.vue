@@ -14,7 +14,7 @@ const props = defineProps<{
 const { t } = useAppI18n();
 const hasChildren = computed(() => props.node.children.length > 0);
 const iconComponent = computed(() => resolveMenuIcon(props.node.icon));
-const displayTitle = computed(() => t(props.node.titleKey || '', props.node.titleDefault || props.node.title));
+const displayTitle = computed(() => t(props.node.titleKey || '', props.node.titleDefault || props.node.title || t('menu.unnamed', 'Unnamed menu')));
 </script>
 
 <template>

@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { ArrowDown } from '@element-plus/icons-vue';
 
 import { login } from '@/api/auth';
 import { useAppI18n } from '@/i18n';
@@ -38,10 +39,19 @@ const redirectTarget = computed(() => {
   return '/dashboard';
 });
 
+const currentLanguageLabel = computed(() => {
+  return localeStore.language === 'en-US' ? t('common.language_en', 'English') : t('common.language_zh', 'Chinese');
+});
+
 const rules = computed<FormRules<LoginForm>>(() => ({
-  username: [{ required: true, message: t('login.form.username_required', '请输入用户名'), trigger: 'blur' }],
-  password: [{ required: true, message: t('login.form.password_required', '请输入密码'), trigger: 'blur' }],
+  username: [{ required: true, message: t('login.form.username_required', 'Enter username'), trigger: 'blur' }],
+  password: [{ required: true, message: t('login.form.password_required', 'Enter password'), trigger: 'blur' }],
 }));
+
+function switchLanguage(language: 'zh-CN' | 'en-US') {
+  localeStore.setLanguage(language);
+  sessionStore.setLanguage(language);
+}
 
 async function onSubmit() {
   if (!formRef.value) {
@@ -57,10 +67,10 @@ async function onSubmit() {
       sessionStore.applyLoginResponse(response);
       localeStore.syncFromUser(response.user);
       await menuStore.ensureLoaded(router);
-      ElMessage.success(t('login.success', '登录成功'));
+      ElMessage.success(t('login.success', 'Login successful'));
       await router.replace(redirectTarget.value);
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('login.failure', '登录失败');
+      const message = error instanceof Error ? error.message : t('login.failure', 'Login failed');
       ElMessage.error(message);
     } finally {
       loading.value = false;
@@ -84,28 +94,28 @@ async function onSubmit() {
         </div>
 
         <div class="login-card__brand-body">
-          <el-tag effect="plain" round type="success">{{ t('login.title', '登录') }}</el-tag>
-          <h2>{{ t('login.welcome', '欢迎使用 GoAdmin') }}</h2>
-          <p>{{ t('login.description', '请输入后端创建的账号登录系统。') }}</p>
+          <el-tag effect="plain" round type="success">{{ t('login.title', 'Login') }}</el-tag>
+          <h2>{{ t('login.welcome', 'Welcome to GoAdmin') }}</h2>
+          <p>{{ t('login.description', 'Sign in with the account created by the backend.') }}</p>
 
           <ul class="login-card__highlights">
-            <li>{{ t('login.highlight.jwt_session', 'JWT 登录与会话管理') }}</li>
-            <li>{{ t('login.highlight.dynamic_menu', '动态菜单与权限驱动') }}</li>
-            <li>{{ t('login.highlight.element_plus', 'Element Plus 统一视觉风格') }}</li>
+            <li>{{ t('login.highlight.jwt_session', 'JWT login and session management') }}</li>
+            <li>{{ t('login.highlight.dynamic_menu', 'Dynamic menus and permission-driven access') }}</li>
+            <li>{{ t('login.highlight.element_plus', 'Unified Element Plus styling') }}</li>
           </ul>
 
           <div class="login-card__stats">
             <div>
               <strong>{{ apiBaseUrl }}</strong>
-              <span>{{ t('login.api_base_url', 'API 基址') }}</span>
+              <span>{{ t('login.api_base_url', 'API base URL') }}</span>
             </div>
             <div>
               <strong>admin</strong>
-              <span>{{ t('login.username', '用户名') }}</span>
+              <span>{{ t('login.username', 'Username') }}</span>
             </div>
             <div>
               <strong>admin123</strong>
-              <span>{{ t('login.default_account', '默认账号：admin / admin123') }}</span>
+              <span>{{ t('login.default_account', 'Default account: admin / admin123') }}</span>
             </div>
           </div>
         </div>
@@ -113,8 +123,26 @@ async function onSubmit() {
 
       <section class="login-card__panel">
         <div class="login-card__panel-header">
-          <h2>{{ t('login.title', '登录') }}</h2>
-          <p>{{ t('login.description', '请输入后端创建的账号登录系统。') }}</p>
+          <div class="login-card__panel-header-top">
+            <div>
+              <h2>{{ t('login.title', 'Login') }}</h2>
+              <p>{{ t('login.description', 'Sign in with the account created by the backend.') }}</p>
+            </div>
+
+            <el-dropdown trigger="click" @command="switchLanguage">
+              <el-button class="login-card__language" text>
+                {{ t('common.language', 'Language') }}：{{ currentLanguageLabel }}
+                <el-icon class="login-card__language-arrow"><ArrowDown /></el-icon>
+              </el-button>
+
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="zh-CN">{{ t('common.language_zh', 'Chinese') }}</el-dropdown-item>
+                  <el-dropdown-item command="en-US">{{ t('common.language_en', 'English') }}</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
 
         <el-form
@@ -125,27 +153,27 @@ async function onSubmit() {
           label-position="top"
           @keyup.enter="onSubmit"
         >
-          <el-form-item :label="t('login.username', '用户名')" prop="username">
-            <el-input v-model="form.username" autocomplete="username" :placeholder="t('login.username_placeholder', '请输入用户名')" />
+          <el-form-item :label="t('login.username', 'Username')" prop="username">
+            <el-input v-model="form.username" autocomplete="username" :placeholder="t('login.username_placeholder', 'Enter username')" />
           </el-form-item>
 
-          <el-form-item :label="t('login.password', '密码')" prop="password">
+          <el-form-item :label="t('login.password', 'Password')" prop="password">
             <el-input
               v-model="form.password"
               autocomplete="current-password"
-              :placeholder="t('login.password_placeholder', '请输入密码')"
+              :placeholder="t('login.password_placeholder', 'Enter password')"
               type="password"
               show-password
             />
           </el-form-item>
 
           <div class="login-form__meta">
-            <el-tag effect="plain" round type="info">{{ t('login.api_base_url', 'API 基址') }}: {{ apiBaseUrl }}</el-tag>
-            <span>{{ t('login.default_account', '默认账号：admin / admin123') }}</span>
+            <el-tag effect="plain" round type="info">{{ t('login.api_base_url', 'API base URL') }}: {{ apiBaseUrl }}</el-tag>
+            <span>{{ t('login.default_account', 'Default account: admin / admin123') }}</span>
           </div>
 
           <el-button class="login-form__submit" type="primary" :loading="loading" @click="onSubmit">
-            {{ t('login.submit', '登录') }}
+            {{ t('login.submit', 'Login') }}
           </el-button>
         </el-form>
       </section>
@@ -320,6 +348,13 @@ async function onSubmit() {
   margin-bottom: 28px;
 }
 
+.login-card__panel-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .login-card__panel-header h2 {
   margin: 0;
   font-size: 30px;
@@ -328,6 +363,16 @@ async function onSubmit() {
 .login-card__panel-header p {
   margin: 0;
   color: var(--app-muted);
+}
+
+.login-card__language {
+  flex-shrink: 0;
+  padding-inline: 0;
+  color: var(--app-muted);
+}
+
+.login-card__language-arrow {
+  margin-left: 4px;
 }
 
 .login-form {
@@ -398,6 +443,10 @@ async function onSubmit() {
 @media (max-width: 640px) {
   .login-page {
     padding: 12px;
+  }
+
+  .login-card__panel-header-top {
+    flex-direction: column;
   }
 
   .login-card__brand-top h1 {

@@ -64,18 +64,20 @@ func (s *Service) Create(ctx context.Context, input command.CreateMenu) (*model.
 		return nil, apperrors.NewWithKey(apperrors.CodeBadRequest, "menu.path_required", "path is required")
 	}
 	entity := &model.Menu{
-		ParentID:    strings.TrimSpace(input.ParentID),
-		Name:        strings.TrimSpace(input.Name),
-		Path:        strings.TrimSpace(input.Path),
-		Component:   strings.TrimSpace(input.Component),
-		Icon:        strings.TrimSpace(input.Icon),
-		Sort:        input.Sort,
-		Permission:  strings.TrimSpace(input.Permission),
-		Type:        normalizeType(input.Type),
-		Visible:     input.Visible,
-		Enabled:     input.Enabled,
-		Redirect:    strings.TrimSpace(input.Redirect),
-		ExternalURL: strings.TrimSpace(input.ExternalURL),
+		ParentID:     strings.TrimSpace(input.ParentID),
+		Name:         strings.TrimSpace(input.Name),
+		TitleKey:     strings.TrimSpace(input.TitleKey),
+		TitleDefault: strings.TrimSpace(input.TitleDefault),
+		Path:         strings.TrimSpace(input.Path),
+		Component:    strings.TrimSpace(input.Component),
+		Icon:         strings.TrimSpace(input.Icon),
+		Sort:         input.Sort,
+		Permission:   strings.TrimSpace(input.Permission),
+		Type:         normalizeType(input.Type),
+		Visible:      input.Visible,
+		Enabled:      input.Enabled,
+		Redirect:     strings.TrimSpace(input.Redirect),
+		ExternalURL:  strings.TrimSpace(input.ExternalURL),
 	}
 	if entity.Type == "" {
 		entity.Type = model.TypeMenu
@@ -100,6 +102,12 @@ func (s *Service) Update(ctx context.Context, id string, input command.UpdateMen
 	}
 	if strings.TrimSpace(input.Name) != "" {
 		current.Name = strings.TrimSpace(input.Name)
+	}
+	if strings.TrimSpace(input.TitleKey) != "" {
+		current.TitleKey = strings.TrimSpace(input.TitleKey)
+	}
+	if strings.TrimSpace(input.TitleDefault) != "" {
+		current.TitleDefault = strings.TrimSpace(input.TitleDefault)
 	}
 	if strings.TrimSpace(input.Path) != "" {
 		current.Path = strings.TrimSpace(input.Path)

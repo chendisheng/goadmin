@@ -128,29 +128,29 @@ async function submitForm() {
 
     if (editingId.value) {
       await updateCasbinRule(editingId.value, payload);
-      ElMessage.success(t('casbin_rule.updated', 'CasbinRule 已更新'));
+      ElMessage.success(t('casbin_rule.updated', 'CasbinRule updated'));
     } else {
       await createCasbinRule(payload);
-      ElMessage.success(t('casbin_rule.created', 'CasbinRule 已创建'));
+      ElMessage.success(t('casbin_rule.created', 'CasbinRule created'));
     }
 
     dialogVisible.value = false;
     await loadItems();
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('casbin_rule.save_failed', '保存失败'));
+    ElMessage.error(error instanceof Error ? error.message : t('casbin_rule.save_failed', 'Save failed'));
   } finally {
     dialogLoading.value = false;
   }
 }
 
 async function removeRow(row: CasbinRuleItem) {
-  await ElMessageBox.confirm(t('casbin_rule.confirm_delete', '确认删除 CasbinRule {name} 吗？', { name: row.id }), t('casbin_rule.delete_title', '删除 CasbinRule'), {
+  await ElMessageBox.confirm(t('casbin_rule.confirm_delete', 'Delete CasbinRule {name}?', { name: row.id }), t('casbin_rule.delete_title', 'Delete CasbinRule'), {
     type: 'warning',
-    confirmButtonText: t('common.delete', '删除'),
-    cancelButtonText: t('common.cancel', '取消'),
+    confirmButtonText: t('common.delete', 'Delete'),
+    cancelButtonText: t('common.cancel', 'Cancel'),
   });
   await deleteCasbinRule(row.id);
-  ElMessage.success(t('casbin_rule.deleted', 'CasbinRule 已删除'));
+  ElMessage.success(t('casbin_rule.deleted', 'CasbinRule deleted'));
   await loadItems();
 }
 
@@ -184,23 +184,23 @@ onMounted(() => {
 <template>
   <div class="admin-page">
     <AdminTable
-      :title="t('casbin_rule.title', '策略管理')"
-      :description="t('casbin_rule.description', '授权策略规则的列表、编辑和删除入口。')"
+      :title="t('casbin_rule.title', 'Rule management')"
+      :description="t('casbin_rule.description', 'Manage authorization policy rules, including listing, editing, and deletion.')"
       :loading="tableLoading"
     >
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadItems">{{ t('common.refresh', '刷新') }}</el-button>
-        <el-button v-permission="'casbin_rule:create'" type="primary" @click="openCreate">{{ t('common.create', '新增') }}</el-button>
+        <el-button :loading="tableLoading" @click="loadItems">{{ t('common.refresh', 'Refresh') }}</el-button>
+        <el-button v-permission="'casbin_rule:create'" type="primary" @click="openCreate">{{ t('common.create', 'Create') }}</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
-          <el-form-item :label="t('common.search', '查询')">
-            <el-input v-model="query.keyword" clearable :placeholder="t('casbin_rule.keyword_placeholder', '搜索 CasbinRule 数据')" />
+          <el-form-item :label="t('common.search', 'Search')">
+            <el-input v-model="query.keyword" clearable :placeholder="t('casbin_rule.keyword_placeholder', 'Search CasbinRule data')" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">{{ t('common.search', '查询') }}</el-button>
-            <el-button @click="handleReset">{{ t('common.reset', '重置') }}</el-button>
+            <el-button type="primary" @click="handleSearch">{{ t('common.search', 'Search') }}</el-button>
+            <el-button @click="handleReset">{{ t('common.reset', 'Reset') }}</el-button>
           </el-form-item>
         </el-form>
       </template>
@@ -277,20 +277,20 @@ onMounted(() => {
             {{ row.v5 || '-' }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('casbin_rule.created_at', '创建时间')" min-width="180">
+        <el-table-column :label="t('casbin_rule.created_at', 'Created at')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('casbin_rule.updated_at', '更新时间')" min-width="180">
+        <el-table-column :label="t('casbin_rule.updated_at', 'Updated at')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.updated_at) }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('casbin_rule.actions', '操作')" width="180" fixed="right">
+        <el-table-column :label="t('casbin_rule.actions', 'Actions')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'casbin_rule:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', '编辑') }}</el-button>
-            <el-button v-permission="'casbin_rule:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', '删除') }}</el-button>
+            <el-button v-permission="'casbin_rule:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', 'Edit') }}</el-button>
+            <el-button v-permission="'casbin_rule:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', 'Delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -313,31 +313,31 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? t('casbin_rule.edit_title', '编辑策略') : t('casbin_rule.create_title', '新增策略')"
+      :title="editingId ? t('casbin_rule.edit_title', 'Edit rule') : t('casbin_rule.create_title', 'New rule')"
       :loading="dialogLoading"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form">
         <el-form-item :label="t('casbin_rule.ptype', 'Ptype')">
-          <el-input v-model="form.ptype" :placeholder="t('casbin_rule.placeholder', '请输入 {field}', { field: 'Ptype' })" />
+          <el-input v-model="form.ptype" :placeholder="t('casbin_rule.placeholder', 'Enter {field}', { field: 'Ptype' })" />
         </el-form-item>
         <el-form-item :label="t('casbin_rule.v0', 'V0')">
-          <el-input v-model="form.v0" :placeholder="t('casbin_rule.placeholder', '请输入 {field}', { field: 'V0' })" />
+          <el-input v-model="form.v0" :placeholder="t('casbin_rule.placeholder', 'Enter {field}', { field: 'V0' })" />
         </el-form-item>
         <el-form-item :label="t('casbin_rule.v1', 'V1')">
-          <el-input v-model="form.v1" :placeholder="t('casbin_rule.placeholder', '请输入 {field}', { field: 'V1' })" />
+          <el-input v-model="form.v1" :placeholder="t('casbin_rule.placeholder', 'Enter {field}', { field: 'V1' })" />
         </el-form-item>
         <el-form-item :label="t('casbin_rule.v2', 'V2')">
-          <el-input v-model="form.v2" :placeholder="t('casbin_rule.placeholder', '请输入 {field}', { field: 'V2' })" />
+          <el-input v-model="form.v2" :placeholder="t('casbin_rule.placeholder', 'Enter {field}', { field: 'V2' })" />
         </el-form-item>
         <el-form-item :label="t('casbin_rule.v3', 'V3')">
-          <el-input v-model="form.v3" :placeholder="t('casbin_rule.placeholder', '请输入 {field}', { field: 'V3' })" />
+          <el-input v-model="form.v3" :placeholder="t('casbin_rule.placeholder', 'Enter {field}', { field: 'V3' })" />
         </el-form-item>
         <el-form-item :label="t('casbin_rule.v4', 'V4')">
-          <el-input v-model="form.v4" :placeholder="t('casbin_rule.placeholder', '请输入 {field}', { field: 'V4' })" />
+          <el-input v-model="form.v4" :placeholder="t('casbin_rule.placeholder', 'Enter {field}', { field: 'V4' })" />
         </el-form-item>
         <el-form-item :label="t('casbin_rule.v5', 'V5')">
-          <el-input v-model="form.v5" :placeholder="t('casbin_rule.placeholder', '请输入 {field}', { field: 'V5' })" />
+          <el-input v-model="form.v5" :placeholder="t('casbin_rule.placeholder', 'Enter {field}', { field: 'V5' })" />
         </el-form-item>
       </el-form>
     </AdminFormDialog>

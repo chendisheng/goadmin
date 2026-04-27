@@ -17,21 +17,23 @@ import (
 type GormRepository struct{ db *gorm.DB }
 
 type menuRecord struct {
-	ID          string    `gorm:"column:id;primaryKey;size:64"`
-	ParentID    string    `gorm:"column:parent_id;size:64;index"`
-	Name        string    `gorm:"column:name;size:128;not null"`
-	Path        string    `gorm:"column:path;size:255;not null;uniqueIndex"`
-	Component   string    `gorm:"column:component;size:255"`
-	Icon        string    `gorm:"column:icon;size:128"`
-	Sort        int       `gorm:"column:sort;index"`
-	Permission  string    `gorm:"column:permission;size:255;index"`
-	Type        string    `gorm:"column:type;size:32;not null;index"`
-	Visible     bool      `gorm:"column:visible;index"`
-	Enabled     bool      `gorm:"column:enabled;index"`
-	Redirect    string    `gorm:"column:redirect;size:255"`
-	ExternalURL string    `gorm:"column:external_url;size:255"`
-	CreatedAt   time.Time `gorm:"column:created_at"`
-	UpdatedAt   time.Time `gorm:"column:updated_at"`
+	ID           string    `gorm:"column:id;primaryKey;size:64"`
+	ParentID     string    `gorm:"column:parent_id;size:64;index"`
+	Name         string    `gorm:"column:name;size:128;not null"`
+	TitleKey     string    `gorm:"column:title_key;size:255;index"`
+	TitleDefault string    `gorm:"column:title_default;size:255"`
+	Path         string    `gorm:"column:path;size:255;not null;uniqueIndex"`
+	Component    string    `gorm:"column:component;size:255"`
+	Icon         string    `gorm:"column:icon;size:128"`
+	Sort         int       `gorm:"column:sort;index"`
+	Permission   string    `gorm:"column:permission;size:255;index"`
+	Type         string    `gorm:"column:type;size:32;not null;index"`
+	Visible      bool      `gorm:"column:visible;index"`
+	Enabled      bool      `gorm:"column:enabled;index"`
+	Redirect     string    `gorm:"column:redirect;size:255"`
+	ExternalURL  string    `gorm:"column:external_url;size:255"`
+	CreatedAt    time.Time `gorm:"column:created_at"`
+	UpdatedAt    time.Time `gorm:"column:updated_at"`
 }
 
 func (menuRecord) TableName() string { return "menu" }
@@ -104,19 +106,21 @@ func syncSeedMenu(tx *gorm.DB, menu model.Menu, now time.Time, seedIDMap map[str
 			actualID = strings.TrimSpace(record.ID)
 		}
 		updates := map[string]any{
-			"parent_id":    record.ParentID,
-			"name":         record.Name,
-			"path":         record.Path,
-			"component":    record.Component,
-			"icon":         record.Icon,
-			"sort":         record.Sort,
-			"permission":   record.Permission,
-			"type":         record.Type,
-			"visible":      record.Visible,
-			"enabled":      record.Enabled,
-			"redirect":     record.Redirect,
-			"external_url": record.ExternalURL,
-			"updated_at":   now,
+			"parent_id":     record.ParentID,
+			"name":          record.Name,
+			"title_key":     record.TitleKey,
+			"title_default": record.TitleDefault,
+			"path":          record.Path,
+			"component":     record.Component,
+			"icon":          record.Icon,
+			"sort":          record.Sort,
+			"permission":    record.Permission,
+			"type":          record.Type,
+			"visible":       record.Visible,
+			"enabled":       record.Enabled,
+			"redirect":      record.Redirect,
+			"external_url":  record.ExternalURL,
+			"updated_at":    now,
 		}
 		if err := tx.Model(&menuRecord{}).Where("id = ?", actualID).Updates(updates).Error; err != nil {
 			return "", mapMenuRepoError(err)
@@ -304,48 +308,52 @@ func (r *GormRepository) applyFilters(db *gorm.DB, filter menurepo.ListFilter) *
 	}
 	if kw := strings.TrimSpace(strings.ToLower(filter.Keyword)); kw != "" {
 		like := "%" + kw + "%"
-		db = db.Where("LOWER(name) LIKE ? OR LOWER(path) LIKE ? OR LOWER(component) LIKE ? OR LOWER(permission) LIKE ? OR LOWER(icon) LIKE ?", like, like, like, like, like)
+		db = db.Where("LOWER(name) LIKE ? OR LOWER(title_key) LIKE ? OR LOWER(title_default) LIKE ? OR LOWER(path) LIKE ? OR LOWER(component) LIKE ? OR LOWER(permission) LIKE ? OR LOWER(icon) LIKE ?", like, like, like, like, like, like, like)
 	}
 	return db
 }
 
 func toMenuRecord(menu model.Menu) (menuRecord, error) {
 	return menuRecord{
-		ID:          strings.TrimSpace(menu.ID),
-		ParentID:    strings.TrimSpace(menu.ParentID),
-		Name:        strings.TrimSpace(menu.Name),
-		Path:        strings.TrimSpace(menu.Path),
-		Component:   strings.TrimSpace(menu.Component),
-		Icon:        strings.TrimSpace(menu.Icon),
-		Sort:        menu.Sort,
-		Permission:  strings.TrimSpace(menu.Permission),
-		Type:        string(menu.Type),
-		Visible:     menu.Visible,
-		Enabled:     menu.Enabled,
-		Redirect:    strings.TrimSpace(menu.Redirect),
-		ExternalURL: strings.TrimSpace(menu.ExternalURL),
-		CreatedAt:   menu.CreatedAt,
-		UpdatedAt:   menu.UpdatedAt,
+		ID:           strings.TrimSpace(menu.ID),
+		ParentID:     strings.TrimSpace(menu.ParentID),
+		Name:         strings.TrimSpace(menu.Name),
+		TitleKey:     strings.TrimSpace(menu.TitleKey),
+		TitleDefault: strings.TrimSpace(menu.TitleDefault),
+		Path:         strings.TrimSpace(menu.Path),
+		Component:    strings.TrimSpace(menu.Component),
+		Icon:         strings.TrimSpace(menu.Icon),
+		Sort:         menu.Sort,
+		Permission:   strings.TrimSpace(menu.Permission),
+		Type:         string(menu.Type),
+		Visible:      menu.Visible,
+		Enabled:      menu.Enabled,
+		Redirect:     strings.TrimSpace(menu.Redirect),
+		ExternalURL:  strings.TrimSpace(menu.ExternalURL),
+		CreatedAt:    menu.CreatedAt,
+		UpdatedAt:    menu.UpdatedAt,
 	}, nil
 }
 
 func (r menuRecord) toModel() (model.Menu, error) {
 	return model.Menu{
-		ID:          strings.TrimSpace(r.ID),
-		ParentID:    strings.TrimSpace(r.ParentID),
-		Name:        strings.TrimSpace(r.Name),
-		Path:        strings.TrimSpace(r.Path),
-		Component:   strings.TrimSpace(r.Component),
-		Icon:        strings.TrimSpace(r.Icon),
-		Sort:        r.Sort,
-		Permission:  strings.TrimSpace(r.Permission),
-		Type:        model.Type(strings.TrimSpace(r.Type)),
-		Visible:     r.Visible,
-		Enabled:     r.Enabled,
-		Redirect:    strings.TrimSpace(r.Redirect),
-		ExternalURL: strings.TrimSpace(r.ExternalURL),
-		CreatedAt:   r.CreatedAt,
-		UpdatedAt:   r.UpdatedAt,
+		ID:           strings.TrimSpace(r.ID),
+		ParentID:     strings.TrimSpace(r.ParentID),
+		Name:         strings.TrimSpace(r.Name),
+		TitleKey:     strings.TrimSpace(r.TitleKey),
+		TitleDefault: strings.TrimSpace(r.TitleDefault),
+		Path:         strings.TrimSpace(r.Path),
+		Component:    strings.TrimSpace(r.Component),
+		Icon:         strings.TrimSpace(r.Icon),
+		Sort:         r.Sort,
+		Permission:   strings.TrimSpace(r.Permission),
+		Type:         model.Type(strings.TrimSpace(r.Type)),
+		Visible:      r.Visible,
+		Enabled:      r.Enabled,
+		Redirect:     strings.TrimSpace(r.Redirect),
+		ExternalURL:  strings.TrimSpace(r.ExternalURL),
+		CreatedAt:    r.CreatedAt,
+		UpdatedAt:    r.UpdatedAt,
 	}, nil
 }
 

@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 import { useLocaleStore } from '@/store/locale';
-import { appMessages } from './messages';
+import { appMessages } from './messages.ts';
 function isMessageKey(value) {
     return Object.prototype.hasOwnProperty.call(appMessages['zh-CN'], value);
 }

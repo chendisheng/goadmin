@@ -91,18 +91,20 @@ func (h *Handler) Create(c coretransport.Context) {
 		return
 	}
 	item, err := h.service.Create(c.RequestContext(), command.CreateMenu{
-		ParentID:    req.ParentID,
-		Name:        req.Name,
-		Path:        req.Path,
-		Component:   req.Component,
-		Icon:        req.Icon,
-		Sort:        req.Sort,
-		Permission:  req.Permission,
-		Type:        req.Type,
-		Visible:     req.Visible,
-		Enabled:     req.Enabled,
-		Redirect:    req.Redirect,
-		ExternalURL: req.ExternalURL,
+		ParentID:     req.ParentID,
+		Name:         req.Name,
+		TitleKey:     req.TitleKey,
+		TitleDefault: req.TitleDefault,
+		Path:         req.Path,
+		Component:    req.Component,
+		Icon:         req.Icon,
+		Sort:         req.Sort,
+		Permission:   req.Permission,
+		Type:         req.Type,
+		Visible:      req.Visible,
+		Enabled:      req.Enabled,
+		Redirect:     req.Redirect,
+		ExternalURL:  req.ExternalURL,
 	})
 	if err != nil {
 		status, body := response.Failure(err, requestID(c))
@@ -120,18 +122,20 @@ func (h *Handler) Update(c coretransport.Context) {
 		return
 	}
 	item, err := h.service.Update(c.RequestContext(), c.Param("id"), command.UpdateMenu{
-		ParentID:    req.ParentID,
-		Name:        req.Name,
-		Path:        req.Path,
-		Component:   req.Component,
-		Icon:        req.Icon,
-		Sort:        req.Sort,
-		Permission:  req.Permission,
-		Type:        req.Type,
-		Visible:     req.Visible,
-		Enabled:     req.Enabled,
-		Redirect:    req.Redirect,
-		ExternalURL: req.ExternalURL,
+		ParentID:     req.ParentID,
+		Name:         req.Name,
+		TitleKey:     req.TitleKey,
+		TitleDefault: req.TitleDefault,
+		Path:         req.Path,
+		Component:    req.Component,
+		Icon:         req.Icon,
+		Sort:         req.Sort,
+		Permission:   req.Permission,
+		Type:         req.Type,
+		Visible:      req.Visible,
+		Enabled:      req.Enabled,
+		Redirect:     req.Redirect,
+		ExternalURL:  req.ExternalURL,
 	})
 	if err != nil {
 		status, body := response.Failure(err, requestID(c))
@@ -164,22 +168,24 @@ func mapMenu(item model.Menu) menuresp.Item {
 		children = append(children, mapMenu(child))
 	}
 	return menuresp.Item{
-		ID:          item.ID,
-		ParentID:    item.ParentID,
-		Name:        item.Name,
-		Path:        item.Path,
-		Component:   item.Component,
-		Icon:        item.Icon,
-		Sort:        item.Sort,
-		Permission:  item.Permission,
-		Type:        string(item.Type),
-		Visible:     item.Visible,
-		Enabled:     item.Enabled,
-		Redirect:    item.Redirect,
-		ExternalURL: item.ExternalURL,
-		Children:    children,
-		CreatedAt:   item.CreatedAt,
-		UpdatedAt:   item.UpdatedAt,
+		ID:           item.ID,
+		ParentID:     item.ParentID,
+		Name:         item.Name,
+		TitleKey:     item.TitleKey,
+		TitleDefault: item.TitleDefault,
+		Path:         item.Path,
+		Component:    item.Component,
+		Icon:         item.Icon,
+		Sort:         item.Sort,
+		Permission:   item.Permission,
+		Type:         string(item.Type),
+		Visible:      item.Visible,
+		Enabled:      item.Enabled,
+		Redirect:     item.Redirect,
+		ExternalURL:  item.ExternalURL,
+		Children:     children,
+		CreatedAt:    item.CreatedAt,
+		UpdatedAt:    item.UpdatedAt,
 	}
 }
 
@@ -200,18 +206,30 @@ func mapRoutes(items []model.Menu) []menuresp.Route {
 			AlwaysShow: alwaysShow,
 			Type:       string(item.Type),
 			Meta: menuresp.RouteMeta{
-				Title:      item.Name,
-				Icon:       item.Icon,
-				Permission: item.Permission,
-				Hidden:     !item.Visible,
-				NoCache:    item.Type == model.TypeButton,
-				Affix:      item.Path == "/dashboard",
-				Link:       item.ExternalURL,
+				Title:        titleDefault(item),
+				TitleKey:     item.TitleKey,
+				TitleDefault: titleDefault(item),
+				Icon:         item.Icon,
+				Permission:   item.Permission,
+				Hidden:       !item.Visible,
+				NoCache:      item.Type == model.TypeButton,
+				Affix:        item.Path == "/dashboard",
+				Link:         item.ExternalURL,
 			},
 			Children: children,
 		})
 	}
 	return result
+}
+
+func titleDefault(item model.Menu) string {
+	if value := strings.TrimSpace(item.TitleDefault); value != "" {
+		return value
+	}
+	if value := strings.TrimSpace(item.Name); value != "" {
+		return value
+	}
+	return strings.TrimSpace(item.ID)
 }
 
 func routeName(item model.Menu) string {

@@ -34,21 +34,23 @@ type Route struct {
 }
 
 type Menu struct {
-	Plugin      string
-	ID          string
-	ParentID    string
-	Name        string
-	Path        string
-	Component   string
-	Icon        string
-	Sort        int
-	Permission  string
-	Type        MenuType
-	Visible     bool
-	Enabled     bool
-	Redirect    string
-	ExternalURL string
-	Children    []Menu
+	Plugin       string
+	ID           string
+	ParentID     string
+	Name         string
+	TitleKey     string
+	TitleDefault string
+	Path         string
+	Component    string
+	Icon         string
+	Sort         int
+	Permission   string
+	Type         MenuType
+	Visible      bool
+	Enabled      bool
+	Redirect     string
+	ExternalURL  string
+	Children     []Menu
 }
 
 type Permission struct {

@@ -8,6 +8,7 @@ import { ElMessage } from 'element-plus';
 import { logout as logoutApi } from '@/api/auth';
 import { resolveRouteLocaleMeta, useAppI18n } from '@/i18n';
 import { useAppStore } from '@/store/app';
+import { useLocaleStore } from '@/store/locale';
 import { useMenuStore } from '@/store/menu';
 import { useSessionStore } from '@/store/session';
 import { useTabsStore } from '@/store/tabs';
@@ -16,6 +17,7 @@ const appTitle = import.meta.env.VITE_APP_TITLE || 'GoAdmin';
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 const buildMode = import.meta.env.MODE;
 const appStore = useAppStore();
+const localeStore = useLocaleStore();
 const menuStore = useMenuStore();
 const sessionStore = useSessionStore();
 const tabsStore = useTabsStore();
@@ -51,8 +53,17 @@ const currentUserInitial = computed(() => {
   return source.slice(0, 1).toUpperCase();
 });
 
+const currentLanguageLabel = computed(() => {
+  return localeStore.language === 'en-US' ? t('common.language_en', 'English') : t('common.language_zh', 'Chinese');
+});
+
 function refreshPage() {
   window.location.reload();
+}
+
+function switchLanguage(language: 'zh-CN' | 'en-US') {
+  localeStore.setLanguage(language);
+  sessionStore.setLanguage(language);
 }
 
 async function onLogout() {
@@ -64,7 +75,7 @@ async function onLogout() {
     menuStore.clear(router);
     tabsStore.clearTabs();
     sessionStore.clearSession();
-    ElMessage.success(t('common.logged_out', '已退出登录'));
+    ElMessage.success(t('common.logged_out', 'Logged out'));
     await router.push({ path: '/login' });
   }
 }
@@ -98,6 +109,19 @@ function onCommand(command: string) {
     <div class="app-header__right">
       <el-tag effect="plain" round type="info">{{ buildMode }}</el-tag>
       <el-tag effect="plain" round type="success">{{ apiBaseUrl }}</el-tag>
+      <el-dropdown trigger="click" @command="switchLanguage">
+        <el-button class="app-header__language" text>
+          {{ t('common.language', 'Language') }}：{{ currentLanguageLabel }}
+          <el-icon class="app-header__language-arrow"><ArrowDown /></el-icon>
+        </el-button>
+
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="zh-CN">{{ t('common.language_zh', 'Chinese') }}</el-dropdown-item>
+            <el-dropdown-item command="en-US">{{ t('common.language_en', 'English') }}</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
       <el-button circle text @click="refreshPage">
         <el-icon><RefreshRight /></el-icon>
       </el-button>

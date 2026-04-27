@@ -39,7 +39,7 @@ export function normalizeMenuRoots(nodes: BackendMenuRoute[]): BackendMenuRoute[
 }
 
 function resolveTitleKey(meta: Pick<BackendMenuRoute['meta'], 'title' | 'titleKey' | 'titleDefault'>): string {
-  return (meta.titleKey || meta.title || '').trim();
+  return (meta.titleKey || meta.titleDefault || meta.title || '').trim();
 }
 
 function componentNameToModulePath(componentName: string): string | null {
@@ -230,7 +230,7 @@ export function mapPluginMenusToBackendRoutes(items: PluginMenu[]): BackendMenuR
     type: item.type as BackendMenuRoute['type'],
     alwaysShow: item.type === 'directory',
     meta: {
-      title: item.name,
+      title: item.titleDefault || item.name,
       titleKey: item.titleKey,
       titleDefault: item.titleDefault,
       icon: item.icon,

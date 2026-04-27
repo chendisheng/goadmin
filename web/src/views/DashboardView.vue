@@ -17,29 +17,29 @@ const healthState = ref<HealthPayload | null>(null);
 const loading = ref(false);
 const errorMessage = ref('');
 
-const shellStatus = computed(() => (appStore.sidebarCollapsed ? t('dashboard.sidebar_collapsed', '侧栏已收起') : t('dashboard.sidebar_expanded', '侧栏已展开')));
+const shellStatus = computed(() => (appStore.sidebarCollapsed ? t('dashboard.sidebar_collapsed', 'Sidebar collapsed') : t('dashboard.sidebar_expanded', 'Sidebar expanded')));
 const currentUser = computed(() => sessionStore.currentUser);
 
 const dashboardMetrics = computed(() => [
   {
-    label: t('dashboard.metric.api_base_url', 'API 基址'),
+    label: t('dashboard.metric.api_base_url', 'API base URL'),
     value: apiBaseUrl,
-    note: t('dashboard.metric.api_base_url_note', 'Axios 统一请求入口'),
+    note: t('dashboard.metric.api_base_url_note', 'Unified Axios request entry'),
   },
   {
-    label: t('dashboard.metric.layout_state', '布局状态'),
+    label: t('dashboard.metric.layout_state', 'Layout state'),
     value: shellStatus.value,
-    note: t('dashboard.metric.layout_state_note', '侧边栏折叠状态已持久化'),
+    note: t('dashboard.metric.layout_state_note', 'Sidebar collapse state persisted'),
   },
   {
-    label: t('dashboard.metric.current_user', '当前用户'),
-    value: sessionStore.displayName || t('dashboard.metric.default_user', '系统管理员'),
-    note: t('dashboard.metric.current_user_note', '会话信息已加载'),
+    label: t('dashboard.metric.current_user', 'Current user'),
+    value: sessionStore.displayName || t('dashboard.metric.default_user', 'System administrator'),
+    note: t('dashboard.metric.current_user_note', 'Session information loaded'),
   },
   {
-    label: t('dashboard.metric.login_mode', '登录模式'),
+    label: t('dashboard.metric.login_mode', 'Login mode'),
     value: t('dashboard.metric.login_mode_value', 'JWT / RBAC'),
-    note: t('dashboard.metric.login_mode_note', '按钮权限与菜单权限待扩展'),
+    note: t('dashboard.metric.login_mode_note', 'Button and menu permissions will be extended'),
   },
 ]);
 
@@ -48,9 +48,9 @@ async function onPingHealth() {
   errorMessage.value = '';
   try {
     healthState.value = await fetchHealth();
-    ElMessage.success(t('dashboard.health_success', '健康检查请求成功'));
+    ElMessage.success(t('dashboard.health_success', 'Health check request succeeded'));
   } catch (error) {
-    const message = error instanceof Error ? error.message : t('dashboard.health_failed', '健康检查请求失败');
+    const message = error instanceof Error ? error.message : t('dashboard.health_failed', 'Health check request failed');
     errorMessage.value = message;
     ElMessage.error(message);
   } finally {
@@ -76,22 +76,22 @@ async function onPingHealth() {
         <el-card class="page-card dashboard-hero" shadow="never">
           <template #header>
             <div class="page-card__header">
-              <span>{{ t('dashboard.hero_title', '系统概览') }}</span>
-              <el-tag effect="plain" round type="success">{{ t('dashboard.status_online', '在线') }}</el-tag>
+              <span>{{ t('dashboard.hero_title', 'System overview') }}</span>
+              <el-tag effect="plain" round type="success">{{ t('dashboard.status_online', 'Online') }}</el-tag>
             </div>
           </template>
 
           <div class="dashboard-hero__content">
             <div>
-              <h2>{{ t('dashboard.hero_heading', '{title} 管理后台', { title: appTitle }) }}</h2>
-              <p>{{ t('dashboard.hero_description', '统一的侧边栏、顶部导航与工作台首页，后续可直接承接 Auth、CRUD 和 Plugin 功能模块。') }}</p>
+              <h2>{{ t('dashboard.hero_heading', '{title} admin console', { title: appTitle }) }}</h2>
+              <p>{{ t('dashboard.hero_description', 'Unified sidebar, top navigation, and dashboard home, ready to host Auth, CRUD, and Plugin modules later.') }}</p>
             </div>
 
             <el-descriptions :column="1" border size="small">
-              <el-descriptions-item :label="t('dashboard.hero_app_title', '应用标题')">{{ appTitle }}</el-descriptions-item>
-              <el-descriptions-item :label="t('dashboard.hero_api_base_url', 'API 基址')">{{ apiBaseUrl }}</el-descriptions-item>
-              <el-descriptions-item :label="t('dashboard.hero_layout_state', '布局状态')">{{ shellStatus }}</el-descriptions-item>
-              <el-descriptions-item :label="t('dashboard.hero_current_user', '当前用户')">
+              <el-descriptions-item :label="t('dashboard.hero_app_title', 'Application title')">{{ appTitle }}</el-descriptions-item>
+              <el-descriptions-item :label="t('dashboard.hero_api_base_url', 'API base URL')">{{ apiBaseUrl }}</el-descriptions-item>
+              <el-descriptions-item :label="t('dashboard.hero_layout_state', 'Layout state')">{{ shellStatus }}</el-descriptions-item>
+              <el-descriptions-item :label="t('dashboard.hero_current_user', 'Current user')">
                 {{ sessionStore.displayName }}
               </el-descriptions-item>
             </el-descriptions>
@@ -103,14 +103,14 @@ async function onPingHealth() {
         <el-card class="page-card dashboard-quick-actions" shadow="never">
           <template #header>
             <div class="page-card__header">
-              <span>{{ t('dashboard.quick_actions_title', 'API 验证') }}</span>
-              <el-tag effect="plain" round type="info">{{ t('dashboard.quick_actions_tag', '连通性') }}</el-tag>
+              <span>{{ t('dashboard.quick_actions_title', 'API validation') }}</span>
+              <el-tag effect="plain" round type="info">{{ t('dashboard.quick_actions_tag', 'Connectivity') }}</el-tag>
             </div>
           </template>
 
           <div class="dashboard-quick-actions__body">
-            <p>{{ t('dashboard.quick_actions_description', '点击按钮发送一次健康检查请求，快速验证前后端联通性与 Axios 拦截器。') }}</p>
-            <el-button type="primary" :loading="loading" @click="onPingHealth">{{ t('dashboard.health_check_button', '发送健康检查') }}</el-button>
+            <p>{{ t('dashboard.quick_actions_description', 'Click the button to send a health check request and quickly verify frontend-backend connectivity and Axios interceptors.') }}</p>
+            <el-button type="primary" :loading="loading" @click="onPingHealth">{{ t('dashboard.health_check_button', 'Send health check') }}</el-button>
           </div>
 
           <el-divider />
@@ -146,31 +146,31 @@ async function onPingHealth() {
     <el-row :gutter="16" class="dashboard-secondary-row">
       <el-col :xs="24" :md="8">
         <el-card class="page-card" shadow="never">
-          <template #header>{{ t('dashboard.section.engineering', '工程规范') }}</template>
+          <template #header>{{ t('dashboard.section.engineering', 'Engineering standards') }}</template>
           <ul class="dashboard-list">
             <li>{{ t('dashboard.engineering.vue', 'Vue 3 + TypeScript') }}</li>
-            <li>{{ t('dashboard.engineering.vite', 'Vite 构建与热更新') }}</li>
-            <li>{{ t('dashboard.engineering.element_plus', 'Element Plus 统一界面') }}</li>
+            <li>{{ t('dashboard.engineering.vite', 'Vite build and hot reload') }}</li>
+            <li>{{ t('dashboard.engineering.element_plus', 'Unified Element Plus UI') }}</li>
           </ul>
         </el-card>
       </el-col>
       <el-col :xs="24" :md="8">
         <el-card class="page-card" shadow="never">
-          <template #header>{{ t('dashboard.section.status', '状态中心') }}</template>
+          <template #header>{{ t('dashboard.section.status', 'Status center') }}</template>
           <ul class="dashboard-list">
-            <li>{{ t('dashboard.status.pinia', 'Pinia 全局 Store 已初始化') }}</li>
-            <li>{{ t('dashboard.status.sidebar_persisted', '侧栏折叠状态持久化') }}</li>
-            <li>{{ t('dashboard.status.token_reserved', '预留会话 Token 基础能力') }}</li>
+            <li>{{ t('dashboard.status.pinia', 'Pinia global store initialized') }}</li>
+            <li>{{ t('dashboard.status.sidebar_persisted', 'Sidebar collapse state persisted') }}</li>
+            <li>{{ t('dashboard.status.token_reserved', 'Session token foundation reserved') }}</li>
           </ul>
         </el-card>
       </el-col>
       <el-col :xs="24" :md="8">
         <el-card class="page-card" shadow="never">
-          <template #header>{{ t('dashboard.section.plan', '功能规划') }}</template>
+          <template #header>{{ t('dashboard.section.plan', 'Feature roadmap') }}</template>
           <ul class="dashboard-list">
-            <li>{{ t('dashboard.plan.modules', 'Admin Modules 基础管理页') }}</li>
-            <li>{{ t('dashboard.plan.permissions', '权限控制与按钮级授权') }}</li>
-            <li>{{ t('dashboard.plan.plugin_ui', '插件 UI 与动态扩展') }}</li>
+            <li>{{ t('dashboard.plan.modules', 'Admin Modules base management page') }}</li>
+            <li>{{ t('dashboard.plan.permissions', 'Permission control and button-level authorization') }}</li>
+            <li>{{ t('dashboard.plan.plugin_ui', 'Plugin UI and dynamic extension') }}</li>
           </ul>
         </el-card>
       </el-col>

@@ -10,11 +10,11 @@ const { t } = useAppI18n();
   <div class="not-found-page">
     <el-result
       icon="warning"
-      :title="t('common.not_found', '页面不存在')"
-      :sub-title="t('common.not_found_hint', '请返回工作台继续操作')"
+      :title="t('common.not_found', 'Page not found')"
+      :sub-title="t('common.not_found_hint', 'Please return to the dashboard to continue')"
     >
       <template #extra>
-        <el-button type="primary" @click="router.push('/dashboard')">{{ t('common.back_to_dashboard', '返回工作台') }}</el-button>
+        <el-button type="primary" @click="router.push('/dashboard')">{{ t('common.back_to_dashboard', 'Back to dashboard') }}</el-button>
       </template>
     </el-result>
   </div>

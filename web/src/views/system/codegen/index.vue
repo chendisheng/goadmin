@@ -29,10 +29,10 @@
           </template>
 
           <el-tabs v-model="activeMode" class="codegen-tabs" stretch>
-            <el-tab-pane label="DSL" name="dsl">
+            <el-tab-pane :label="t('codegen.mode.dsl', 'DSL')" name="dsl">
               <el-form label-position="top" class="codegen-form">
                 <el-form-item :label="t('codegen.force_overwrite', '强制覆盖')">
-                  <el-switch v-model="force" inline-prompt active-text="On" inactive-text="Off" />
+                  <el-switch v-model="force" inline-prompt :active-text="t('common.on', 'On')" :inactive-text="t('common.off', 'Off')" />
                 </el-form-item>
                 <el-form-item :label="t('codegen.package_name', '下载包名称')">
                   <el-input v-model="packageName" :placeholder="t('codegen.package_name_placeholder', '留空则由系统自动生成 zip 名称')" />
@@ -57,7 +57,7 @@
               <input ref="fileInputRef" class="hidden-file-input" type="file" accept=".yaml,.yml,.json,.txt" @change="handleFileChange" />
             </el-tab-pane>
 
-            <el-tab-pane label="DB" name="db">
+            <el-tab-pane :label="t('codegen.mode.db', 'DB')" name="db">
               <div class="db-mode-panel">
                 <div class="db-hero">
                   <div>
@@ -171,7 +171,7 @@
               </div>
             </el-tab-pane>
 
-            <el-tab-pane label="删除" name="delete">
+            <el-tab-pane :label="t('codegen.mode.delete', 'Delete')" name="delete">
               <div class="delete-mode-panel">
                 <el-alert
                   :title="t('codegen.delete_preview_required', '请先执行删除预览，确认计划、风险与冲突后，再点击确认删除。')"
@@ -252,17 +252,17 @@
 
             <div class="preview-table-wrap">
               <el-table :data="previewItems" class="preview-table" size="small" border>
-                <el-table-column prop="index" label="#" width="60" />
-                <el-table-column prop="kind" label="Kind" min-width="130" show-overflow-tooltip />
-                <el-table-column prop="name" label="Name" min-width="160" show-overflow-tooltip />
-                <el-table-column label="Force" width="88">
+                <el-table-column prop="index" :label="t('codegen.preview.index', '#')" width="60" />
+                <el-table-column prop="kind" :label="t('codegen.preview.kind', 'Kind')" min-width="130" show-overflow-tooltip />
+                <el-table-column prop="name" :label="t('codegen.preview.name', 'Name')" min-width="160" show-overflow-tooltip />
+                <el-table-column :label="t('codegen.preview.force', 'Force')" width="88">
                   <template #default="scope">
                     <el-tag :type="scope.row.force ? 'warning' : 'info'" effect="light">
-                      {{ scope.row.force ? 'Yes' : 'No' }}
+                      {{ scope.row.force ? t('common.yes', 'Yes') : t('common.no', 'No') }}
                     </el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column label="Actions" min-width="280">
+                <el-table-column :label="t('codegen.preview.actions', 'Actions')" min-width="280">
                   <template #default="scope">
                     <div class="action-tags">
                       <el-tag
@@ -293,20 +293,20 @@
 
             <el-empty v-if="!filePlans.length" :description="t('codegen.no_file_plan', '暂无文件计划')" />
             <el-table v-else :data="filePlans" size="small" border class="preview-table">
-              <el-table-column prop="path" label="Path" min-width="220" show-overflow-tooltip />
-              <el-table-column prop="action" label="Action" width="120" />
-              <el-table-column prop="kind" label="Kind" width="140" show-overflow-tooltip />
-              <el-table-column label="Exists" width="88">
+              <el-table-column prop="path" :label="t('codegen.file_plan.path', 'Path')" min-width="220" show-overflow-tooltip />
+              <el-table-column prop="action" :label="t('codegen.file_plan.action', 'Action')" width="120" />
+              <el-table-column prop="kind" :label="t('codegen.file_plan.kind', 'Kind')" width="140" show-overflow-tooltip />
+              <el-table-column :label="t('codegen.file_plan.exists', 'Exists')" width="88">
                 <template #default="scope">
                   <el-tag :type="scope.row.exists ? 'warning' : 'success'" effect="light">
-                    {{ scope.row.exists ? 'Yes' : 'No' }}
+                    {{ scope.row.exists ? t('common.yes', 'Yes') : t('common.no', 'No') }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="Conflict" width="96">
+              <el-table-column :label="t('codegen.file_plan.conflict', 'Conflict')" width="96">
                 <template #default="scope">
                   <el-tag :type="scope.row.conflict ? 'danger' : 'success'" effect="light">
-                    {{ scope.row.conflict ? 'Yes' : 'No' }}
+                    {{ scope.row.conflict ? t('common.yes', 'Yes') : t('common.no', 'No') }}
                   </el-tag>
                 </template>
               </el-table-column>
@@ -323,12 +323,12 @@
               </div>
             </template>
 
-            <el-empty v-if="!deleteConflicts.length" :description="t('codegen.no_risk', '暂无冲突')" />
+            <el-empty v-if="!deleteConflicts.length" :description="t('codegen.no_risk', 'No conflicts')" />
             <el-table v-else :data="deleteConflicts" size="small" border class="preview-table">
-              <el-table-column prop="kind" label="Kind" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="severity" label="Severity" width="110" />
-              <el-table-column prop="path" label="Path" min-width="200" show-overflow-tooltip />
-              <el-table-column prop="message" label="Message" min-width="280" show-overflow-tooltip />
+              <el-table-column prop="kind" :label="t('codegen.conflict.kind', 'Kind')" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="severity" :label="t('codegen.conflict.severity', 'Severity')" width="110" />
+              <el-table-column prop="path" :label="t('codegen.conflict.path', 'Path')" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="message" :label="t('codegen.conflict.message', 'Message')" min-width="280" show-overflow-tooltip />
             </el-table>
           </el-card>
 
@@ -342,11 +342,11 @@
               </div>
             </template>
 
-            <el-empty v-if="!conflicts.length" description="暂无冲突" />
+            <el-empty v-if="!conflicts.length" :description="t('codegen.no_conflicts', 'No conflicts')" />
             <el-table v-else :data="conflicts" size="small" border class="preview-table">
-              <el-table-column prop="path" label="Path" min-width="220" show-overflow-tooltip />
-              <el-table-column prop="resource" label="Resource" min-width="160" show-overflow-tooltip />
-              <el-table-column prop="reason" label="Reason" min-width="260" show-overflow-tooltip />
+              <el-table-column prop="path" :label="t('codegen.conflict.path', 'Path')" min-width="220" show-overflow-tooltip />
+              <el-table-column prop="resource" :label="t('codegen.conflict.resource', 'Resource')" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="reason" :label="t('codegen.conflict.reason', 'Reason')" min-width="260" show-overflow-tooltip />
             </el-table>
           </el-card>
 
@@ -371,12 +371,12 @@
                 <div class="artifact-summary-card">
                   <span class="artifact-summary-label">{{ t('codegen.input', '输入') }}</span>
                   <span class="artifact-summary-value">{{ auditRecord.input.driver }} / {{ auditRecord.input.database }}</span>
-                  <span class="artifact-summary-meta">dry-run: {{ auditRecord.input.dry_run ? 'yes' : 'no' }}</span>
+                  <span class="artifact-summary-meta">dry-run: {{ auditRecord.input.dry_run ? t('common.yes', 'Yes') : t('common.no', 'No') }}</span>
                 </div>
                 <div class="artifact-summary-card">
                   <span class="artifact-summary-label">{{ t('codegen.output_file_count', '输出文件') }}</span>
                   <span class="artifact-summary-value">{{ auditRecord.output.file_count }}</span>
-                  <span class="artifact-summary-meta">冲突：{{ auditRecord.output.conflict_count }}</span>
+                  <span class="artifact-summary-meta">{{ t('codegen.conflict_count_label', 'Conflicts: {count}', { count: auditRecord.output.conflict_count }) }}</span>
                 </div>
                 <div class="artifact-summary-card">
                   <span class="artifact-summary-label">{{ t('codegen.table_scope', '表范围') }}</span>

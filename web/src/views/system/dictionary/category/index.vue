@@ -76,12 +76,12 @@ function openEdit(row: DictionaryCategoryItem) {
 }
 
 function statusLabel(status: string): string {
-  return status === 'disabled' ? t('dictionary.category.disabled', '禁用') : t('dictionary.category.enabled', '启用');
+  return status === 'disabled' ? t('dictionary.category.disabled', 'Disabled') : t('dictionary.category.enabled', 'Enabled');
 }
 
 async function submitForm() {
   if (form.code.trim() === '' || form.name.trim() === '') {
-    ElMessage.warning(t('dictionary.category.validation_required', '请输入字典编码和名称'));
+    ElMessage.warning(t('dictionary.category.validation_required', 'Enter the dictionary code and name'));
     return;
   }
   dialogLoading.value = true;
@@ -98,10 +98,10 @@ async function submitForm() {
 
     if (editingId.value) {
       await updateDictionaryCategory(editingId.value, payload);
-      ElMessage.success(t('dictionary.category.updated', '字典分类已更新'));
+      ElMessage.success(t('dictionary.category.updated', 'Dictionary category updated'));
     } else {
       await createDictionaryCategory(payload);
-      ElMessage.success(t('dictionary.category.created', '字典分类已创建'));
+      ElMessage.success(t('dictionary.category.created', 'Dictionary category created'));
     }
 
     dialogVisible.value = false;
@@ -112,13 +112,13 @@ async function submitForm() {
 }
 
 async function removeRow(row: DictionaryCategoryItem) {
-  await ElMessageBox.confirm(t('dictionary.category.confirm_delete', '确认删除字典分类 {name} 吗？', { name: row.name }), t('dictionary.category.delete_title', '删除分类'), {
+  await ElMessageBox.confirm(t('dictionary.category.confirm_delete', 'Delete dictionary category {name}?', { name: row.name }), t('dictionary.category.delete_title', 'Delete category'), {
     type: 'warning',
-    confirmButtonText: t('common.delete', '删除'),
-    cancelButtonText: t('common.cancel', '取消'),
+    confirmButtonText: t('common.delete', 'Delete'),
+    cancelButtonText: t('common.cancel', 'Cancel'),
   });
   await deleteDictionaryCategory(row.id);
-  ElMessage.success(t('dictionary.category.deleted', '字典分类已删除'));
+  ElMessage.success(t('dictionary.category.deleted', 'Dictionary category deleted'));
   await loadCategories();
 }
 
@@ -153,55 +153,55 @@ onMounted(() => {
 <template>
   <div class="admin-page">
     <AdminTable
-      :title="t('dictionary.category.title', '字典分类管理')"
-      :description="t('dictionary.category.description', '维护字典分类编码、名称与启停状态，供系统内其他模块复用。')"
+      :title="t('dictionary.category.title', 'Dictionary categories')"
+      :description="t('dictionary.category.description', 'Maintain dictionary category codes, names, and enable/disable status for reuse by other modules.')"
       :loading="tableLoading"
     >
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadCategories">{{ t('common.refresh', '刷新') }}</el-button>
-        <el-button v-permission="'dictionary:category:create'" type="primary" @click="openCreate">{{ t('dictionary.category.create', '新增分类') }}</el-button>
+        <el-button :loading="tableLoading" @click="loadCategories">{{ t('common.refresh', 'Refresh') }}</el-button>
+        <el-button v-permission="'dictionary:category:create'" type="primary" @click="openCreate">{{ t('dictionary.category.create', 'Add category') }}</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
-          <el-form-item :label="t('dictionary.category.keyword', '关键字')">
-            <el-input v-model="query.keyword" clearable :placeholder="t('dictionary.category.keyword_placeholder', '编码 / 名称 / 备注')" />
+          <el-form-item :label="t('dictionary.category.keyword', 'Keyword')">
+            <el-input v-model="query.keyword" clearable :placeholder="t('dictionary.category.keyword_placeholder', 'Code / name / remark')" />
           </el-form-item>
-          <el-form-item :label="t('dictionary.category.status', '状态')">
-            <el-select v-model="query.status" clearable :placeholder="t('dictionary.category.all_status', '全部状态')" style="width: 180px">
-              <el-option :label="t('dictionary.category.enabled', '启用')" value="enabled" />
-              <el-option :label="t('dictionary.category.disabled', '禁用')" value="disabled" />
+          <el-form-item :label="t('dictionary.category.status', 'Status')">
+            <el-select v-model="query.status" clearable :placeholder="t('dictionary.category.all_status', 'All statuses')" style="width: 180px">
+              <el-option :label="t('dictionary.category.enabled', 'Enabled')" value="enabled" />
+              <el-option :label="t('dictionary.category.disabled', 'Disabled')" value="disabled" />
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">{{ t('common.search', '查询') }}</el-button>
-            <el-button @click="handleReset">{{ t('common.reset', '重置') }}</el-button>
+            <el-button type="primary" @click="handleSearch">{{ t('common.search', 'Search') }}</el-button>
+            <el-button @click="handleReset">{{ t('common.reset', 'Reset') }}</el-button>
           </el-form-item>
         </el-form>
       </template>
 
       <el-table :data="rows" border row-key="id" v-loading="tableLoading">
-        <el-table-column prop="code" :label="t('dictionary.category.code', '分类编码')" min-width="160" />
-        <el-table-column prop="name" :label="t('dictionary.category.name', '分类名称')" min-width="160" />
-        <el-table-column prop="description" :label="t('dictionary.category.description_label', '描述')" min-width="220" show-overflow-tooltip />
-        <el-table-column :label="t('dictionary.category.status', '状态')" width="100">
+        <el-table-column prop="code" :label="t('dictionary.category.code', 'Category code')" min-width="160" />
+        <el-table-column prop="name" :label="t('dictionary.category.name', 'Category name')" min-width="160" />
+        <el-table-column prop="description" :label="t('dictionary.category.description_label', 'Description')" min-width="220" show-overflow-tooltip />
+        <el-table-column :label="t('dictionary.category.status', 'Status')" width="100">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)" effect="plain">
               {{ statusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="sort" :label="t('dictionary.category.sort', '排序')" width="90" />
-        <el-table-column prop="remark" :label="t('dictionary.category.remark', '备注')" min-width="180" show-overflow-tooltip />
-        <el-table-column :label="t('dictionary.category.updated_at', '更新时间')" min-width="180">
+        <el-table-column prop="sort" :label="t('dictionary.category.sort', 'Sort')" width="90" />
+        <el-table-column prop="remark" :label="t('dictionary.category.remark', 'Remark')" min-width="180" show-overflow-tooltip />
+        <el-table-column :label="t('dictionary.category.updated_at', 'Updated at')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.updated_at) }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.actions', '操作')" width="180" fixed="right">
+        <el-table-column :label="t('common.actions', 'Actions')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'dictionary:category:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', '编辑') }}</el-button>
-            <el-button v-permission="'dictionary:category:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', '删除') }}</el-button>
+            <el-button v-permission="'dictionary:category:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', 'Edit') }}</el-button>
+            <el-button v-permission="'dictionary:category:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', 'Delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -224,32 +224,32 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? t('dictionary.category.edit_title', '编辑字典分类') : t('dictionary.category.create_title', '新增字典分类')"
+      :title="editingId ? t('dictionary.category.edit_title', 'Edit dictionary category') : t('dictionary.category.create_title', 'New dictionary category')"
       :loading="dialogLoading"
       width="720px"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form">
-        <el-form-item :label="t('dictionary.category.code', '分类编码')" required>
-          <el-input v-model="form.code" :placeholder="t('dictionary.category.code_placeholder', '请输入分类编码')" />
+        <el-form-item :label="t('dictionary.category.code', 'Category code')" required>
+          <el-input v-model="form.code" :placeholder="t('dictionary.category.code_placeholder', 'Enter category code')" />
         </el-form-item>
-        <el-form-item :label="t('dictionary.category.name', '分类名称')" required>
-          <el-input v-model="form.name" :placeholder="t('dictionary.category.name_placeholder', '请输入分类名称')" />
+        <el-form-item :label="t('dictionary.category.name', 'Category name')" required>
+          <el-input v-model="form.name" :placeholder="t('dictionary.category.name_placeholder', 'Enter category name')" />
         </el-form-item>
-        <el-form-item :label="t('dictionary.category.description_label', '描述')">
-          <el-input v-model="form.description" type="textarea" :rows="3" :placeholder="t('dictionary.category.description_placeholder', '请输入描述')" />
+        <el-form-item :label="t('dictionary.category.description_label', 'Description')">
+          <el-input v-model="form.description" type="textarea" :rows="3" :placeholder="t('dictionary.category.description_placeholder', 'Enter description')" />
         </el-form-item>
-        <el-form-item :label="t('dictionary.category.status', '状态')">
+        <el-form-item :label="t('dictionary.category.status', 'Status')">
           <el-select v-model="form.status" style="width: 100%">
-            <el-option :label="t('dictionary.category.enabled', '启用')" value="enabled" />
-            <el-option :label="t('dictionary.category.disabled', '禁用')" value="disabled" />
+            <el-option :label="t('dictionary.category.enabled', 'Enabled')" value="enabled" />
+            <el-option :label="t('dictionary.category.disabled', 'Disabled')" value="disabled" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('dictionary.category.sort', '排序')">
+        <el-form-item :label="t('dictionary.category.sort', 'Sort')">
           <el-input-number v-model="form.sort" :min="0" :step="1" style="width: 100%" />
         </el-form-item>
-        <el-form-item :label="t('dictionary.category.remark', '备注')">
-          <el-input v-model="form.remark" type="textarea" :rows="3" :placeholder="t('dictionary.category.remark_placeholder', '请输入备注')" />
+        <el-form-item :label="t('dictionary.category.remark', 'Remark')">
+          <el-input v-model="form.remark" type="textarea" :rows="3" :placeholder="t('dictionary.category.remark_placeholder', 'Enter remark')" />
         </el-form-item>
       </el-form>
     </AdminFormDialog>

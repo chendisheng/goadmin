@@ -33,17 +33,19 @@ type ManifestDocument struct {
 }
 
 type ManifestMenu struct {
-	Name       string `yaml:"name"`
-	Path       string `yaml:"path"`
-	ParentPath string `yaml:"parent_path,omitempty"`
-	Component  string `yaml:"component,omitempty"`
-	Icon       string `yaml:"icon,omitempty"`
-	Permission string `yaml:"permission,omitempty"`
-	Type       string `yaml:"type,omitempty"`
-	Redirect   string `yaml:"redirect,omitempty"`
-	Visible    bool   `yaml:"visible,omitempty"`
-	Enabled    bool   `yaml:"enabled,omitempty"`
-	Sort       int    `yaml:"sort,omitempty"`
+	Name         string `yaml:"name"`
+	TitleKey     string `yaml:"title_key,omitempty"`
+	TitleDefault string `yaml:"title_default,omitempty"`
+	Path         string `yaml:"path"`
+	ParentPath   string `yaml:"parent_path,omitempty"`
+	Component    string `yaml:"component,omitempty"`
+	Icon         string `yaml:"icon,omitempty"`
+	Permission   string `yaml:"permission,omitempty"`
+	Type         string `yaml:"type,omitempty"`
+	Redirect     string `yaml:"redirect,omitempty"`
+	Visible      bool   `yaml:"visible,omitempty"`
+	Enabled      bool   `yaml:"enabled,omitempty"`
+	Sort         int    `yaml:"sort,omitempty"`
 }
 
 type ManifestRoute struct {
@@ -159,18 +161,20 @@ func (s *Service) InstallManifest(ctx context.Context, manifestPath string) (Ins
 
 		if current, ok := existingByPath[menuPath]; ok && current != nil {
 			updated, err := s.menus.Update(ctx, current.ID, menucommand.UpdateMenu{
-				ParentID:    parentID,
-				Name:        spec.Name,
-				Path:        spec.Path,
-				Component:   spec.Component,
-				Icon:        spec.Icon,
-				Sort:        spec.Sort,
-				Permission:  spec.Permission,
-				Type:        spec.Type,
-				Visible:     spec.Visible,
-				Enabled:     spec.Enabled,
-				Redirect:    spec.Redirect,
-				ExternalURL: "",
+				ParentID:     parentID,
+				Name:         spec.Name,
+				TitleKey:     spec.TitleKey,
+				TitleDefault: spec.TitleDefault,
+				Path:         spec.Path,
+				Component:    spec.Component,
+				Icon:         spec.Icon,
+				Sort:         spec.Sort,
+				Permission:   spec.Permission,
+				Type:         spec.Type,
+				Visible:      spec.Visible,
+				Enabled:      spec.Enabled,
+				Redirect:     spec.Redirect,
+				ExternalURL:  "",
 			})
 			if err != nil {
 				return nil, err
@@ -189,18 +193,20 @@ func (s *Service) InstallManifest(ctx context.Context, manifestPath string) (Ins
 		}
 
 		created, err := s.menus.Create(ctx, menucommand.CreateMenu{
-			ParentID:    parentID,
-			Name:        spec.Name,
-			Path:        spec.Path,
-			Component:   spec.Component,
-			Icon:        spec.Icon,
-			Sort:        spec.Sort,
-			Permission:  spec.Permission,
-			Type:        spec.Type,
-			Visible:     spec.Visible,
-			Enabled:     spec.Enabled,
-			Redirect:    spec.Redirect,
-			ExternalURL: "",
+			ParentID:     parentID,
+			Name:         spec.Name,
+			TitleKey:     spec.TitleKey,
+			TitleDefault: spec.TitleDefault,
+			Path:         spec.Path,
+			Component:    spec.Component,
+			Icon:         spec.Icon,
+			Sort:         spec.Sort,
+			Permission:   spec.Permission,
+			Type:         spec.Type,
+			Visible:      spec.Visible,
+			Enabled:      spec.Enabled,
+			Redirect:     spec.Redirect,
+			ExternalURL:  "",
 		})
 		if err != nil {
 			return nil, err
@@ -281,6 +287,8 @@ func flattenMenuTree(items []menumodel.Menu) map[string]*menumodel.Menu {
 
 func normalizeManifestMenu(menu ManifestMenu) (ManifestMenu, error) {
 	menu.Name = strings.TrimSpace(menu.Name)
+	menu.TitleKey = strings.TrimSpace(menu.TitleKey)
+	menu.TitleDefault = strings.TrimSpace(menu.TitleDefault)
 	menu.Path = normalizeMenuPath(menu.Path)
 	menu.ParentPath = normalizeMenuPath(menu.ParentPath)
 	menu.Component = strings.TrimSpace(menu.Component)

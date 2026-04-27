@@ -10,31 +10,35 @@ type ListRequest struct {
 }
 
 type CreateRequest struct {
-	ParentID    string `json:"parent_id"`
-	Name        string `json:"name" binding:"required"`
-	Path        string `json:"path" binding:"required"`
-	Component   string `json:"component"`
-	Icon        string `json:"icon"`
-	Sort        int    `json:"sort"`
-	Permission  string `json:"permission"`
-	Type        string `json:"type"`
-	Visible     bool   `json:"visible"`
-	Enabled     bool   `json:"enabled"`
-	Redirect    string `json:"redirect"`
-	ExternalURL string `json:"external_url"`
+	ParentID     string `json:"parent_id"`
+	Name         string `json:"name" binding:"required"`
+	TitleKey     string `json:"title_key"`
+	TitleDefault string `json:"title_default"`
+	Path         string `json:"path" binding:"required"`
+	Component    string `json:"component"`
+	Icon         string `json:"icon"`
+	Sort         int    `json:"sort"`
+	Permission   string `json:"permission"`
+	Type         string `json:"type"`
+	Visible      bool   `json:"visible"`
+	Enabled      bool   `json:"enabled"`
+	Redirect     string `json:"redirect"`
+	ExternalURL  string `json:"external_url"`
 }
 
 type UpdateRequest struct {
-	ParentID    string `json:"parent_id"`
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	Component   string `json:"component"`
-	Icon        string `json:"icon"`
-	Sort        int    `json:"sort"`
-	Permission  string `json:"permission"`
-	Type        string `json:"type"`
-	Visible     bool   `json:"visible"`
-	Enabled     bool   `json:"enabled"`
-	Redirect    string `json:"redirect"`
-	ExternalURL string `json:"external_url"`
+	ParentID     string `json:"parent_id"`
+	Name         string `json:"name"`
+	TitleKey     string `json:"title_key"`
+	TitleDefault string `json:"title_default"`
+	Path         string `json:"path"`
+	Component    string `json:"component"`
+	Icon         string `json:"icon"`
+	Sort         int    `json:"sort"`
+	Permission   string `json:"permission"`
+	Type         string `json:"type"`
+	Visible      bool   `json:"visible"`
+	Enabled      bool   `json:"enabled"`
+	Redirect     string `json:"redirect"`
+	ExternalURL  string `json:"external_url"`
 }

@@ -103,16 +103,16 @@ async function submitForm() {
 
     if (editingId.value) {
       await updateCasbinModel(editingId.value, payload);
-      ElMessage.success(t('casbin_model.updated', 'CasbinModel 已更新'));
+      ElMessage.success(t('casbin_model.updated', 'CasbinModel updated'));
     } else {
       await createCasbinModel(payload);
-      ElMessage.success(t('casbin_model.created', 'CasbinModel 已创建'));
+      ElMessage.success(t('casbin_model.created', 'CasbinModel created'));
     }
 
     dialogVisible.value = false;
     await loadItems();
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('casbin_model.save_failed', '保存失败'));
+    ElMessage.error(error instanceof Error ? error.message : t('casbin_model.save_failed', 'Save failed'));
   } finally {
     dialogLoading.value = false;
   }
@@ -120,13 +120,13 @@ async function submitForm() {
 
 async function removeRow(row: CasbinModelItem) {
   const rowKey = getRowKey(row);
-  await ElMessageBox.confirm(t('casbin_model.confirm_delete', '确认删除 CasbinModel {name} 吗？', { name: rowKey }), t('casbin_model.delete_title', '删除 CasbinModel'), {
+  await ElMessageBox.confirm(t('casbin_model.confirm_delete', 'Delete CasbinModel {name}?', { name: rowKey }), t('casbin_model.delete_title', 'Delete CasbinModel'), {
     type: 'warning',
-    confirmButtonText: t('common.delete', '删除'),
-    cancelButtonText: t('common.cancel', '取消'),
+    confirmButtonText: t('common.delete', 'Delete'),
+    cancelButtonText: t('common.cancel', 'Cancel'),
   });
   await deleteCasbinModel(rowKey);
-  ElMessage.success(t('casbin_model.deleted', 'CasbinModel 已删除'));
+  ElMessage.success(t('casbin_model.deleted', 'CasbinModel deleted'));
   await loadItems();
 }
 
@@ -160,23 +160,23 @@ onMounted(() => {
 <template>
   <div class="admin-page">
     <AdminTable
-      :title="t('casbin_model.title', '模型管理')"
-      :description="t('casbin_model.description', '授权模型配置的列表、编辑和删除入口。')"
+      :title="t('casbin_model.title', 'Model management')"
+      :description="t('casbin_model.description', 'Manage authorization model configuration, edit entries, and delete entries.')"
       :loading="tableLoading"
     >
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadItems">{{ t('common.refresh', '刷新') }}</el-button>
-        <el-button v-permission="'casbin_model:create'" type="primary" @click="openCreate">{{ t('common.create', '新增') }}</el-button>
+        <el-button :loading="tableLoading" @click="loadItems">{{ t('common.refresh', 'Refresh') }}</el-button>
+        <el-button v-permission="'casbin_model:create'" type="primary" @click="openCreate">{{ t('common.create', 'Create') }}</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
-          <el-form-item :label="t('common.search', '查询')">
-            <el-input v-model="query.keyword" clearable :placeholder="t('casbin_model.keyword_placeholder', '搜索 CasbinModel 数据')" />
+          <el-form-item :label="t('common.search', 'Search')">
+            <el-input v-model="query.keyword" clearable :placeholder="t('casbin_model.keyword_placeholder', 'Search CasbinModel data')" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">{{ t('common.search', '查询') }}</el-button>
-            <el-button @click="handleReset">{{ t('common.reset', '重置') }}</el-button>
+            <el-button type="primary" @click="handleSearch">{{ t('common.search', 'Search') }}</el-button>
+            <el-button @click="handleReset">{{ t('common.reset', 'Reset') }}</el-button>
           </el-form-item>
         </el-form>
       </template>
@@ -197,20 +197,20 @@ onMounted(() => {
             {{ row.content || '-' }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('casbin_model.created_at', '创建时间')" min-width="180">
+        <el-table-column :label="t('casbin_model.created_at', 'Created at')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('casbin_model.updated_at', '更新时间')" min-width="180">
+        <el-table-column :label="t('casbin_model.updated_at', 'Updated at')" min-width="180">
           <template #default="{ row }">
             {{ formatDateTime(row.updated_at) }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('casbin_model.actions', '操作')" width="180" fixed="right">
+        <el-table-column :label="t('casbin_model.actions', 'Actions')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'casbin_model:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', '编辑') }}</el-button>
-            <el-button v-permission="'casbin_model:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', '删除') }}</el-button>
+            <el-button v-permission="'casbin_model:update'" link type="primary" @click="openEdit(row)">{{ t('common.edit', 'Edit') }}</el-button>
+            <el-button v-permission="'casbin_model:delete'" link type="danger" @click="removeRow(row)">{{ t('common.delete', 'Delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -233,13 +233,13 @@ onMounted(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? t('casbin_model.edit_title', '编辑模型') : t('casbin_model.create_title', '新增模型')"
+      :title="editingId ? t('casbin_model.edit_title', 'Edit model') : t('casbin_model.create_title', 'New model')"
       :loading="dialogLoading"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form">
         <el-form-item :label="t('casbin_model.content', 'Content')">
-          <el-input v-model="form.content" type="textarea" :rows="4" :placeholder="t('casbin_model.content_placeholder', '请输入 Content')" />
+          <el-input v-model="form.content" type="textarea" :rows="4" :placeholder="t('casbin_model.content_placeholder', 'Enter content')" />
         </el-form-item>
       </el-form>
     </AdminFormDialog>

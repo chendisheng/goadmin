@@ -62,8 +62,13 @@ func TestPreviewCollectsOwnedAssetsAndConflicts(t *testing.T) {
 	assertDeleteItemPath(t, report.Plan.SourceFiles, "backend/modules/book/bootstrap.go")
 	assertDeleteItemPath(t, report.Plan.SourceFiles, "backend/modules/book/manifest.yaml")
 	assertDeleteItemPath(t, report.Plan.SourceFiles, "backend/modules/book/schema.sql")
+	assertDeleteItemPath(t, report.Plan.SourceFiles, "backend/modules/book/locales/zh-CN/book.yaml")
+	assertDeleteItemPath(t, report.Plan.SourceFiles, "backend/modules/book/locales/en-US/book.yaml")
 	assertDeleteItemPath(t, report.Plan.RegistryChanges, "backend/core/bootstrap/modules_gen.go")
 	assertDeleteItemPath(t, report.Plan.FrontendChanges, "web/src/views/book/index.vue")
+	assertDeleteItemPath(t, report.Plan.FrontendChanges, "web/src/views/book/index.vue.js")
+	assertDeleteItemPath(t, report.Plan.FrontendChanges, "web/src/api/book.js")
+	assertDeleteItemPath(t, report.Plan.FrontendChanges, "web/src/router/modules/book.js")
 	if len(report.Plan.PolicyChanges) != 10 {
 		t.Fatalf("policy changes = %d, want 10", len(report.Plan.PolicyChanges))
 	}
@@ -172,6 +177,21 @@ func TestDeleteRemovesGeneratedAssetsAndRefreshesRegistry(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "web", "src", "views", "book")); !os.IsNotExist(err) {
 		t.Fatalf("expected frontend view dir to be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "web", "src", "views", "book", "index.vue.js")); !os.IsNotExist(err) {
+		t.Fatalf("expected vue companion js file to be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "web", "src", "api", "book.js")); !os.IsNotExist(err) {
+		t.Fatalf("expected api companion js file to be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "web", "src", "router", "modules", "book.js")); !os.IsNotExist(err) {
+		t.Fatalf("expected router companion js file to be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "backend", "modules", "book", "locales", "zh-CN", "book.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("expected zh-CN locale file to be removed, got err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "backend", "modules", "book", "locales", "en-US", "book.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("expected en-US locale file to be removed, got err=%v", err)
 	}
 	registryPath := filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go")
 	content, err := os.ReadFile(registryPath)
@@ -348,6 +368,8 @@ func createDeleteModuleFixture(t *testing.T, root, module string, includeManifes
 	mustMkdirAll(t, filepath.Join(moduleDir, "transport", "http", "handler"))
 	mustMkdirAll(t, filepath.Join(moduleDir, "transport", "http", "request"))
 	mustMkdirAll(t, filepath.Join(moduleDir, "transport", "http", "response"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "locales", "zh-CN"))
+	mustMkdirAll(t, filepath.Join(moduleDir, "locales", "en-US"))
 	mustMkdirAll(t, filepath.Join(root, "backend", "core", "bootstrap"))
 	mustMkdirAll(t, filepath.Join(root, "web", "src", "api"))
 	mustMkdirAll(t, filepath.Join(root, "web", "src", "router", "modules"))
@@ -415,14 +437,19 @@ permissions:
 	writeFixture(t, filepath.Join(moduleDir, "transport", "http", "handler", "handler.go"), "package handler\n")
 	writeFixture(t, filepath.Join(moduleDir, "transport", "http", "request", module+".go"), "package request\n")
 	writeFixture(t, filepath.Join(moduleDir, "transport", "http", "response", module+".go"), "package response\n")
+	writeFixture(t, filepath.Join(moduleDir, "locales", "zh-CN", module+".yaml"), "title: zh-CN\n")
+	writeFixture(t, filepath.Join(moduleDir, "locales", "en-US", module+".yaml"), "title: en-US\n")
 	if includeUnknown {
 		writeFixture(t, filepath.Join(moduleDir, "notes.txt"), "manual note")
 	}
 	writeFixture(t, filepath.Join(root, "backend", "core", "bootstrap", "modules_gen.go"), "package bootstrap\n\nimport (\n\t\"goadmin/modules/"+module+"\"\n)\n\nfunc generatedModules() []Module {\n\treturn []Module{\n\t\t"+module+".NewBootstrap(),\n\t}\n}\n")
 	writeFixture(t, filepath.Join(root, "backend", "core", "bootstrap", "modules_builtin.go"), "package bootstrap\n\nimport ()\n\nfunc builtinModules() []Module {\n\treturn []Module{}\n}\n")
 	writeFixture(t, filepath.Join(root, "web", "src", "api", module+".ts"), "export {}\n")
+	writeFixture(t, filepath.Join(root, "web", "src", "api", module+".js"), "export {}\n")
 	writeFixture(t, filepath.Join(root, "web", "src", "router", "modules", module+".ts"), "export {}\n")
+	writeFixture(t, filepath.Join(root, "web", "src", "router", "modules", module+".js"), "export {}\n")
 	writeFixture(t, filepath.Join(root, "web", "src", "views", module, "index.vue"), "<template></template>\n")
+	writeFixture(t, filepath.Join(root, "web", "src", "views", module, "index.vue.js"), "export {}\n")
 }
 
 func writeFixture(t *testing.T, path, content string) {

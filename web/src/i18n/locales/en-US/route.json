@@ -29,6 +29,7 @@
   "route.dashboard": "Dashboard",
   "route.login": "Sign in",
   "route.book": "Book management",
+  "route.book_list": "Book list",
   "route.plugin_detail": "Plugin details",
   "route.not_found": "Page not found",
   "route.placeholder.title": "Page placeholder",

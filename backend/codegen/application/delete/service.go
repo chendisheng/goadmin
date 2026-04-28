@@ -685,8 +685,33 @@ func (s *Service) collectFrontendCandidates(module string, managed bool, display
 			Managed:  managed,
 			Metadata: map[string]any{"relative_path": displayPath(displayRoot, abs)},
 		})
+		for _, companion := range frontendCompanionJSFiles(abs) {
+			if !fileExists(companion) {
+				continue
+			}
+			items = append(items, lifecycle.DeleteItem{
+				Module:   module,
+				Kind:     candidate.kind,
+				Path:     displayPath(displayRoot, companion),
+				Origin:   sourceOrigin(managed),
+				Managed:  managed,
+				Metadata: map[string]any{"relative_path": displayPath(displayRoot, companion), "generated_companion": true},
+			})
+		}
 	}
 	return items
+}
+
+func frontendCompanionJSFiles(path string) []string {
+	path = filepath.Clean(path)
+	switch {
+	case strings.HasSuffix(path, ".vue"):
+		return []string{path + ".js"}
+	case strings.HasSuffix(path, ".ts"):
+		return []string{strings.TrimSuffix(path, ".ts") + ".js"}
+	default:
+		return nil
+	}
 }
 
 func classifyModuleSourceFile(rel string) (lifecycle.AssetKind, bool) {
@@ -698,6 +723,8 @@ func classifyModuleSourceFile(rel string) (lifecycle.AssetKind, bool) {
 		return lifecycle.AssetKindSourceFile, true
 	}
 	switch {
+	case strings.HasPrefix(rel, "locales/") && (strings.HasSuffix(rel, ".yaml") || strings.HasSuffix(rel, ".yml")):
+		return lifecycle.AssetKindSourceFile, true
 	case strings.HasPrefix(rel, "application/command/") && strings.HasSuffix(rel, ".go"):
 		return lifecycle.AssetKindSourceFile, true
 	case strings.HasPrefix(rel, "application/query/") && strings.HasSuffix(rel, ".go"):

@@ -26,6 +26,7 @@
   "route.dashboard": "工作台",
   "route.login": "登录",
   "route.book": "图书管理",
+  "route.book_list": "图书列表",
   "route.codegen_console": "CodeGen 控制台",
   "route.casbin_models": "模型管理",
   "route.casbin_rules": "策略管理",

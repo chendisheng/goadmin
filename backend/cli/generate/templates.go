@@ -78,6 +78,10 @@ const crudLocaleZhTemplate = `translation:
   {{- end }}
 `
 
+const crudFrontendLocaleZhTemplate = `{{ frontendLocaleJSON . "zh-CN" }}`
+
+const crudFrontendLocaleEnTemplate = `{{ frontendLocaleJSON . "en-US" }}`
+
 const crudLocaleEnTemplate = `translation:
   {{.EntityLower}}.repository_required: {{ yamlStringLiteral (printf "%s repository is required" .Title) }}
   {{.EntityLower}}.service_not_configured: {{ yamlStringLiteral (printf "%s service is not configured" .Title) }}
@@ -624,10 +628,11 @@ import { useRoute } from 'vue-router';
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { create{{.Entity}}, delete{{.Entity}}, list{{.EntityPlural}}, update{{.Entity}} } from '@/api/{{.EntityLower}}';
-import { resolveRouteLocaleMeta } from '@/i18n';
+import { resolveRouteLocaleMeta, useAppI18n } from '@/i18n';
 import { formatDateTime } from '@/utils/admin';
 
 const route = useRoute();
+const { t } = useAppI18n();
 
 const pageTitle = computed(() => {
   const localized = resolveRouteLocaleMeta(route);
@@ -750,29 +755,29 @@ async function submitForm() {
 
     if (editingId.value) {
       await update{{.Entity}}(editingId.value, payload);
-      ElMessage.success('{{.Entity}} 已更新');
+      ElMessage.success(t('{{.EntityLower}}.updated', 'Updated'));
     } else {
       await create{{.Entity}}(payload);
-      ElMessage.success('{{.Entity}} 已创建');
+      ElMessage.success(t('{{.EntityLower}}.created', 'Created'));
     }
 
     dialogVisible.value = false;
     await loadItems();
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '保存失败');
+    ElMessage.error(error instanceof Error ? error.message : t('{{.EntityLower}}.save_failed', 'Save failed'));
   } finally {
     dialogLoading.value = false;
   }
 }
 
 async function removeRow(row: {{.Entity}}Item) {
-  await ElMessageBox.confirm('确认删除 {{.Entity}} ' + row.id + ' 吗？', '删除{{.Entity}}', {
+  await ElMessageBox.confirm(t('{{.EntityLower}}.delete_confirm', 'Delete this record?', { name: row.id }), t('{{.EntityLower}}.delete_title', 'Delete record'), {
     type: 'warning',
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
+    confirmButtonText: t('common.delete', 'Delete'),
+    cancelButtonText: t('common.cancel', 'Cancel'),
   });
   await delete{{.Entity}}(row.id);
-  ElMessage.success('{{.Entity}} 已删除');
+  ElMessage.success(t('{{.EntityLower}}.deleted', 'Deleted'));
   await loadItems();
 }
 
@@ -811,32 +816,32 @@ onActivated(() => {
   <div class="admin-page">
     <AdminTable
       :title="pageTitle"
-      description="由 goadmin-cli 生成的 CRUD 页面，可直接用于列表、编辑和删除。"
+      :description="t('{{.EntityLower}}.page.description', 'Generated CRUD page for listing, editing, and deleting records.')"
       :loading="tableLoading"
     >
       <template #actions>
-        <el-button :loading="tableLoading" @click="loadItems">刷新</el-button>
-        <el-button v-permission="'{{.EntityLower}}:create'" type="primary" @click="openCreate">新增{{.Entity}}</el-button>
+        <el-button :loading="tableLoading" @click="loadItems">{{"{{"}} t('common.refresh', 'Refresh') {{"}}"}}</el-button>
+        <el-button v-permission="'{{.EntityLower}}:create'" type="primary" @click="openCreate">{{"{{"}} t('common.create', 'Create') {{"}}"}}</el-button>
       </template>
 
       <template #filters>
         <el-form :inline="true" label-width="88px" class="admin-filters">
-          <el-form-item label="关键字">
-            <el-input v-model="query.keyword" clearable placeholder="搜索{{.Entity}}数据" />
+          <el-form-item :label="t('common.search', 'Search')">
+            <el-input v-model="query.keyword" clearable :placeholder="t('{{.EntityLower}}.search.placeholder', 'Search records')" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="handleReset">重置</el-button>
+            <el-button type="primary" @click="handleSearch">{{"{{"}} t('common.search', 'Search') {{"}}"}}</el-button>
+            <el-button @click="handleReset">{{"{{"}} t('common.reset', 'Reset') {{"}}"}}</el-button>
           </el-form-item>
         </el-form>
       </template>
 
       <el-table :data="rows" border row-key="id" v-loading="tableLoading">
-        <el-table-column prop="id" label="ID" min-width="160" />
+        <el-table-column prop="id" :label="t('common.id', 'ID')" min-width="160" />
 {{- range .DisplayFields}}
         <el-table-column
           prop="{{.JSONName}}"
-          label="{{.DisplayLabel}}"
+          :label="t({{ vueStringLiteral (fieldLocaleKey $.EntityLower . "label") }}, {{ vueStringLiteral (localeFieldLabelEn .) }})"
           min-width="{{if eq .FrontendControl "datetime"}}180{{else if eq .FrontendControl "number"}}120{{else if eq .FrontendControl "textarea"}}220{{else}}140{{end}}"
 {{- if or (eq .FrontendControl "input") (eq .FrontendControl "textarea")}}
           show-overflow-tooltip
@@ -847,20 +852,20 @@ onActivated(() => {
           </template>
         </el-table-column>
 {{- end}}
-        <el-table-column label="创建时间" min-width="180">
+        <el-table-column :label="t('common.created_at', 'Created at')" min-width="180">
           <template #default="{ row }">
             {{"{{"}} formatDateTime(row.created_at) {{"}}"}}
           </template>
         </el-table-column>
-        <el-table-column label="更新时间" min-width="180">
+        <el-table-column :label="t('common.updated_at', 'Updated at')" min-width="180">
           <template #default="{ row }">
             {{"{{"}} formatDateTime(row.updated_at) {{"}}"}}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column :label="t('common.actions', 'Actions')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'{{.EntityLower}}:update'" link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button v-permission="'{{.EntityLower}}:delete'" link type="danger" @click="removeRow(row)">删除</el-button>
+            <el-button v-permission="'{{.EntityLower}}:update'" link type="primary" @click="openEdit(row)">{{"{{"}} t('common.edit', 'Edit') {{"}}"}}</el-button>
+            <el-button v-permission="'{{.EntityLower}}:delete'" link type="danger" @click="removeRow(row)">{{"{{"}} t('common.delete', 'Delete') {{"}}"}}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -883,13 +888,13 @@ onActivated(() => {
 
     <AdminFormDialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑' + pageTitle : '新增' + pageTitle"
+      :title="editingId ? t('{{.EntityLower}}.edit_title', 'Edit record') : t('{{.EntityLower}}.create_title', 'Create record')"
       :loading="dialogLoading"
       @confirm="submitForm"
     >
       <el-form label-width="110px" class="admin-form">
 {{- range .FormFields}}
-        <el-form-item label="{{.DisplayLabel}}">
+        <el-form-item :label="t({{ vueStringLiteral (fieldLocaleKey $.EntityLower . "label") }}, {{ vueStringLiteral (localeFieldLabelEn .) }})">
 {{- if .HasEnum}}
 {{- $enumOptions := .EnumDisplayOptions }}
 {{- if and (eq .FrontendControl "switch") (eq (len $enumOptions) 2) }}
@@ -902,7 +907,7 @@ onActivated(() => {
             :inactive-value="{{ vueStringLiteral (index $enumOptions 0).Value }}"
           />
 {{- else if eq .FrontendControl "switch"}}
-          <el-select v-model="form.{{.JSONName}}" filterable clearable placeholder="请选择{{.DisplayLabel}}" style="width: 100%">
+          <el-select v-model="form.{{.JSONName}}" filterable clearable :placeholder="t({{ vueStringLiteral (fieldLocaleKey $.EntityLower . "placeholder") }}, {{ vueStringLiteral (printf "Please enter %s" (localeFieldLabelEn .)) }})" style="width: 100%">
 {{- range $enumOptions}}
             <el-option :label="{{ vueStringLiteral .Label }}" :value="{{ vueStringLiteral .Value }}" :disabled="{{ .Disabled }}" />
 {{- end}}
@@ -920,7 +925,7 @@ onActivated(() => {
 {{- end}}
           </el-checkbox-group>
 {{- else}}
-          <el-select v-model="form.{{.JSONName}}" filterable clearable :multiple="{{ if eq .EnumMode "multiple" }}true{{ else }}false{{ end }}" placeholder="请选择{{.DisplayLabel}}" style="width: 100%">
+          <el-select v-model="form.{{.JSONName}}" filterable clearable :multiple="{{ if eq .EnumMode "multiple" }}true{{ else }}false{{ end }}" :placeholder="t({{ vueStringLiteral (fieldLocaleKey $.EntityLower . "placeholder") }}, {{ vueStringLiteral (printf "Please enter %s" (localeFieldLabelEn .)) }})" style="width: 100%">
 {{- range $enumOptions}}
             <el-option :label="{{ vueStringLiteral .Label }}" :value="{{ vueStringLiteral .Value }}" :disabled="{{ .Disabled }}" />
 {{- end}}
@@ -932,17 +937,22 @@ onActivated(() => {
             type="datetime"
             format="YYYY-MM-DD HH:mm:ss"
             value-format="YYYY-MM-DDTHH:mm:ssZ"
-            placeholder="请选择{{.DisplayLabel}}"
+            :placeholder="t({{ vueStringLiteral (fieldLocaleKey $.EntityLower . "placeholder") }}, {{ vueStringLiteral (printf "Please enter %s" (localeFieldLabelEn .)) }})"
             style="width: 100%"
           />
 {{- else if eq .FrontendControl "switch"}}
-          <el-switch v-model="form.{{.JSONName}}" inline-prompt active-text="是" inactive-text="否" />
+          <el-switch
+            v-model="form.{{.JSONName}}"
+            inline-prompt
+            :active-text="{{"{{"}} t('common.yes', 'Yes') {{"}}"}}"
+            :inactive-text="{{"{{"}} t('common.no', 'No') {{"}}"}}"
+          />
 {{- else if eq .FrontendControl "number"}}
           <el-input-number v-model="form.{{.JSONName}}" :controls="false" style="width: 100%" />
 {{- else if eq .FrontendControl "textarea"}}
-          <el-input v-model="form.{{.JSONName}}" type="textarea" :rows="4" :placeholder="'请输入{{.DisplayLabel}}'" />
+          <el-input v-model="form.{{.JSONName}}" type="textarea" :rows="4" :placeholder="t({{ vueStringLiteral (fieldLocaleKey $.EntityLower . "placeholder") }}, {{ vueStringLiteral (printf "Please enter %s" (localeFieldLabelEn .)) }})" />
 {{- else}}
-          <el-input v-model="form.{{.JSONName}}" :placeholder="'请输入{{.DisplayLabel}}'" />
+          <el-input v-model="form.{{.JSONName}}" :placeholder="t({{ vueStringLiteral (fieldLocaleKey $.EntityLower . "placeholder") }}, {{ vueStringLiteral (printf "Please enter %s" (localeFieldLabelEn .)) }})" />
 {{- end}}
         </el-form-item>
 {{- end}}

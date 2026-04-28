@@ -998,9 +998,11 @@ func (g *Generator) writeScaffold(data scaffoldData) error {
 	}
 	if data.GenerateFrontend {
 		frontendFiles := map[string]string{
-			filepath.Join(g.Root, "web", "src", "api", data.EntityLower+".ts"):               frontendApiTemplate,
-			filepath.Join(g.Root, "web", "src", "router", "modules", data.EntityLower+".ts"): frontendRouterTemplate,
-			filepath.Join(g.Root, "web", "src", "views", data.EntityLower, "index.vue"):      frontendViewTemplate,
+			filepath.Join(g.Root, "web", "src", "i18n", "locales", "zh-CN", data.EntityLower+".json"): crudFrontendLocaleZhTemplate,
+			filepath.Join(g.Root, "web", "src", "i18n", "locales", "en-US", data.EntityLower+".json"): crudFrontendLocaleEnTemplate,
+			filepath.Join(g.Root, "web", "src", "api", data.EntityLower+".ts"):                        frontendApiTemplate,
+			filepath.Join(g.Root, "web", "src", "router", "modules", data.EntityLower+".ts"):          frontendRouterTemplate,
+			filepath.Join(g.Root, "web", "src", "views", data.EntityLower, "index.vue"):               frontendViewTemplate,
 		}
 		for path, tmpl := range frontendFiles {
 			if err := g.writeGoOrText(path, tmpl, data, data.Force); err != nil {
@@ -1217,9 +1219,17 @@ func yamlStringLiteral(value string) string {
 }
 
 func localeFieldLabelZh(field Field) string {
-	label := strings.TrimSpace(field.DisplayLabel())
+	label := strings.TrimSpace(field.Comment)
+	if label != "" {
+		label = strings.TrimSpace(strings.SplitN(label, "|", 2)[0])
+		label = strings.TrimSpace(strings.SplitN(label, "（", 2)[0])
+		label = strings.TrimSpace(strings.SplitN(label, "(", 2)[0])
+	}
 	if label == "" {
-		return field.DisplayLabel()
+		label = strings.TrimSpace(field.DisplayLabel())
+	}
+	if label == "" {
+		return "字段"
 	}
 	return label
 }
@@ -1232,11 +1242,106 @@ func localeFieldLabelEn(field Field) string {
 	return label
 }
 
+func fieldLocaleName(field Field) string {
+	name := strings.TrimSpace(field.JSONName)
+	if name == "" {
+		name = strings.TrimSpace(field.GoName)
+	}
+	name = NormalizeName(name)
+	if name == "" {
+		return "field"
+	}
+	return name
+}
+
+func fieldLocaleKey(entityLower string, field Field, suffix string) string {
+	entityLower = NormalizeName(entityLower)
+	if entityLower == "" {
+		entityLower = "entity"
+	}
+	suffix = NormalizeName(suffix)
+	if suffix == "" {
+		suffix = "label"
+	}
+	return fmt.Sprintf("%s.field.%s.%s", entityLower, fieldLocaleName(field), suffix)
+}
+
+func frontendLocaleJSON(data scaffoldData, language string) string {
+	entityLower := NormalizeName(data.EntityLower)
+	if entityLower == "" {
+		entityLower = "entity"
+	}
+	language = strings.ToLower(strings.TrimSpace(language))
+	isChinese := strings.HasPrefix(language, "zh")
+
+	entries := make([]struct{ key, value string }, 0, len(data.DisplayFields())*2+10)
+	if isChinese {
+		entries = append(entries,
+			struct{ key, value string }{key: entityLower + ".page.description", value: "由 goadmin-cli 生成的 CRUD 页面，可用于列表、编辑和删除。"},
+			struct{ key, value string }{key: entityLower + ".search.placeholder", value: "搜索记录"},
+			struct{ key, value string }{key: entityLower + ".create_title", value: "新建记录"},
+			struct{ key, value string }{key: entityLower + ".edit_title", value: "编辑记录"},
+			struct{ key, value string }{key: entityLower + ".created", value: "已创建"},
+			struct{ key, value string }{key: entityLower + ".updated", value: "已更新"},
+			struct{ key, value string }{key: entityLower + ".deleted", value: "已删除"},
+			struct{ key, value string }{key: entityLower + ".save_failed", value: "保存失败"},
+			struct{ key, value string }{key: entityLower + ".delete_confirm", value: "确认删除记录 {name} 吗？"},
+			struct{ key, value string }{key: entityLower + ".delete_title", value: "删除记录"},
+		)
+	} else {
+		entries = append(entries,
+			struct{ key, value string }{key: entityLower + ".page.description", value: "Generated CRUD page for listing, editing, and deleting records."},
+			struct{ key, value string }{key: entityLower + ".search.placeholder", value: "Search records"},
+			struct{ key, value string }{key: entityLower + ".create_title", value: "Create record"},
+			struct{ key, value string }{key: entityLower + ".edit_title", value: "Edit record"},
+			struct{ key, value string }{key: entityLower + ".created", value: "Created"},
+			struct{ key, value string }{key: entityLower + ".updated", value: "Updated"},
+			struct{ key, value string }{key: entityLower + ".deleted", value: "Deleted"},
+			struct{ key, value string }{key: entityLower + ".save_failed", value: "Save failed"},
+			struct{ key, value string }{key: entityLower + ".delete_confirm", value: "Delete record {name}?"},
+			struct{ key, value string }{key: entityLower + ".delete_title", value: "Delete record"},
+		)
+	}
+
+	for _, field := range data.DisplayFields() {
+		label := localeFieldLabelEn(field)
+		placeholder := fmt.Sprintf("Please enter %s", label)
+		if isChinese {
+			label = localeFieldLabelZh(field)
+			placeholder = fmt.Sprintf("请输入%s", label)
+		}
+		entries = append(entries,
+			struct{ key, value string }{key: fieldLocaleKey(entityLower, field, "label"), value: label},
+			struct{ key, value string }{key: fieldLocaleKey(entityLower, field, "placeholder"), value: placeholder},
+		)
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].key < entries[j].key
+	})
+
+	var builder strings.Builder
+	builder.WriteString("{\n")
+	for idx, entry := range entries {
+		if idx > 0 {
+			builder.WriteString(",\n")
+		}
+		builder.WriteString("  ")
+		builder.WriteString(strconv.Quote(entry.key))
+		builder.WriteString(": ")
+		builder.WriteString(strconv.Quote(entry.value))
+	}
+	builder.WriteString("\n}\n")
+	return builder.String()
+}
+
 func renderTemplate(tmpl string, data any) (string, error) {
 	t, err := template.New("goadmin").Funcs(template.FuncMap{
 		"yamlStringLiteral":  yamlStringLiteral,
 		"localeFieldLabelZh": localeFieldLabelZh,
 		"localeFieldLabelEn": localeFieldLabelEn,
+		"fieldLocaleKey":     fieldLocaleKey,
+		"frontendLocaleJSON": frontendLocaleJSON,
 		"vueStringLiteral":   vueStringLiteral,
 	}).Parse(tmpl)
 	if err != nil {

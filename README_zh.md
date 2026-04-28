@@ -201,6 +201,7 @@ make server-run-cli ARGS="generate plugin demo"
 
 - `docs/GoAdmin 架构设计.md`
 - `docs/GoAdmin 架构设计-简版摘要.md`
+- `docs/demo/demo.md`
 
 ## 开发约定
 

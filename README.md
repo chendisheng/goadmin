@@ -201,6 +201,7 @@ Recommended reading:
 
 - `docs/GoAdmin 架构设计.md`
 - `docs/GoAdmin 架构设计-简版摘要.md`
+- `docs/demo/demo.md`
 
 ## Development conventions
 

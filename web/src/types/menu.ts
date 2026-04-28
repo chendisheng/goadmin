@@ -1,4 +1,4 @@
-export interface BackendMenuRouteMeta {
+export interface ServerMenuRouteMeta {
   title: string;
   titleKey?: string;
   titleDefault?: string;
@@ -13,22 +13,22 @@ export interface BackendMenuRouteMeta {
   subtitleDefault?: string;
 }
 
-export type BackendMenuRouteType = 'directory' | 'menu' | 'button';
+export type ServerMenuRouteType = 'directory' | 'menu' | 'button';
 
-export interface BackendMenuRoute {
+export interface ServerMenuRoute {
   name: string;
   path: string;
   component?: string;
   redirect?: string;
   hidden: boolean;
   alwaysShow?: boolean;
-  type?: BackendMenuRouteType;
-  meta: BackendMenuRouteMeta;
-  children?: BackendMenuRoute[];
+  type?: ServerMenuRouteType;
+  meta: ServerMenuRouteMeta;
+  children?: ServerMenuRoute[];
 }
 
-export interface BackendMenuRoutesResponse {
-  items: BackendMenuRoute[];
+export interface ServerMenuRoutesResponse {
+  items: ServerMenuRoute[];
 }
 
 export interface SidebarMenuNode {

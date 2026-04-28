@@ -23,7 +23,7 @@
   "dashboard.hero_current_user": "Current user",
   "dashboard.quick_actions_title": "API validation",
   "dashboard.quick_actions_tag": "Connectivity",
-  "dashboard.quick_actions_description": "Click the button to send a health check request and quickly verify frontend-backend connectivity and Axios interceptors.",
+  "dashboard.quick_actions_description": "Click the button to send a health check request and quickly verify frontend-server connectivity and Axios interceptors.",
   "dashboard.health_check_button": "Send health check",
   "dashboard.health_status": "status",
   "dashboard.health_uptime": "uptime",

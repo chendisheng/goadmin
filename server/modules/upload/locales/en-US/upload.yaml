@@ -1,0 +1,95 @@
+translation:
+  upload.repository_required: upload repository is required
+  upload.storage_driver_required: upload storage driver is required
+  upload.service_not_configured: upload service is not configured
+  upload.file_required: upload file is required
+  upload.visibility_invalid: invalid upload visibility
+  upload.public_url_failed: failed to resolve upload public url
+  upload.persist_failed: failed to store upload metadata
+  upload.file_not_found: upload file not found
+  upload.storage_key_required: upload storage key is required
+  upload.default_storage_driver_required: default storage driver is required
+  upload.unsupported_storage_driver: unsupported upload storage driver
+  upload.filename_required: upload filename is required
+  upload.filename_invalid: invalid upload filename
+  upload.file_size_exceeded: upload file size exceeds limit
+  upload.extension_not_allowed: upload extension is not allowed
+  upload.content_type_required: upload content type is required
+  upload.content_type_not_allowed: upload content type is not allowed
+  upload.invalid_list_request: invalid file list request
+  upload.invalid_upload_request: invalid upload request
+  upload.invalid_bind_request: invalid bind request
+  upload.invalid_storage_setting_request: invalid storage setting request
+  upload.open_file_failed: failed to open upload file
+  upload.bootstrap_route_registrar_required: upload bootstrap requires route registrar
+  upload.bootstrap_db_required: upload bootstrap requires db
+  upload.bootstrap_config_required: upload bootstrap requires config
+  upload.migrate_requires_db: upload migrate requires db
+  upload.repository_not_configured: upload repository is not configured
+  upload.file_asset_nil: upload file asset is nil
+  upload.storage.db_driver_required: upload storage db driver requires db
+  upload.storage.db_driver_not_configured: database storage driver is not configured
+  upload.read_stream_failed: read upload stream
+  upload.file_size_mismatch: upload file size mismatch
+  upload.checksum_mismatch: upload checksum mismatch
+  upload.storage_key_invalid: invalid upload storage key
+  upload.storage_key_traversal: upload storage key contains path traversal
+  upload.encode_metadata_failed: encode upload metadata
+  upload.qiniu_bucket_required: upload storage qiniu bucket is required
+  upload.qiniu_access_key_id_required: upload storage qiniu access_key_id is required
+  upload.qiniu_access_key_secret_required: upload storage qiniu access_key_secret is required
+  upload.qiniu_public_base_url_required: upload storage qiniu public_base_url is required
+  upload.qiniu_driver_not_configured: qiniu storage driver is not configured
+  upload.qiniu_create_temp_failed: create qiniu upload temp file
+  upload.qiniu_write_temp_failed: write qiniu upload file
+  upload.qiniu_sync_temp_failed: sync qiniu upload file
+  upload.qiniu_close_temp_failed: close qiniu upload temp file
+  upload.qiniu_reopen_temp_failed: reopen qiniu upload temp file
+  upload.qiniu_put_failed: qiniu upload failed
+  upload.qiniu_upload_failed: qiniu upload failed
+  upload.qiniu_decode_response_failed: decode qiniu upload response
+  upload.qiniu_upload_error: qiniu upload error
+  upload.qiniu_delete_failed: qiniu delete failed
+  upload.qiniu_download_failed: qiniu download failed
+  upload.qiniu_stat_failed: qiniu stat failed
+  upload.qiniu_stat_error: qiniu stat error
+  upload.local_base_dir_required: local storage base_dir is required
+  upload.local_public_base_url_required: local storage public_base_url is required
+  upload.local_resolve_base_dir_failed: resolve local storage base_dir
+  upload.local_driver_not_configured: local storage driver is not configured
+  upload.local_create_dir_failed: create upload directory
+  upload.local_create_temp_failed: create upload temp file
+  upload.local_write_file_failed: write upload file
+  upload.local_sync_file_failed: sync upload file
+  upload.local_close_temp_failed: close upload temp file
+  upload.local_move_file_failed: move upload file into place
+  upload.local_key_escapes_base_dir: upload key escapes base dir
+  upload.local_ensure_base_dir_failed: ensure upload storage base dir
+  upload.object_storage_driver_name_required: object storage driver name is required
+  upload.object_storage_client_not_configured: object storage client is not configured
+  upload.object_storage_public_base_url_required: object storage public_base_url is required for public urls
+  upload.object_storage_ensure_base_dir_failed: ensure object storage base dir
+  upload.object_storage_key_escapes_base_dir: object storage key escapes base dir
+  upload.object_create_dir_failed: create object directory
+  upload.object_create_temp_failed: create object temp file
+  upload.object_write_file_failed: write object file
+  upload.object_sync_file_failed: sync object file
+  upload.object_close_temp_failed: close object temp file
+  upload.object_move_file_failed: move object file into place
+  upload.object_write_metadata_failed: write object metadata
+  upload.storage_endpoint_required: upload storage endpoint is required
+  upload.storage_cos_region_required: upload storage cos region is required
+  upload.storage_bucket_required: upload storage bucket is required
+  upload.storage_access_key_id_required: upload storage access_key_id is required
+  upload.storage_access_key_secret_required: upload storage access_key_secret is required
+  upload.storage_cos_secret_id_required: upload storage cos secret_id is required
+  upload.storage_cos_secret_key_required: upload storage cos secret_key is required
+  upload.minio_endpoint_parse_failed: parse upload.storage.minio.endpoint
+  upload.minio_endpoint_invalid: upload.storage.minio.endpoint must include a host
+  upload.minio_server_not_configured: minio server is not configured
+  upload.minio_public_base_url_required: minio public_base_url is required for public urls
+  upload.minio_signed_url_method_unsupported: unsupported signed url method for minio server
+  upload.minio_bucket_required: minio bucket is required
+  upload.qiniu_object_key_invalid: invalid qiniu object key
+  upload.byte_size_required: empty byte size
+  upload.byte_size_invalid: invalid byte size

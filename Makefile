@@ -2,7 +2,7 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
 ROOT_DIR := $(abspath .)
-BACKEND_DIR := $(ROOT_DIR)/backend
+SERVER_DIR := $(ROOT_DIR)/server
 WEB_DIR := $(ROOT_DIR)/web
 COMPOSE_DIR := $(ROOT_DIR)/deploy/docker-compose
 COMPOSE_FILE := $(COMPOSE_DIR)/docker-compose.yaml
@@ -16,40 +16,40 @@ COMPOSE ?= docker compose
 ARGS ?=
 
 .PHONY: help all dev build test clean \
-	backend-dev backend-run backend-build backend-build-cli backend-run-cli backend-test backend-fmt backend-tidy backend-clean \
+	server-dev server-run server-build server-build-cli server-run-cli server-test server-fmt server-tidy server-clean \
 	host-dev host-run host-build host-build-cli host-run-cli host-test host-fmt host-tidy host-cache-init \
 	web-install web-dev web-build web-preview web-typecheck web-clean \
 	compose-init compose-up compose-down compose-logs compose-ps compose-build compose-reset \
 	compose-build-local compose-up-local \
-	docker-builder-init docker-build-backend docker-build-web
+	docker-builder-init docker-build-server docker-build-web
 
 help:
 	@printf "GoAdmin root Makefile\n"
 	@printf "\nCommon targets:\n"
 	@printf "  make dev                 Start local compose environment\n"
-	@printf "  make build               Build backend and frontend bundles\n"
-	@printf "  make test                Run backend tests and frontend typecheck\n"
+	@printf "  make build               Build server and frontend bundles\n"
+	@printf "  make test                Run server tests and frontend typecheck\n"
 	@printf "  make clean               Clean generated build outputs\n"
 	@printf "\nHost-cache targets:\n"
-	@printf "  make host-dev            Run backend dev server with host-local Go cache\n"
-	@printf "  make host-run            Run backend server with host-local Go cache\n"
-	@printf "  make host-build          Build backend binary with host-local Go cache\n"
+	@printf "  make host-dev            Run server dev server with host-local Go cache\n"
+	@printf "  make host-run            Run server with host-local Go cache\n"
+	@printf "  make host-build          Build server binary with host-local Go cache\n"
 	@printf "  make host-build-cli      Build CLI binary with host-local Go cache\n"
 	@printf "  make host-run-cli        Run CLI with host-local Go cache\n"
-	@printf "  make host-test           Run backend tests with host-local Go cache\n"
-	@printf "  make host-fmt            Format backend Go files with host-local Go cache\n"
+	@printf "  make host-test           Run server tests with host-local Go cache\n"
+	@printf "  make host-fmt            Format server Go files with host-local Go cache\n"
 	@printf "  make host-tidy           Run go mod tidy with host-local Go cache\n"
-	@printf "  make host-cache-init     Create backend/.cache directories\n"
-	@printf "\nBackend targets:\n"
-	@printf "  make backend-dev         Run backend dev server via scripts/dev.sh\n"
-	@printf "  make backend-run         Run backend server with go run\n"
-	@printf "  make backend-build       Build backend binary\n"
-	@printf "  make backend-build-cli   Build CLI binary\n"
-	@printf "  make backend-run-cli     Run CLI, e.g. make backend-run-cli ARGS=\"generate plugin demo\"\n"
-	@printf "  make backend-test        Run backend tests\n"
-	@printf "  make backend-fmt         Format backend Go files\n"
-	@printf "  make backend-tidy        Run go mod tidy in backend\n"
-	@printf "  make backend-clean       Remove backend bin outputs\n"
+	@printf "  make host-cache-init     Create server/.cache directories\n"
+	@printf "\nServer targets:\n"
+	@printf "  make server-dev          Run server dev server via scripts/dev.sh\n"
+	@printf "  make server-run          Run server with go run\n"
+	@printf "  make server-build        Build server binary\n"
+	@printf "  make server-build-cli    Build CLI binary\n"
+	@printf "  make server-run-cli      Run CLI, e.g. make server-run-cli ARGS=\"generate plugin demo\"\n"
+	@printf "  make server-test         Run server tests\n"
+	@printf "  make server-fmt          Format server Go files\n"
+	@printf "  make server-tidy         Run go mod tidy in server\n"
+	@printf "  make server-clean        Remove server bin outputs\n"
 	@printf "\nFrontend targets:\n"
 	@printf "  make web-install         Install frontend dependencies\n"
 	@printf "  make web-dev             Run Vite dev server\n"
@@ -69,72 +69,72 @@ help:
 	@printf "  make compose-reset       Stop compose and remove volumes\n"
 	@printf "\nDocker targets:\n"
 	@printf "  make docker-builder-init  Create and select a docker-container buildx builder\n"
-	@printf "  make docker-build-backend Build backend image without cache\n"
+	@printf "  make docker-build-server  Build server image without cache\n"
 	@printf "  make docker-build-web     Build frontend image without cache\n"
 
 all: test build
 
 dev: compose-up
 
-build: backend-build web-build
+build: server-build web-build
 
-test: backend-test web-typecheck
+test: server-test web-typecheck
 
-clean: backend-clean web-clean
+clean: server-clean web-clean
 
-backend-dev:
-	$(MAKE) -C $(BACKEND_DIR) dev
+server-dev:
+	$(MAKE) -C $(SERVER_DIR) dev
 
-backend-run:
-	$(MAKE) -C $(BACKEND_DIR) run
+server-run:
+	$(MAKE) -C $(SERVER_DIR) run
 
-backend-build:
-	$(MAKE) -C $(BACKEND_DIR) build
+server-build:
+	$(MAKE) -C $(SERVER_DIR) build
 
-backend-build-cli:
-	$(MAKE) -C $(BACKEND_DIR) build-cli
+server-build-cli:
+	$(MAKE) -C $(SERVER_DIR) build-cli
 
-backend-run-cli:
-	$(MAKE) -C $(BACKEND_DIR) run-cli ARGS="$(ARGS)"
+server-run-cli:
+	$(MAKE) -C $(SERVER_DIR) run-cli ARGS="$(ARGS)"
 
-backend-test:
-	$(MAKE) -C $(BACKEND_DIR) test
+server-test:
+	$(MAKE) -C $(SERVER_DIR) test
 
-backend-fmt:
-	$(MAKE) -C $(BACKEND_DIR) fmt
+server-fmt:
+	$(MAKE) -C $(SERVER_DIR) fmt
 
-backend-tidy:
-	$(MAKE) -C $(BACKEND_DIR) tidy
+server-tidy:
+	$(MAKE) -C $(SERVER_DIR) tidy
 
-backend-clean:
-	$(MAKE) -C $(BACKEND_DIR) clean
+server-clean:
+	$(MAKE) -C $(SERVER_DIR) clean
 
 host-dev:
-	$(MAKE) backend-dev
+	$(MAKE) server-dev
 
 host-run:
-	$(MAKE) backend-run
+	$(MAKE) server-run
 
 host-build:
-	$(MAKE) backend-build
+	$(MAKE) server-build
 
 host-build-cli:
-	$(MAKE) backend-build-cli
+	$(MAKE) server-build-cli
 
 host-run-cli:
-	$(MAKE) backend-run-cli ARGS="$(ARGS)"
+	$(MAKE) server-run-cli ARGS="$(ARGS)"
 
 host-test:
-	$(MAKE) backend-test
+	$(MAKE) server-test
 
 host-fmt:
-	$(MAKE) backend-fmt
+	$(MAKE) server-fmt
 
 host-tidy:
-	$(MAKE) backend-tidy
+	$(MAKE) server-tidy
 
 host-cache-init:
-	$(MAKE) -C $(BACKEND_DIR) cache-init
+	$(MAKE) -C $(SERVER_DIR) cache-init
 
 web-install:
 	cd $(WEB_DIR) && $(NPM) install
@@ -187,8 +187,8 @@ compose-reset: compose-init
 docker-builder-init:
 	$(DOCKER) buildx create --name goadmin-builder --driver docker-container --bootstrap --use
 
-docker-build-backend:
-	$(DOCKER) build --no-cache -f deploy/docker/Dockerfile -t goadmin/backend:local .
+docker-build-server:
+	$(DOCKER) build --no-cache -f deploy/docker/Dockerfile -t goadmin/server:local .
 
 docker-build-web:
 	$(DOCKER) build --no-cache -f deploy/docker/web.Dockerfile -t goadmin/web:local .

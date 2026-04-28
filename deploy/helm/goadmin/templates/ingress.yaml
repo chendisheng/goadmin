@@ -15,7 +15,7 @@ spec:
           {{- range .paths }}
           - path: {{ .path | quote }}
             pathType: {{ .pathType }}
-            backend:
+            server:
               service:
                 name: {{ include "goadmin.fullname" $ }}-web
                 port:

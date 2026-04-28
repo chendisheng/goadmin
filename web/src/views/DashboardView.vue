@@ -109,7 +109,7 @@ async function onPingHealth() {
           </template>
 
           <div class="dashboard-quick-actions__body">
-            <p>{{ t('dashboard.quick_actions_description', 'Click the button to send a health check request and quickly verify frontend-backend connectivity and Axios interceptors.') }}</p>
+            <p>{{ t('dashboard.quick_actions_description', 'Click the button to send a health check request and quickly verify frontend-server connectivity and Axios interceptors.') }}</p>
             <el-button type="primary" :loading="loading" @click="onPingHealth">{{ t('dashboard.health_check_button', 'Send health check') }}</el-button>
           </div>
 

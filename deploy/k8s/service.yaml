@@ -5,12 +5,12 @@ metadata:
   namespace: goadmin
   labels:
     app.kubernetes.io/name: goadmin
-    app.kubernetes.io/component: backend
+    app.kubernetes.io/component: server
 spec:
   type: ClusterIP
   selector:
     app.kubernetes.io/name: goadmin
-    app.kubernetes.io/component: backend
+    app.kubernetes.io/component: server
   ports:
     - name: http
       port: 80

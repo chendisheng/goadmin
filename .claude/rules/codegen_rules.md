@@ -18,18 +18,18 @@
 
 ## 3. Repository Layout Rules
 
-- 当前兼容层仍位于 `backend/cli/generate/`，但新架构能力应优先沉淀到 `backend/codegen/`。
+- 当前兼容层仍位于 `server/cli/generate/`，但新架构能力应优先沉淀到 `server/codegen/`。
 - 建议优先按以下边界组织：
-  - `backend/codegen/driver/`
-  - `backend/codegen/schema/`
-  - `backend/codegen/model/`
-  - `backend/codegen/planner/`
-  - `backend/codegen/generator/`
-  - `backend/codegen/merger/`
-  - `backend/codegen/templates/`
-  - `backend/codegen/postprocess/`
-  - `backend/codegen/runtime/`
-- `backend/cli/generate/` 只适合保留为兼容入口和迁移过渡层，不要继续堆叠新职责。
+  - `server/codegen/driver/`
+  - `server/codegen/schema/`
+  - `server/codegen/model/`
+  - `server/codegen/planner/`
+  - `server/codegen/generator/`
+  - `server/codegen/merger/`
+  - `server/codegen/templates/`
+  - `server/codegen/postprocess/`
+  - `server/codegen/runtime/`
+- `server/cli/generate/` 只适合保留为兼容入口和迁移过渡层，不要继续堆叠新职责。
 - 模板资源应与生成逻辑分离，避免把模板字符串散落在业务代码中。
 - 不要把 CodeGen 的输入 DSL、输出 artifact、运行快照混在同一目录里。
 
@@ -69,7 +69,7 @@
 
 ## 8. CLI / API / Job Rules
 
-- `backend/cmd/cli` 作为当前兼容入口可以保留，但新增能力应优先接入新的 CodeGen 核心。
+- `server/cmd/cli` 作为当前兼容入口可以保留，但新增能力应优先接入新的 CodeGen 核心。
 - CodeGen 的外部入口应支持：CLI、HTTP API、异步任务三种形态中的至少一种；如扩展新入口，不得破坏现有命令。
 - CLI 参数必须与文档中的生成行为一致，不允许偷偷改变默认覆盖策略或默认输出目录。
 - 对于耗时生成任务，优先支持 dry run、预览与异步执行，不要在主进程里做不可控的大规模同步生成。

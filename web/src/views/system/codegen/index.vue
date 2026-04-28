@@ -1013,7 +1013,7 @@ function loadSample() {
   dslText.value = `version: v1
 module: codegen
 framework:
-  backend: gin
+  server: gin
   frontend: vue3
 resources:
   - kind: frontend-page

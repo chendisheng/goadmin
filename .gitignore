@@ -34,9 +34,9 @@ pnpm-debug.log*
 # =====================
 /bin/
 .cache/
-backend/bin/
-backend/dist/
-backend/.cache/
+server/bin/
+server/dist/
+server/.cache/
 *.test
 *.out
 coverage.out

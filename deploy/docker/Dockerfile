@@ -2,15 +2,15 @@
 
 FROM golang:1.22-bookworm AS builder
 
-WORKDIR /src/backend
+WORKDIR /src/server
 ARG TARGETARCH=amd64
 ARG GOPROXY=https://goproxy.cn,direct
-COPY backend/go.mod backend/go.sum ./
+COPY server/go.mod server/go.sum ./
 ENV GOPROXY=${GOPROXY}
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go mod tidy && go mod download
-COPY backend/ ./
+COPY server/ ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH:-amd64} go build -trimpath -ldflags='-s -w' -o /out/goadmin ./cmd/server
@@ -23,16 +23,16 @@ RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories
     && addgroup -S goadmin \
     && adduser -S -G goadmin goadmin
 
-WORKDIR /app/backend
+WORKDIR /app/server
 COPY --from=builder /out/goadmin /usr/local/bin/goadmin
-COPY --from=builder /src/backend/config ./config
-COPY --from=builder /src/backend/core/auth/casbin/model ./core/auth/casbin/model
-COPY --from=builder /src/backend/core/auth/casbin/adapter/policy.csv ./core/auth/casbin/adapter/policy.csv
-COPY --from=builder /src/backend/scripts ./scripts
+COPY --from=builder /src/server/config ./config
+COPY --from=builder /src/server/core/auth/casbin/model ./core/auth/casbin/model
+COPY --from=builder /src/server/core/auth/casbin/adapter/policy.csv ./core/auth/casbin/adapter/policy.csv
+COPY --from=builder /src/server/scripts ./scripts
 RUN chmod +x ./scripts/*.sh \
-    && chown -R goadmin:goadmin /app/backend
+    && chown -R goadmin:goadmin /app/server
 
-ENV GOADMIN_CONFIG_DIR=/app/backend/config \
+ENV GOADMIN_CONFIG_DIR=/app/server/config \
     GOADMIN_ENV=dev \
     APP_ENV=dev \
     GOADMIN_SERVER_HTTP_HOST=0.0.0.0 \
@@ -42,6 +42,6 @@ USER goadmin
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=10s --timeout=3s --retries=5 --start-period=10s CMD ["bash", "/app/backend/scripts/healthcheck.sh"]
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 --start-period=10s CMD ["bash", "/app/server/scripts/healthcheck.sh"]
 
 ENTRYPOINT ["/usr/local/bin/goadmin"]

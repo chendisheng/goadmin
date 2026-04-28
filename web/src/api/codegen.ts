@@ -261,7 +261,7 @@ export interface CodegenDeleteResolution {
   module?: string;
   kind?: string;
   project_root?: string;
-  backend_root?: string;
+  server_root?: string;
   module_dir?: string;
   manifest_path?: string;
   module_go_path?: string;

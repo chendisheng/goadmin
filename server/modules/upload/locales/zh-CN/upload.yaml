@@ -1,0 +1,95 @@
+translation:
+  upload.repository_required: 上传仓储未配置
+  upload.storage_driver_required: 上传存储驱动未配置
+  upload.service_not_configured: 上传服务未配置
+  upload.file_required: 需要上传文件
+  upload.visibility_invalid: 上传可见性无效
+  upload.public_url_failed: 获取上传公开地址失败
+  upload.persist_failed: 保存上传元数据失败
+  upload.file_not_found: 上传文件不存在
+  upload.storage_key_required: 上传存储键不能为空
+  upload.default_storage_driver_required: 默认存储驱动不能为空
+  upload.unsupported_storage_driver: 不支持的上传存储驱动
+  upload.filename_required: 需要上传文件名
+  upload.filename_invalid: 上传文件名无效
+  upload.file_size_exceeded: 上传文件大小超出限制
+  upload.extension_not_allowed: 上传文件扩展名不允许
+  upload.content_type_required: 需要上传文件类型
+  upload.content_type_not_allowed: 上传文件类型不允许
+  upload.invalid_list_request: 无效的文件列表请求
+  upload.invalid_upload_request: 无效的上传请求
+  upload.invalid_bind_request: 无效的绑定请求
+  upload.invalid_storage_setting_request: 无效的存储设置请求
+  upload.open_file_failed: 打开上传文件失败
+  upload.bootstrap_route_registrar_required: 上传模块注册需要路由注册器
+  upload.bootstrap_db_required: 上传模块注册需要数据库
+  upload.bootstrap_config_required: 上传模块注册需要配置
+  upload.migrate_requires_db: 上传迁移需要数据库
+  upload.repository_not_configured: 上传仓储未配置
+  upload.file_asset_nil: 上传文件对象不能为空
+  upload.storage.db_driver_required: 上传数据库存储驱动需要数据库
+  upload.storage.db_driver_not_configured: 上传数据库存储驱动未配置
+  upload.read_stream_failed: 读取上传流失败
+  upload.file_size_mismatch: 上传文件大小不匹配
+  upload.checksum_mismatch: 上传校验和不匹配
+  upload.storage_key_invalid: 上传存储键无效
+  upload.storage_key_traversal: 上传存储键包含路径穿越
+  upload.encode_metadata_failed: 编码上传元数据失败
+  upload.qiniu_bucket_required: 七牛存储 bucket 不能为空
+  upload.qiniu_access_key_id_required: 七牛存储 access_key_id 不能为空
+  upload.qiniu_access_key_secret_required: 七牛存储 access_key_secret 不能为空
+  upload.qiniu_public_base_url_required: 七牛存储 public_base_url 不能为空
+  upload.qiniu_driver_not_configured: 七牛存储驱动未配置
+  upload.qiniu_create_temp_failed: 创建七牛上传临时文件失败
+  upload.qiniu_write_temp_failed: 写入七牛上传文件失败
+  upload.qiniu_sync_temp_failed: 同步七牛上传文件失败
+  upload.qiniu_close_temp_failed: 关闭七牛上传临时文件失败
+  upload.qiniu_reopen_temp_failed: 重新打开七牛上传临时文件失败
+  upload.qiniu_put_failed: 七牛上传失败
+  upload.qiniu_upload_failed: 七牛上传失败
+  upload.qiniu_decode_response_failed: 解析七牛上传响应失败
+  upload.qiniu_upload_error: 七牛上传返回错误
+  upload.qiniu_delete_failed: 七牛删除失败
+  upload.qiniu_download_failed: 七牛下载失败
+  upload.qiniu_stat_failed: 七牛查询失败
+  upload.qiniu_stat_error: 七牛查询返回错误
+  upload.local_base_dir_required: 本地存储 base_dir 不能为空
+  upload.local_public_base_url_required: 本地存储 public_base_url 不能为空
+  upload.local_resolve_base_dir_failed: 解析本地存储 base_dir 失败
+  upload.local_driver_not_configured: 本地存储驱动未配置
+  upload.local_create_dir_failed: 创建上传目录失败
+  upload.local_create_temp_failed: 创建上传临时文件失败
+  upload.local_write_file_failed: 写入上传文件失败
+  upload.local_sync_file_failed: 同步上传文件失败
+  upload.local_close_temp_failed: 关闭上传临时文件失败
+  upload.local_move_file_failed: 移动上传文件失败
+  upload.local_key_escapes_base_dir: 上传键越过了基础目录
+  upload.local_ensure_base_dir_failed: 确保本地存储基础目录失败
+  upload.object_storage_driver_name_required: 对象存储驱动名称不能为空
+  upload.object_storage_client_not_configured: 对象存储客户端未配置
+  upload.object_storage_public_base_url_required: 对象存储 public_base_url 不能为空
+  upload.object_storage_ensure_base_dir_failed: 确保对象存储基础目录失败
+  upload.object_storage_key_escapes_base_dir: 对象存储键越过了基础目录
+  upload.object_create_dir_failed: 创建对象目录失败
+  upload.object_create_temp_failed: 创建对象临时文件失败
+  upload.object_write_file_failed: 写入对象文件失败
+  upload.object_sync_file_failed: 同步对象文件失败
+  upload.object_close_temp_failed: 关闭对象临时文件失败
+  upload.object_move_file_failed: 移动对象文件失败
+  upload.object_write_metadata_failed: 写入对象元数据失败
+  upload.storage_endpoint_required: 上传存储 endpoint 不能为空
+  upload.storage_cos_region_required: COS 存储 region 不能为空
+  upload.storage_bucket_required: 上传存储 bucket 不能为空
+  upload.storage_access_key_id_required: 上传存储 access_key_id 不能为空
+  upload.storage_access_key_secret_required: 上传存储 access_key_secret 不能为空
+  upload.storage_cos_secret_id_required: COS 存储 secret_id 不能为空
+  upload.storage_cos_secret_key_required: COS 存储 secret_key 不能为空
+  upload.minio_endpoint_parse_failed: 解析 MinIO endpoint 失败
+  upload.minio_endpoint_invalid: MinIO endpoint 无效
+  upload.minio_server_not_configured: MinIO 后端未配置
+  upload.minio_public_base_url_required: MinIO public_base_url 不能为空
+  upload.minio_signed_url_method_unsupported: 不支持的 MinIO 签名 URL 方法
+  upload.minio_bucket_required: MinIO bucket 不能为空
+  upload.qiniu_object_key_invalid: 七牛对象键无效
+  upload.byte_size_required: 字节大小不能为空
+  upload.byte_size_invalid: 字节大小无效

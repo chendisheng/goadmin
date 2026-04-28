@@ -28,7 +28,7 @@ describe('i18n route namespace preloading', () => {
     expect(preloadRouteNamespaces).toHaveBeenCalled();
   });
 
-  it('keeps route namespace preloading after backend routes are registered', async () => {
+  it('keeps route namespace preloading after server routes are registered', async () => {
     const { default: router } = await import('../src/router');
 
     await router.push('/system/dictionary/categories');
@@ -36,7 +36,7 @@ describe('i18n route namespace preloading', () => {
     expect(preloadRouteNamespaces).toHaveBeenCalled();
   });
 
-  it('preloads explicit and component-derived namespaces for backend routes', async () => {
+  it('preloads explicit and component-derived namespaces for server routes', async () => {
     const { preloadRouteNamespaces, initializeI18n, setI18nLanguage, useAppI18n } = await import('../src/i18n');
     const localeStore = (await import('../src/store/locale')).useLocaleStore();
     localeStore.setLanguage('zh-CN');

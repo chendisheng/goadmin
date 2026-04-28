@@ -18,7 +18,7 @@
 
 - `docs/teckdesign/3. GoAdmin CodeGen 架构设计.md` 与 `docs/teckdesign/3. GoAdmin CodeGen 目录结构草案.md` 必须同时被视为 CodeGen 的配套文档。
 - 主架构文档中涉及 CodeGen 的部分，只保留定位、边界、阶段计划和引用，不要把 IR、Planner、Merger、模板、适配器等细节全部展开。
-- 当 CodeGen 目录结构发生变化时，主架构文档中的 `backend/codegen/` 描述、阶段计划和引用说明必须同步更新。
+- 当 CodeGen 目录结构发生变化时，主架构文档中的 `server/codegen/` 描述、阶段计划和引用说明必须同步更新。
 
 ## 4. Do / Don't
 

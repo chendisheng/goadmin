@@ -1,6 +1,6 @@
 apiVersion: v2
 name: goadmin
-description: GoAdmin backend Helm chart
+description: GoAdmin server Helm chart
 icon: https://helm.sh/img/helm.svg
 type: application
 version: 0.1.0

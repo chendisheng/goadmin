@@ -104,7 +104,7 @@ async function onSubmit() {
         <div class="login-card__brand-body">
           <el-tag effect="plain" round type="success">{{ t('login.title', 'Login') }}</el-tag>
           <h2>{{ t('login.welcome', 'Welcome to GoAdmin') }}</h2>
-          <p>{{ t('login.description', 'Sign in with the account created by the backend.') }}</p>
+          <p>{{ t('login.description', 'Sign in with the account created by the server.') }}</p>
 
           <ul class="login-card__highlights">
             <li>{{ t('login.highlight.jwt_session', 'JWT login and session management') }}</li>
@@ -134,7 +134,7 @@ async function onSubmit() {
           <div class="login-card__panel-header-top">
             <div>
               <h2>{{ t('login.title', 'Login') }}</h2>
-              <p>{{ t('login.description', 'Sign in with the account created by the backend.') }}</p>
+              <p>{{ t('login.description', 'Sign in with the account created by the server.') }}</p>
             </div>
 
             <el-dropdown trigger="click" @command="switchLanguage">

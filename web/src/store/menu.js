@@ -2,7 +2,7 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { fetchMenuRoutes } from '@/api/menu';
 import { fetchPluginMenus } from '@/api/plugins';
-import { buildMenusOnly, filterMenuRoutesByPermission, mapPluginMenusToBackendRoutes, registerBackendRoutes } from '@/router/navigation';
+import { buildMenusOnly, filterMenuRoutesByPermission, mapPluginMenusToServerRoutes, registerServerRoutes } from '@/router/navigation';
 import { useSessionStore } from '@/store/session';
 export const useMenuStore = defineStore('menu', () => {
     const sessionStore = useSessionStore();
@@ -26,12 +26,12 @@ export const useMenuStore = defineStore('menu', () => {
         loadPromise = (async () => {
             const [menuResult, pluginResult] = await Promise.allSettled([fetchMenuRoutes(), fetchPluginMenus()]);
             const items = menuResult.status === 'fulfilled' ? menuResult.value.items ?? [] : [];
-            const pluginItems = pluginResult.status === 'fulfilled' ? mapPluginMenusToBackendRoutes(pluginResult.value.items ?? []) : [];
+            const pluginItems = pluginResult.status === 'fulfilled' ? mapPluginMenusToServerRoutes(pluginResult.value.items ?? []) : [];
             const mergedItems = [...items, ...pluginItems];
             const canAccessMenu = (permission) => sessionStore.hasPermission(permission);
             menuRoutes.value = filterMenuRoutesByPermission(mergedItems, canAccessMenu);
             sidebarMenus.value = buildMenusOnly(mergedItems, canAccessMenu);
-            routeNames.value = registerBackendRoutes(router, mergedItems, canAccessMenu);
+            routeNames.value = registerServerRoutes(router, mergedItems, canAccessMenu);
             loaded.value = true;
         })();
         try {

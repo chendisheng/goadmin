@@ -4,13 +4,13 @@ import type { RouteRecordRaw, Router } from 'vue-router';
 
 import RouteGroupView from '@/views/RouteGroupView.vue';
 import RoutePlaceholderView from '@/views/RoutePlaceholderView.vue';
-import type { BackendMenuRoute, SidebarMenuNode } from '@/types/menu';
+import type { ServerMenuRoute, SidebarMenuNode } from '@/types/menu';
 import type { PluginMenu } from '@/types/plugin';
 
 type ViewModuleLoader = AsyncComponentLoader<Component>;
 type PermissionChecker = (permission: string) => boolean;
 
-function isButtonMenu(node: Pick<BackendMenuRoute, 'type' | 'meta'> | Pick<PluginMenu, 'type' | 'visible' | 'enabled'>): boolean {
+function isButtonMenu(node: Pick<ServerMenuRoute, 'type' | 'meta'> | Pick<PluginMenu, 'type' | 'visible' | 'enabled'>): boolean {
   return String(node.type || '').trim() === 'button';
 }
 
@@ -34,11 +34,11 @@ function createNamedView(name: string, component: Component): Component {
   });
 }
 
-export function normalizeMenuRoots(nodes: BackendMenuRoute[]): BackendMenuRoute[] {
+export function normalizeMenuRoots(nodes: ServerMenuRoute[]): ServerMenuRoute[] {
   return nodes;
 }
 
-function resolveTitleKey(meta: Pick<BackendMenuRoute['meta'], 'title' | 'titleKey' | 'titleDefault'>): string {
+function resolveTitleKey(meta: Pick<ServerMenuRoute['meta'], 'title' | 'titleKey' | 'titleDefault'>): string {
   return (meta.titleKey || meta.titleDefault || meta.title || '').trim();
 }
 
@@ -119,8 +119,8 @@ function canAccessMenu(permission: string | undefined, canAccess: PermissionChec
   return canAccess(normalized);
 }
 
-export function filterMenuRoutesByPermission(nodes: BackendMenuRoute[], canAccess: PermissionChecker): BackendMenuRoute[] {
-  const result: BackendMenuRoute[] =[];
+export function filterMenuRoutesByPermission(nodes: ServerMenuRoute[], canAccess: PermissionChecker): ServerMenuRoute[] {
+  const result: ServerMenuRoute[] =[];
 
   for (const node of normalizeMenuRoots(nodes)) {
     if (isButtonMenu(node)) {
@@ -144,7 +144,7 @@ export function filterMenuRoutesByPermission(nodes: BackendMenuRoute[], canAcces
   return result;
 }
 
-function buildSidebarNodes(nodes: BackendMenuRoute[]): SidebarMenuNode[] {
+function buildSidebarNodes(nodes: ServerMenuRoute[]): SidebarMenuNode[] {
   const roots = normalizeMenuRoots(nodes);
   const result: SidebarMenuNode[] = [];
   for (const node of roots) {
@@ -192,7 +192,7 @@ function resolveLeafComponent(componentName: string | undefined): Component {
   return createNamedView(normalizeComponentKey(normalized), RoutePlaceholderView);
 }
 
-function buildRouteRecord(node: BackendMenuRoute, parentPath = '/'): RouteRecordRaw {
+function buildRouteRecord(node: ServerMenuRoute, parentPath = '/'): RouteRecordRaw {
   const currentPath = normalizePath(node.path);
   const childPath = relativePath(currentPath, parentPath);
   const children = (node.children ?? []).map((child) => buildRouteRecord(child, currentPath));
@@ -226,7 +226,7 @@ function buildRouteRecord(node: BackendMenuRoute, parentPath = '/'): RouteRecord
   return record;
 }
 
-export function registerBackendRoutes(router: Router, nodes: BackendMenuRoute[], canAccess: PermissionChecker = () => true): string[] {
+export function registerServerRoutes(router: Router, nodes: ServerMenuRoute[], canAccess: PermissionChecker = () => true): string[] {
   const roots = filterMenuRoutesByPermission(nodes, canAccess);
   const routeNames: string[] = [];
 
@@ -242,18 +242,18 @@ export function registerBackendRoutes(router: Router, nodes: BackendMenuRoute[],
   return routeNames;
 }
 
-export function buildMenusOnly(items: BackendMenuRoute[], canAccess: PermissionChecker = () => true): SidebarMenuNode[] {
+export function buildMenusOnly(items: ServerMenuRoute[], canAccess: PermissionChecker = () => true): SidebarMenuNode[] {
   return buildSidebarNodes(filterMenuRoutesByPermission(items, canAccess));
 }
 
-export function mapPluginMenusToBackendRoutes(items: PluginMenu[]): BackendMenuRoute[] {
+export function mapPluginMenusToServerRoutes(items: PluginMenu[]): ServerMenuRoute[] {
   return items.map((item) => ({
     name: item.plugin ? `${item.plugin}:${item.id}` : item.id,
     path: item.path,
     component: item.component,
     redirect: item.redirect,
     hidden: !item.visible || !item.enabled,
-    type: item.type as BackendMenuRoute['type'],
+    type: item.type as ServerMenuRoute['type'],
     alwaysShow: item.type === 'directory',
     meta: {
       title: item.titleDefault || item.name,
@@ -271,6 +271,6 @@ export function mapPluginMenusToBackendRoutes(items: PluginMenu[]): BackendMenuR
       componentName: item.component,
       i18nNamespaces: namespacesFromComponentName(item.component || ''),
     },
-    children: mapPluginMenusToBackendRoutes(item.children ?? []),
+    children: mapPluginMenusToServerRoutes(item.children ?? []),
   }));
 }

@@ -648,7 +648,7 @@ onActivated(() => {
 
     <el-dialog v-model="uploadDialogVisible" :title="t('upload.upload_title', 'Upload file')" width="760px" destroy-on-close>
       <el-alert
-        :title="t('upload.upload_alert', 'You can fill in business binding info and a remark during upload; file content is validated according to the backend storage policy.')"
+        :title="t('upload.upload_alert', 'You can fill in business binding info and a remark during upload; file content is validated according to the server storage policy.')"
         type="info"
         :closable="false"
         show-icon

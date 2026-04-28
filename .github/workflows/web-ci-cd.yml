@@ -9,7 +9,7 @@ on:
         required: true
         default: true
 
-# Manual backup workflow. The unified frontend/backend pipeline lives in .github/workflows/ci-cd.yml.
+# Manual backup workflow. The unified frontend/server pipeline lives in .github/workflows/ci-cd.yml.
 
 env:
   NODE_VERSION: "20"

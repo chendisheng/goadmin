@@ -11,9 +11,9 @@ memory-bank
 **/node_modules
 web/dist
 web/node_modules
-backend/bin
-backend/dist
-backend/.cache
+server/bin
+server/dist
+server/.cache
 coverage
 .env
 .env.*

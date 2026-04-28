@@ -1,6 +1,6 @@
 # GoAdmin
 
-GoAdmin is a clean-room, modular backend project. This repository currently includes the Phase 1 core backend skeleton and local development helpers.
+GoAdmin is a clean-room, modular server project. This repository currently includes the Phase 1 core server skeleton and local development helpers.
 
 ## Prerequisites
 
@@ -19,17 +19,17 @@ If you only want the default local compose values, this step is still recommende
 
 If you prefer to keep compose-specific env files next to the compose manifest, you can also copy `deploy/docker-compose/.env.example` to `deploy/docker-compose/.env` and start with `--env-file deploy/docker-compose/.env`.
 
-1. Start the backend with Docker Compose:
+1. Start the server with Docker Compose:
 
 ```bash
 docker compose -f deploy/docker-compose/docker-compose.yaml up --build
 ```
 
-If you want to run the backend outside Docker, use the host-development workflow below.
+If you want to run the server outside Docker, use the host-development workflow below.
 
-### Host development / non-Docker backend development
+### Host development / non-Docker server development
 
-The backend Makefile and dev script use host-local Go module and build caches under `backend/.cache/go-mod` and `backend/.cache/go-build`.
+The server Makefile and dev script use host-local Go module and build caches under `server/.cache/go-mod` and `server/.cache/go-build`.
 
 Recommended commands:
 
@@ -51,13 +51,13 @@ make host-cache-init
 This starts the HTTP server with the current config loading rules:
 
 - `GOADMIN_ENV` / `APP_ENV` default to `dev`
-- `GOADMIN_CONFIG_DIR` defaults to `backend/config`
+- `GOADMIN_CONFIG_DIR` defaults to `server/config`
 
-The repository also ships a Phase 15 frontend delivery path under `web/` and `deploy/docker/web.Dockerfile`, which builds the Vue app into static assets and serves them through Nginx with API proxying to the backend.
+The repository also ships a Phase 15 frontend delivery path under `web/` and `deploy/docker/web.Dockerfile`, which builds the Vue app into static assets and serves them through Nginx with API proxying to the server.
 
 ### Tenant configuration
 
-The backend exposes a runtime tenant toggle in `backend/config/*.yaml`:
+The server exposes a runtime tenant toggle in `server/config/*.yaml`:
 
 - `tenant.enabled: true` enables multi-tenant behavior
 - `tenant.enabled: false` degrades the system to single-tenant mode
@@ -66,13 +66,13 @@ When tenant is disabled, create/update operations ignore `tenant_id`, query path
 
 ### Authorization runtime configuration
 
-The authorization layer supports a configurable policy source in `backend/config/*.yaml` and `deploy/docker-compose/.env.example`. The current implementation is Casbin-backed, but the module boundary is intentionally replaceable:
+The authorization layer supports a configurable policy source in `server/config/*.yaml` and `deploy/docker-compose/.env.example`. The current implementation is Casbin-backed, but the module boundary is intentionally replaceable:
 
 - `auth.casbin.source: file` loads the authorization model and policy from the local files under `core/auth/casbin/`
 - `auth.casbin.source: db` loads authorization policy from the database, auto-migrates the authorization tables, and seeds the initial model/policy from the configured file paths on first boot
 - Supported values for `auth.casbin.source` are `file` and `db`
 
-For DB mode, the server must be started with the shared database connection so auth bootstrap can initialize the authorization runtime against the same store used by the rest of the backend.
+For DB mode, the server must be started with the shared database connection so auth bootstrap can initialize the authorization runtime against the same store used by the rest of the server.
 
 ### Available endpoints
 
@@ -89,7 +89,7 @@ cp deploy/docker-compose/.env.example deploy/docker-compose/.env
 docker compose -f deploy/docker-compose/docker-compose.yaml up --build
 ```
 
-The backend is exposed on port `8080` by default.
+The server is exposed on port `8080` by default.
 
 ### Deployment artifacts
 
@@ -100,16 +100,16 @@ The repository also includes the delivery artifacts needed for Phase 9 and the c
 - `deploy/docker-compose/docker-compose.yaml` for local container orchestration
 - `deploy/k8s/` for plain Kubernetes manifests
 - `deploy/helm/goadmin/` for Helm-based deployments
-- `.github/workflows/ci-cd.yml` for the unified backend + frontend CI/CD automation
+- `.github/workflows/ci-cd.yml` for the unified server + frontend CI/CD automation
 - `.github/workflows/web-ci-cd.yml` as a manual backup for frontend-only image publishing
 
 For local development, the root `Makefile` exposes the same host-development workflow through `make host-*` targets, while `make dev` continues to start the Docker Compose stack.
 
-The root `Makefile` also exposes `make docker-build-backend` and `make docker-build-web` as plain `docker build --no-cache` commands for manual image builds.
+The root `Makefile` also exposes `make docker-build-server` and `make docker-build-web` as plain `docker build --no-cache` commands for manual image builds.
 
 `make compose-build-local` and `make compose-up-local` are simple aliases of `make compose-build` and `make compose-up`.
 
-Environment toggles are exposed through `deploy/docker-compose/.env.example` and the YAML config files under `backend/config/`, including `tenant.enabled`.
+Environment toggles are exposed through `deploy/docker-compose/.env.example` and the YAML config files under `server/config/`, including `tenant.enabled`.
 
 ### Health check
 
@@ -125,10 +125,10 @@ docker compose ps
 
 ## Build and test
 
-Build the backend binary:
+Build the server binary:
 
 ```bash
-make backend-build
+make server-build
 ```
 
 Build the frontend bundle:
@@ -156,20 +156,20 @@ make test
 Build the CLI binary:
 
 ```bash
-make backend-build-cli
+make server-build-cli
 ```
 
-Run the generator from the backend module:
+Run the generator from the server module:
 
 ```bash
-make backend-run-cli ARGS="generate module user"
-make backend-run-cli ARGS="generate crud order --fields id:string,name:string,status:string --policy --frontend"
-make backend-run-cli ARGS="generate plugin demo"
+make server-run-cli ARGS="generate module user"
+make server-run-cli ARGS="generate crud order --fields id:string,name:string,status:string --policy --frontend"
+make server-run-cli ARGS="generate plugin demo"
 ```
 
 The generator will:
 
-- create module skeletons under `backend/modules/<name>`
+- create module skeletons under `server/modules/<name>`
 - generate CRUD application / transport / infrastructure layers
-- append Casbin policy lines into `backend/core/auth/casbin/adapter/policy.csv`
+- append Casbin policy lines into `server/core/auth/casbin/adapter/policy.csv`
 - generate frontend API / router / view files when `--frontend` is enabled

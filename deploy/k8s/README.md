@@ -38,6 +38,6 @@ kustomize build deploy/k8s/overlays/prod | kubectl apply -f -
 
 - Replace the placeholder image reference before production use.
 - Replace `GOADMIN_DATABASE_DSN` and `GOADMIN_AUTH_JWT_SECRET` with real secret values.
-- The backend container listens on port `8080` and serves `/api/v1/health` for health checks.
-- The frontend container listens on port `80`, serves the SPA, and proxies `/api/` to the backend service.
+- The server container listens on port `8080` and serves `/api/v1/health` for health checks.
+- The frontend container listens on port `80`, serves the SPA, and proxies `/api/` to the server service.
 - `tenant.enabled` can be switched via `GOADMIN_TENANT_ENABLED`.

@@ -8,7 +8,7 @@
   "login.success": "Signed in successfully",
   "login.failure": "Sign in failed",
   "login.welcome": "Welcome to GoAdmin",
-  "login.description": "Enter the account created on the backend to sign in.",
+  "login.description": "Enter the account created on the server to sign in.",
   "login.api_base_url": "API base URL",
   "login.default_account": "Default account: admin / admin123",
   "login.form.username_required": "Please enter your username",

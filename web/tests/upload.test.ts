@@ -133,7 +133,7 @@ describe('upload api smoke', () => {
     ]));
   });
 
-  it('downloads a file using the backend filename and a temporary object URL', async () => {
+  it('downloads a file using the server filename and a temporary object URL', async () => {
     const fetchMock = vi.fn(async () => new Response(new Blob(['demo file']), {
       status: 200,
       headers: {

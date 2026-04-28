@@ -35,7 +35,7 @@ FROM nginx:1.27-alpine AS runtime
 
 RUN apk add --no-cache curl
 
-ENV API_UPSTREAM=http://backend:8080
+ENV API_UPSTREAM=http://server:8080
 
 COPY deploy/docker/web-nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=builder /src/web/dist /usr/share/nginx/html

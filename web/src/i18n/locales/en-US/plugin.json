@@ -197,7 +197,7 @@
   "plugin.example_call_failed": "Plugin API call failed",
   "plugin.example_badge": "Plugin UI",
   "plugin.example_alert_title": "This is a dynamic page registered by a plugin",
-  "plugin.example_alert_description": "The component path comes from the backend menu configuration `view/plugin/example/index` and is loaded through the frontend dynamic component mapping.",
+  "plugin.example_alert_description": "The component path comes from the server menu configuration `view/plugin/example/index` and is loaded through the frontend dynamic component mapping.",
   "plugin.example_route_path": "Route path",
   "plugin.example_component_name": "Component name",
   "plugin.example_permission": "Permission key",

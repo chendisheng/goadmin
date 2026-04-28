@@ -171,7 +171,7 @@ function buildRouteRecord(node, parentPath = '/') {
     };
     return record;
 }
-export function registerBackendRoutes(router, nodes, canAccess = () => true) {
+export function registerServerRoutes(router, nodes, canAccess = () => true) {
     const roots = filterMenuRoutesByPermission(nodes, canAccess);
     const routeNames = [];
     for (const item of roots) {
@@ -187,7 +187,7 @@ export function registerBackendRoutes(router, nodes, canAccess = () => true) {
 export function buildMenusOnly(items, canAccess = () => true) {
     return buildSidebarNodes(filterMenuRoutesByPermission(items, canAccess));
 }
-export function mapPluginMenusToBackendRoutes(items) {
+export function mapPluginMenusToServerRoutes(items) {
     return items.map((item) => ({
         name: item.plugin ? `${item.plugin}:${item.id}` : item.id,
         path: item.path,
@@ -210,6 +210,6 @@ export function mapPluginMenusToBackendRoutes(items) {
             subtitleKey: item.subtitleKey,
             subtitleDefault: item.subtitleDefault,
         },
-        children: mapPluginMenusToBackendRoutes(item.children ?? []),
+        children: mapPluginMenusToServerRoutes(item.children ?? []),
     }));
 }

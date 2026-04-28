@@ -69,7 +69,7 @@ describe('useLocaleStore', () => {
     expect(localStorage.getItem('goadmin.language')).toBe('en-US');
   });
 
-  it('lets the backend profile language win when the login page did not make an explicit choice', () => {
+  it('lets the server profile language win when the login page did not make an explicit choice', () => {
     const localeStore = useLocaleStore();
     const sessionStore = useSessionStore();
 

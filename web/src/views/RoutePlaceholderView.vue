@@ -34,7 +34,7 @@ function goDashboard() {
 
       <div class="route-placeholder-page__body">
         <el-alert
-          :title="t('route.placeholder.info', 'This route has been registered from backend menu data')"
+          :title="t('route.placeholder.info', 'This route has been registered from server menu data')"
           :description="t('route.placeholder.description', 'This page serves as a placeholder for business modules that are not implemented yet. The placeholder logic will be replaced by real pages in later phases.')"
           type="info"
           show-icon

@@ -38,13 +38,13 @@
 
 迁移入口在：
 
-- `backend/cmd/server/main.go`
+- `server/cmd/server/main.go`
 
 对应仓储实现：
 
-- `backend/modules/user/infrastructure/repo/gorm.go`
-- `backend/modules/role/infrastructure/repo/gorm.go`
-- `backend/modules/menu/infrastructure/repo/gorm.go`
+- `server/modules/user/infrastructure/repo/gorm.go`
+- `server/modules/role/infrastructure/repo/gorm.go`
+- `server/modules/menu/infrastructure/repo/gorm.go`
 
 ## 配置同步
 
@@ -52,10 +52,10 @@
 
 - `deploy/docker-compose/docker-compose.yaml`
 - `deploy/docker-compose/.env.example`
-- `backend/config/config.yaml`
-- `backend/config/config.dev.yaml`
-- `backend/config/config.prod.yaml`
-- `backend/core/config/config.go`
+- `server/config/config.yaml`
+- `server/config/config.dev.yaml`
+- `server/config/config.prod.yaml`
+- `server/core/config/config.go`
 
 ## 重新执行初始化
 

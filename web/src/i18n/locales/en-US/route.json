@@ -34,7 +34,7 @@
   "route.not_found": "Page not found",
   "route.placeholder.title": "Page placeholder",
   "route.placeholder.subtitle": "Dynamic Route",
-  "route.placeholder.info": "This route is registered from backend menu metadata.",
+  "route.placeholder.info": "This route is registered from server menu metadata.",
   "route.placeholder.description": "This page is a placeholder for business modules that are not implemented yet. It will be replaced by a real page in later Phase 13/14 work.",
   "route.placeholder.route_path": "Route path",
   "route.placeholder.component_name": "Component key",

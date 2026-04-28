@@ -3,7 +3,7 @@
   "upload.description": "Manage uploaded files, bind business objects, download files, and inspect file metadata.",
   "upload.upload_file": "Upload file",
   "upload.upload_title": "Upload file",
-  "upload.upload_alert": "You can fill in business binding info and remarks during upload; file content will be validated according to backend storage rules.",
+  "upload.upload_alert": "You can fill in business binding info and remarks during upload; file content will be validated according to server storage rules.",
   "upload.file": "File",
   "upload.choose_file": "Choose file",
   "upload.no_file_selected": "No file selected",

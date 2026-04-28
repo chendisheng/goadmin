@@ -2,9 +2,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildMenusOnly, filterMenuRoutesByPermission } from '../src/router/navigation';
-import type { BackendMenuRoute } from '../src/types/menu';
+import type { ServerMenuRoute } from '../src/types/menu';
 
-function createMenuRoute(overrides: Partial<BackendMenuRoute>): BackendMenuRoute {
+function createMenuRoute(overrides: Partial<ServerMenuRoute>): ServerMenuRoute {
   return {
     name: 'default',
     path: '/',
@@ -25,7 +25,7 @@ function createMenuRoute(overrides: Partial<BackendMenuRoute>): BackendMenuRoute
   };
 }
 
-const menuTree: BackendMenuRoute[] = [
+const menuTree: ServerMenuRoute[] = [
   createMenuRoute({
     name: 'dashboard',
     path: '/dashboard',
@@ -134,10 +134,10 @@ describe('menu permission filtering', () => {
 
     const filtered = filterMenuRoutesByPermission(menuTree, canAccess);
     const systemRoute = filtered.find((item) => item.name === 'system');
-    const childNames = systemRoute?.children.map((child: BackendMenuRoute) => child.name) ?? [];
+    const childNames = systemRoute?.children.map((child: ServerMenuRoute) => child.name) ?? [];
 
     expect(systemRoute).toBeDefined();
     expect(childNames).toEqual(['system-user', 'system-role']);
-    expect(systemRoute?.children.some((child: BackendMenuRoute) => child.type === 'button')).toBe(false);
+    expect(systemRoute?.children.some((child: ServerMenuRoute) => child.type === 'button')).toBe(false);
   });
 });

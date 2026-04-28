@@ -45,7 +45,7 @@ async function handlePing() {
 
       <el-alert
         :title="t('plugin.example_alert_title', 'This is a dynamic page registered by a plugin')"
-        :description="t('plugin.example_alert_description', 'The component path comes from backend menu configuration `view/plugin/example/index` and is loaded through the frontend dynamic component map.')"
+        :description="t('plugin.example_alert_description', 'The component path comes from server menu configuration `view/plugin/example/index` and is loaded through the frontend dynamic component map.')"
         type="success"
         show-icon
         :closable="false"

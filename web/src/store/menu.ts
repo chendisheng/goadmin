@@ -4,13 +4,13 @@ import type { Router } from 'vue-router';
 
 import { fetchMenuRoutes } from '@/api/menu';
 import { fetchPluginMenus } from '@/api/plugins';
-import { buildMenusOnly, filterMenuRoutesByPermission, mapPluginMenusToBackendRoutes, registerBackendRoutes } from '@/router/navigation';
-import type { BackendMenuRoute, SidebarMenuNode } from '@/types/menu';
+import { buildMenusOnly, filterMenuRoutesByPermission, mapPluginMenusToServerRoutes, registerServerRoutes } from '@/router/navigation';
+import type { ServerMenuRoute, SidebarMenuNode } from '@/types/menu';
 import { useSessionStore } from '@/store/session';
 
 export const useMenuStore = defineStore('menu', () => {
   const sessionStore = useSessionStore();
-  const menuRoutes = ref<BackendMenuRoute[]>([]);
+  const menuRoutes = ref<ServerMenuRoute[]>([]);
   const sidebarMenus = ref<SidebarMenuNode[]>([]);
   const routeNames = ref<string[]>([]);
   const loaded = ref(false);
@@ -33,13 +33,13 @@ export const useMenuStore = defineStore('menu', () => {
     loadPromise = (async () => {
       const [menuResult, pluginResult] = await Promise.allSettled([fetchMenuRoutes(), fetchPluginMenus()]);
       const items = menuResult.status === 'fulfilled' ? menuResult.value.items ?? [] : [];
-      const pluginItems = pluginResult.status === 'fulfilled' ? mapPluginMenusToBackendRoutes(pluginResult.value.items ?? []) : [];
+      const pluginItems = pluginResult.status === 'fulfilled' ? mapPluginMenusToServerRoutes(pluginResult.value.items ?? []) : [];
       const mergedItems = [...items, ...pluginItems];
       const canAccessMenu = (permission: string) => sessionStore.hasPermission(permission);
 
       menuRoutes.value = filterMenuRoutesByPermission(mergedItems, canAccessMenu);
       sidebarMenus.value = buildMenusOnly(mergedItems, canAccessMenu);
-      routeNames.value = registerBackendRoutes(router, mergedItems, canAccessMenu);
+      routeNames.value = registerServerRoutes(router, mergedItems, canAccessMenu);
       loaded.value = true;
     })();
 

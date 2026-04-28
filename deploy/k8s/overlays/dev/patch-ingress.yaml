@@ -9,7 +9,7 @@ spec:
         paths:
           - path: /
             pathType: Prefix
-            backend:
+            server:
               service:
                 name: goadmin
                 port:

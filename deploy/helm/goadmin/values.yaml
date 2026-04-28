@@ -42,7 +42,7 @@ ingress:
 config:
   goadminEnv: prod
   appEnv: prod
-  configDir: /app/backend/config
+  configDir: /app/server/config
   serverHttpHost: 0.0.0.0
   port: 8080
   timezone: Asia/Shanghai

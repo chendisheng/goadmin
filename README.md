@@ -1,37 +1,59 @@
 # GoAdmin
 
-GoAdmin is a clean-room, modular server project. This repository currently includes the Phase 1 core server skeleton and local development helpers.
+[English](./README.md) | [简体中文](./README_zh.md)
 
-## Prerequisites
+This English README mirrors `README_zh.md` and uses the same project scope, structure, and usage notes in English.
 
-- Go 1.22+
-- Docker and Docker Compose v2
+GoAdmin is a clean-room, modular full-stack platform. It uses a `server/ + web/` repository layout and focuses on reusable platform capabilities instead of a single business app.
 
-## Local development
+This file is the English version of the project overview. It keeps the same structure and meaning as `README_zh.md`, so you can switch between the two languages at any time.
 
-1. Copy the example environment file:
+## Project positioning
+
+- **Clean-room implementation**: do not reuse source code, directory habits, or interface design from external sibling projects.
+- **Modular backend**: the backend follows `transport -> application -> domain -> infrastructure`.
+- **Frontend/backend separation**: the frontend runs independently and consumes REST APIs plus dynamic runtime capabilities.
+- **Expandable platform**: built-in support for code generation, plugins, uploads, i18n, and authorization governance.
+
+## Main capabilities
+
+- **Authentication and authorization**: JWT session handling, Casbin-style policy governance, dynamic menus and routes.
+- **Dynamic admin pages**: user, role, menu, dictionary, upload, and plugin center pages.
+- **Code generation**: module / CRUD / plugin generation, plus DSL preview and execution.
+- **File uploads**: support for local, database, and object-storage drivers with preview/download flows.
+- **Internationalization**: i18next-based frontend runtime with persisted language selection and dynamic loading.
+- **Delivery toolchain**: Docker, Docker Compose, Kubernetes, Helm, and CI/CD support.
+
+## Requirements
+
+- **Go**: 1.22+
+- **Node.js**: 18+ recommended for the `web/` frontend
+- **npm**: for frontend dependency installation
+- **Docker / Docker Compose v2**: for containerized startup and deployment
+
+## Quick start
+
+### 1. Prepare local environment variables
+
+Copy the Compose environment file:
 
 ```bash
 cp deploy/docker-compose/.env.example deploy/docker-compose/.env
 ```
 
-If you only want the default local compose values, this step is still recommended so you can tweak port, image tag, or database settings without editing the compose file.
+If you plan to use Docker Compose, this file is the preferred place to adjust ports, image tags, or database settings.
 
-If you prefer to keep compose-specific env files next to the compose manifest, you can also copy `deploy/docker-compose/.env.example` to `deploy/docker-compose/.env` and start with `--env-file deploy/docker-compose/.env`.
-
-1. Start the server with Docker Compose:
+### 2. Start with Docker Compose
 
 ```bash
 docker compose -f deploy/docker-compose/docker-compose.yaml up --build
 ```
 
-If you want to run the server outside Docker, use the host-development workflow below.
+By default, the service is exposed on port `8080`.
 
-### Host development / non-Docker server development
+### 3. Develop the backend on the host
 
-The server Makefile and dev script use host-local Go module and build caches under `server/.cache/go-mod` and `server/.cache/go-build`.
-
-Recommended commands:
+If you do not want to run the backend in Docker, use the host-development commands provided by the repository:
 
 ```bash
 make host-dev
@@ -40,126 +62,91 @@ make host-test
 make host-run-cli ARGS="generate module demo"
 ```
 
-These targets reuse the same host-local directories for `go run`, `go build`, `go test`, `go fmt`, and `go mod tidy`.
-
-If you want to initialize the cache directories explicitly, run:
+To initialize the local cache directories explicitly, run:
 
 ```bash
 make host-cache-init
 ```
 
-This starts the HTTP server with the current config loading rules:
+Host development reuses the following local cache directories:
+
+- `server/.cache/go-mod`
+- `server/.cache/go-build`
+
+## Directory structure
+
+```text
+.
+├── server/                 # backend workspace, including service entrypoints, CLI, modules, config, and codegen
+├── web/                    # frontend project based on Vue 3 + TypeScript + Vite + Pinia + Vue Router + Element Plus
+├── deploy/                 # delivery assets for Docker / Compose / Kubernetes / Helm
+├── docs/                   # architecture, design, requirements, and reference documents
+├── memory-bank/            # project memory and progress records
+├── Makefile                # root-level entry commands
+└── README.md               # English project overview
+```
+
+### Backend highlights
+
+- `server/cmd/`: server entrypoints, CLI entrypoints, and migration tools.
+- `server/config/`: backend configuration files and environment-specific settings.
+- `server/core/`: authentication, authorization, configuration, startup orchestration, and other core capabilities.
+- `server/modules/`: modular backend implementations.
+- `server/codegen/`: code generation, deletion, installation, and DSL handling.
+
+### Frontend highlights
+
+- `web/src/api/`: API client wrappers.
+- `web/src/views/`: page views.
+- `web/src/router/`: routing and dynamic menu binding.
+- `web/src/store/`: Pinia state management.
+- `web/src/i18n/`: internationalization resources and runtime integration.
+
+## Configuration
+
+The backend loads configuration with the following defaults:
 
 - `GOADMIN_ENV` / `APP_ENV` default to `dev`
 - `GOADMIN_CONFIG_DIR` defaults to `server/config`
 
-The repository also ships a Phase 15 frontend delivery path under `web/` and `deploy/docker/web.Dockerfile`, which builds the Vue app into static assets and serves them through Nginx with API proxying to the server.
+Common config files:
 
-### Tenant configuration
+- `server/config/config.yaml`
+- `server/config/config.dev.yaml`
+- `server/config/config.prod.yaml`
 
-The server exposes a runtime tenant toggle in `server/config/*.yaml`:
+Compose environment variables are defined in:
 
-- `tenant.enabled: true` enables multi-tenant behavior
-- `tenant.enabled: false` degrades the system to single-tenant mode
+- `deploy/docker-compose/.env.example`
 
-When tenant is disabled, create/update operations ignore `tenant_id`, query paths stop injecting tenant filters, and the authorization runtime falls back to role-only evaluation.
+## Common commands
 
-### Authorization runtime configuration
-
-The authorization layer supports a configurable policy source in `server/config/*.yaml` and `deploy/docker-compose/.env.example`. The current implementation is Casbin-backed, but the module boundary is intentionally replaceable:
-
-- `auth.casbin.source: file` loads the authorization model and policy from the local files under `core/auth/casbin/`
-- `auth.casbin.source: db` loads authorization policy from the database, auto-migrates the authorization tables, and seeds the initial model/policy from the configured file paths on first boot
-- Supported values for `auth.casbin.source` are `file` and `db`
-
-For DB mode, the server must be started with the shared database connection so auth bootstrap can initialize the authorization runtime against the same store used by the rest of the server.
-
-### Available endpoints
-
-- `GET /api/v1/health`
-- `GET /api/v1/meta/version`
-- `GET /api/v1/meta/config`
-
-## Docker Compose
-
-Start the service from the repository root:
-
-```bash
-cp deploy/docker-compose/.env.example deploy/docker-compose/.env
-docker compose -f deploy/docker-compose/docker-compose.yaml up --build
-```
-
-The server is exposed on port `8080` by default.
-
-### Deployment artifacts
-
-The repository also includes the delivery artifacts needed for Phase 9 and the current deployment layout:
-
-- `deploy/docker/Dockerfile` for image builds
-- `deploy/docker/web.Dockerfile` and `deploy/docker/web-nginx.conf` for frontend image builds and Nginx SPA hosting
-- `deploy/docker-compose/docker-compose.yaml` for local container orchestration
-- `deploy/k8s/` for plain Kubernetes manifests
-- `deploy/helm/goadmin/` for Helm-based deployments
-- `.github/workflows/ci-cd.yml` for the unified server + frontend CI/CD automation
-- `.github/workflows/web-ci-cd.yml` as a manual backup for frontend-only image publishing
-
-For local development, the root `Makefile` exposes the same host-development workflow through `make host-*` targets, while `make dev` continues to start the Docker Compose stack.
-
-The root `Makefile` also exposes `make docker-build-server` and `make docker-build-web` as plain `docker build --no-cache` commands for manual image builds.
-
-`make compose-build-local` and `make compose-up-local` are simple aliases of `make compose-build` and `make compose-up`.
-
-Environment toggles are exposed through `deploy/docker-compose/.env.example` and the YAML config files under `server/config/`, including `tenant.enabled`.
-
-### Health check
-
-The Compose service includes a health check that verifies the HTTP health endpoint:
-
-- `GET /api/v1/health`
-
-You can inspect status with:
-
-```bash
-docker compose ps
-```
-
-## Build and test
-
-Build the server binary:
+### Backend build and test
 
 ```bash
 make server-build
+make server-build-cli
+make test
 ```
 
-Build the frontend bundle:
+### Frontend build and test
 
 ```bash
 cd web
 npm install
 npm run build
+npm run test
 ```
 
-Build the frontend container image:
+### Frontend type checking and i18n validation
 
 ```bash
-docker build -f deploy/docker/web.Dockerfile -t goadmin/web:local .
+cd web
+npm run typecheck
+npm run i18n:check-locales
 ```
 
-Run tests:
-
-```bash
-make test
-```
-
-## CLI generator
-
-Build the CLI binary:
-
-```bash
-make server-build-cli
-```
-
-Run the generator from the server module:
+### CLI code generation
 
 ```bash
 make server-run-cli ARGS="generate module user"
@@ -173,3 +160,56 @@ The generator will:
 - generate CRUD application / transport / infrastructure layers
 - append Casbin policy lines into `server/core/auth/casbin/adapter/policy.csv`
 - generate frontend API / router / view files when `--frontend` is enabled
+
+## Runtime endpoints
+
+The backend currently exposes the following common endpoints:
+
+- `GET /api/v1/health`
+- `GET /api/v1/meta/version`
+- `GET /api/v1/meta/config`
+
+> More business endpoints will be added as modules continue to grow.
+
+## Deployment
+
+The repository already includes the following delivery assets:
+
+- `deploy/docker/Dockerfile`
+- `deploy/docker/web.Dockerfile`
+- `deploy/docker/web-nginx.conf`
+- `deploy/docker-compose/docker-compose.yaml`
+- `deploy/k8s/`
+- `deploy/k8s/overlays/`
+- `deploy/helm/goadmin/`
+- `.github/workflows/ci-cd.yml`
+- `.github/workflows/web-ci-cd.yml`
+
+The root `Makefile` also provides common deployment helpers such as:
+
+- `make dev`
+- `make compose-build`
+- `make compose-up`
+- `make compose-build-local`
+- `make compose-up-local`
+- `make docker-build-server`
+- `make docker-build-web`
+
+## Documentation navigation
+
+Recommended reading:
+
+- `docs/GoAdmin 架构设计.md`
+- `docs/GoAdmin 架构设计-简版摘要.md`
+
+## Development conventions
+
+- **Follow the architecture document**: implementation should prioritize `docs/GoAdmin 架构设计.md`.
+- **Keep clean-room discipline**: only reference ideas from external projects, never copy implementations.
+- **Use the root Makefile first**: repository entry commands should be run from the root.
+- **Keep backend config under `server/config/`**.
+- **Keep the frontend stack consistent**: Vue 3 + TypeScript + Vite + Pinia + Vue Router + Axios + Element Plus.
+
+## License
+
+This repository follows the license defined in the root `LICENSE` file.

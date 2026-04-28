@@ -358,6 +358,7 @@ async function openPreview(row: UploadFileItem) {
   try {
     revokePreviewBrowserUrl();
     const item = await previewUploadFile(row.id);
+    previewItem.value = item;
     const publicUrl = item.public_url ?? '';
     if (previewMode.value === 'download_only' || previewKind.value === 'download-only') {
       previewBrowserUrl.value = '';
@@ -365,7 +366,7 @@ async function openPreview(row: UploadFileItem) {
     } else if (previewMode.value === 'public_url' && publicUrl && isBrowserDirectPublicUrl(publicUrl)) {
       previewBrowserUrl.value = publicUrl;
       previewBrowserUrlIsObjectUrl.value = false;
-    } else if (previewItem.value.download_url) {
+    } else if (item.download_url) {
       previewBrowserUrl.value = await createUploadFilePreviewUrl(row.id);
       previewBrowserUrlIsObjectUrl.value = true;
     }

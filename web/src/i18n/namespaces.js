@@ -34,7 +34,18 @@ export function namespacesFromComponentName(componentName) {
     if (normalized === '' || normalized === 'Layout') {
         return [];
     }
-    const normalizedNamespace = namespaceFromKey(normalized).trim().toLowerCase();
+    const segments = normalized.split('/').filter(Boolean);
+    if (segments.length === 0) {
+        return [];
+    }
+    const viewIndex = segments[0] === 'view' || segments[0] === 'views' ? 1 : 0;
+    if (viewIndex >= segments.length) {
+        return [];
+    }
+    const namespace = segments[viewIndex] === 'system' && viewIndex + 1 < segments.length
+        ? segments[viewIndex + 1]
+        : segments[viewIndex];
+    const normalizedNamespace = namespace.trim().toLowerCase();
     return normalizedNamespace === '' ? [] : [normalizedNamespace];
 }
 function singularizeNamespaceCandidate(value) {
@@ -82,11 +93,22 @@ export function namespacesFromRoutePath(routePath) {
 }
 export function collectNamespacesFromRouteMeta(meta) {
     const typedMeta = meta;
-    const namespaces = collectNamespacesFromKeys([
+    const namespaces = new Set(collectNamespacesFromKeys([
         typeof typedMeta.titleKey === 'string' ? typedMeta.titleKey : '',
         typeof typedMeta.subtitleKey === 'string' ? typedMeta.subtitleKey : '',
         typeof typedMeta.componentName === 'string' ? typedMeta.componentName : '',
         typeof typedMeta.title === 'string' ? typedMeta.title : '',
-    ]);
-    return namespaces;
+    ]));
+    for (const namespace of typedMeta.i18nNamespaces ?? []) {
+        const normalized = namespace.trim().toLowerCase();
+        if (normalized !== '' && isValidNamespace(normalized)) {
+            namespaces.add(normalized);
+        }
+    }
+    if (typeof typedMeta.componentName === 'string') {
+        for (const namespace of namespacesFromComponentName(typedMeta.componentName)) {
+            namespaces.add(namespace);
+        }
+    }
+    return [...namespaces];
 }

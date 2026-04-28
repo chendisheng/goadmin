@@ -176,7 +176,7 @@ export const useSessionStore = defineStore('session', () => {
     persistNumberValue(REFRESH_EXPIRES_AT_KEY, 0);
   }
 
-  function setLanguage(value: string, profileLanguage?: string) {
+  function setLanguage(value: string | null | undefined, profileLanguage?: string | null) {
     language.value = resolvePreferredI18nLanguage(value, profileLanguage);
     persistLanguageValue(language.value);
   }

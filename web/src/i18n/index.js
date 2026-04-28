@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import i18next from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { useLocaleStore } from '@/store/locale';
@@ -8,6 +8,10 @@ import { collectNamespacesFromRouteMeta, isValidNamespace, I18N_BASE_NAMESPACES,
 const APP_NAMESPACE = I18N_DEFAULT_NS;
 let initPromise = null;
 const runtimeNamespaces = new Set(I18N_BASE_NAMESPACES);
+const runtimeVersion = ref(0);
+function bumpRuntimeVersion() {
+    runtimeVersion.value += 1;
+}
 function normalizeNamespaces(namespaces) {
     const result = new Set(I18N_BASE_NAMESPACES);
     for (const ns of namespaces) {
@@ -74,8 +78,10 @@ async function bootstrapI18n(language) {
         ...runtimeNamespaces,
     ]);
     await ensureI18nRuntimeResources(normalizedLanguage, [...knownNamespaces]);
+    bumpRuntimeVersion();
     if (instance.language !== normalizedLanguage) {
         await instance.changeLanguage(normalizedLanguage);
+        bumpRuntimeVersion();
     }
     return instance;
 }
@@ -88,12 +94,6 @@ function hasTranslationKey(value) {
         return i18next.exists(key, { ns: namespaceFromKey(key) });
     }
     return false;
-}
-export async function initializeI18n(language) {
-    await bootstrapI18n(language);
-}
-export async function setI18nLanguage(language) {
-    await bootstrapI18n(language);
 }
 function collectRouteNamespaces(route) {
     const typedMeta = route.meta;
@@ -121,14 +121,21 @@ function collectRouteNamespaces(route) {
     }
     return [...namespaces];
 }
-export async function preloadRouteNamespaces(route) {
+export async function initializeI18n(language) {
+    await bootstrapI18n(language);
+}
+export async function setI18nLanguage(language) {
+    await bootstrapI18n(language);
+}
+export async function preloadRouteNamespaces(route, languageOverride) {
     const localeStore = useLocaleStore();
-    const language = normalizeI18nLanguage(localeStore.language);
+    const language = normalizeI18nLanguage(languageOverride ?? localeStore.language);
     const namespaces = collectRouteNamespaces(route);
     for (const namespace of namespaces) {
         runtimeNamespaces.add(namespace);
     }
     await ensureI18nRuntimeResources(language, namespaces);
+    bumpRuntimeVersion();
 }
 export function getAppLanguage() {
     const localeStore = useLocaleStore();
@@ -139,6 +146,7 @@ export function translate(key, fallback = '', values) {
     const namespace = namespaceFromKey(normalizedKey);
     const localeStore = useLocaleStore();
     void localeStore.language;
+    void runtimeVersion.value;
     if (normalizedKey === '') {
         return fallback.trim() === '' ? '' : formatMessage(fallback, values);
     }
@@ -166,6 +174,7 @@ export function useAppI18n() {
     const language = computed(() => normalizeI18nLanguage(localeStore.language));
     function t(key, fallback = '', values) {
         void language.value;
+        void runtimeVersion.value;
         return translate(key, fallback, values);
     }
     return {

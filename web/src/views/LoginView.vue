@@ -71,7 +71,7 @@ async function onSubmit() {
     loading.value = true;
     try {
       const response = await login({ username: form.username.trim(), password: form.password });
-      const selectedLanguage = localeStore.hasLanguagePreference ? localeStore.language : null;
+      const selectedLanguage = localeStore.hasLanguagePreference ? localeStore.language : undefined;
       sessionStore.applyLoginResponse(response, selectedLanguage);
       localeStore.applyLanguagePreference(selectedLanguage, response.user.language, localeStore.hasLanguagePreference);
       await menuStore.ensureLoaded(router);

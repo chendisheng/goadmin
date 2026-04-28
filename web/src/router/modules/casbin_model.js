@@ -6,6 +6,7 @@ const route = {
         title: 'models',
         titleKey: 'route.casbin_models',
         titleDefault: 'Model management',
+        i18nNamespaces: ['casbin_model'],
         icon: 'menu',
     },
 };

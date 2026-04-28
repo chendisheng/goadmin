@@ -6,6 +6,7 @@ const route = {
         title: 'Codegen console',
         titleKey: 'route.codegen_console',
         titleDefault: 'CodeGen console',
+        i18nNamespaces: ['codegen'],
         permission: 'codegen:list',
     },
 };

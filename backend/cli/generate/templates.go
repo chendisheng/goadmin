@@ -228,10 +228,12 @@ const gormRepositoryTemplate = `package repo
 import (
 	"context"
 	"fmt"
-	{{if .NeedsStringsImport}}"strings"{{end}}
-{{if .NeedsPrimaryIDGeneration}}
+	{{- if .NeedsStringsImport }}
+	"strings"
+	{{- end }}
+	{{- if .NeedsPrimaryIDGeneration }}
 	"time"
-{{end}}
+	{{- end }}
 
 	"goadmin/modules/{{.EntityLower}}/domain/model"
 

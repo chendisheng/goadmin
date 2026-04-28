@@ -347,6 +347,35 @@ func TestGenerateCRUDPrimaryKeyModes(t *testing.T) {
 	}
 }
 
+func TestGenerateCRUDRepoImportsStayFormatted(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	gen := New(root)
+	fields := []Field{
+		{Name: "id", GoName: "ID", JSONName: "id", GoType: "string", Column: "id", Primary: true},
+		{Name: "name", GoName: "Name", JSONName: "name", GoType: "string", Column: "name"},
+		{Name: "published_at", GoName: "PublishedAt", JSONName: "published_at", GoType: "time.Time", Column: "published_at"},
+	}
+
+	if err := gen.GenerateCRUD(CRUDOptions{Name: "Article", Fields: fields, GenerateFrontend: false, GeneratePolicy: false, Force: true}); err != nil {
+		t.Fatalf("GenerateCRUD returned error: %v", err)
+	}
+
+	repoPath := filepath.Join(root, "backend", "modules", "article", "infrastructure", "repo", "gorm.go")
+	content, err := os.ReadFile(repoPath)
+	if err != nil {
+		t.Fatalf("read repo file: %v", err)
+	}
+	text := string(content)
+	if strings.Contains(text, "\"strings\"\n\n\t\"time\"") || strings.Contains(text, "\"time\"\n\n\t\"strings\"") {
+		t.Fatalf("generated repo imports contain a blank line between stdlib imports:\n%s", text)
+	}
+	if !strings.Contains(text, "\"strings\"") || !strings.Contains(text, "\"time\"") {
+		t.Fatalf("generated repo imports missing expected stdlib packages:\n%s", text)
+	}
+}
+
 func TestRefreshBootstrapRegistryFiltersGeneratedModules(t *testing.T) {
 	t.Parallel()
 

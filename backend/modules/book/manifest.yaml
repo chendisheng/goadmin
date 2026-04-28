@@ -1,0 +1,65 @@
+# codegen:begin
+name: book
+version: v1
+kind: crud
+module: book
+dependencies:
+  - core/auth/bootstrap
+  - core/auth/casbin
+routes:
+  - method: GET
+    path: /api/v1/books
+  - method: GET
+    path: /api/v1/books/:id
+  - method: POST
+    path: /api/v1/books
+  - method: PUT
+    path: /api/v1/books/:id
+  - method: DELETE
+    path: /api/v1/books/:id
+menus:
+  - name: Books
+    title_key: route.book
+    title_default: Books
+    path: /books
+    component: Layout
+    icon: menu
+    permission: book:view
+    type: directory
+    redirect: /books/list
+    visible: true
+    enabled: true
+    sort: 1
+  - name: List
+    title_key: route.book_list
+    title_default: List
+    path: /books/list
+    parent_path: /books
+    component: view/book/index
+    icon: menu
+    permission: book:list
+    type: menu
+    visible: true
+    enabled: true
+    sort: 2
+permissions:
+  - object: book
+    action: list
+    description: List Book
+  - object: book
+    action: view
+    description: View Book
+  - object: book
+    action: create
+    description: Create Book
+  - object: book
+    action: update
+    description: Update Book
+  - object: book
+    action: delete
+    description: Delete Book
+capabilities:
+  - basic-crud
+  - policy-generated
+  - frontend-generated
+# codegen:end

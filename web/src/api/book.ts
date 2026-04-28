@@ -34,7 +34,7 @@ export function listbooks(params: BookListQuery = {}): Promise<ListResponse<Book
 }
 
 export function getBook(id: string | number): Promise<BookItem> {
-  return http.get<BookItem>(`${basePath}/${id}`);
+  return http.get<BookItem>(basePath + '/' + id);
 }
 
 export function createBook(data: Record<string, unknown>): Promise<BookItem> {
@@ -42,9 +42,9 @@ export function createBook(data: Record<string, unknown>): Promise<BookItem> {
 }
 
 export function updateBook(id: string | number, data: Record<string, unknown>): Promise<BookItem> {
-  return http.put<BookItem>(`${basePath}/${id}`, data);
+  return http.put<BookItem>(basePath + '/' + id, data);
 }
 
 export function deleteBook(id: string | number): Promise<{ deleted: boolean }> {
-  return http.delete<{ deleted: boolean }>(`${basePath}/${id}`);
+  return http.delete<{ deleted: boolean }>(basePath + '/' + id);
 }

@@ -584,26 +584,43 @@ func (Bootstrap) Register(group coretransport.RouteRegistrar, deps corebootstrap
 
 const frontendApiTemplate = `import http from './http';
 
-const basePath = '/{{.EntityPlural}}'
+import type { ListResponse } from '@/types/admin';
 
-export function list{{.EntityPlural}}(params = {}) {
-  return http.get(basePath, { params });
+export interface {{.Entity}}Item {
+  id: string;
+{{- range .DisplayFields}}
+  {{.JSONName}}?: {{.TSValueType}};
+{{- end}}
+  created_at?: string;
+  updated_at?: string;
 }
 
-export function get{{.Entity}}(id) {
-  return http.get(basePath + '/' + id);
+export interface {{.Entity}}ListQuery {
+  keyword?: string;
+  page?: number;
+  page_size?: number;
 }
 
-export function create{{.Entity}}(data) {
-  return http.post(basePath, data);
+const basePath = '/{{.EntityPlural}}';
+
+export function list{{.EntityPlural}}(params: {{.Entity}}ListQuery = {}): Promise<ListResponse<{{.Entity}}Item>> {
+  return http.get<ListResponse<{{.Entity}}Item>>(basePath, { params });
 }
 
-export function update{{.Entity}}(id, data) {
-  return http.put(basePath + '/' + id, data);
+export function get{{.Entity}}(id: string | number): Promise<{{.Entity}}Item> {
+  return http.get<{{.Entity}}Item>(basePath + '/' + id);
 }
 
-export function delete{{.Entity}}(id) {
-  return http.delete(basePath + '/' + id);
+export function create{{.Entity}}(data: Record<string, unknown>): Promise<{{.Entity}}Item> {
+  return http.post<{{.Entity}}Item>(basePath, data);
+}
+
+export function update{{.Entity}}(id: string | number, data: Record<string, unknown>): Promise<{{.Entity}}Item> {
+  return http.put<{{.Entity}}Item>(basePath + '/' + id, data);
+}
+
+export function delete{{.Entity}}(id: string | number): Promise<{ deleted: boolean }> {
+  return http.delete<{ deleted: boolean }>(basePath + '/' + id);
 }
 `
 

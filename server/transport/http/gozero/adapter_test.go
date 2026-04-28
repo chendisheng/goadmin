@@ -2,6 +2,7 @@ package gozero
 
 import (
 	"context"
+	"mime/multipart"
 	"testing"
 
 	coretransport "goadmin/core/transport"
@@ -49,12 +50,14 @@ func (c *fakeContext) Get(key string) (any, bool) {
 	value, ok := c.values[key]
 	return value, ok
 }
-func (c *fakeContext) ShouldBindJSON(any) error      { c.jsonCalled = true; return nil }
-func (c *fakeContext) ShouldBindQuery(any) error     { c.bindQueryCalled = true; return nil }
-func (c *fakeContext) BindJSON(v any) error          { return c.ShouldBindJSON(v) }
-func (c *fakeContext) JSON(int, any)                 {}
-func (c *fakeContext) FileAttachment(string, string) {}
-func (c *fakeContext) AbortWithStatusJSON(int, any)  {}
+func (c *fakeContext) ShouldBind(any) error                           { return nil }
+func (c *fakeContext) ShouldBindJSON(any) error                       { c.jsonCalled = true; return nil }
+func (c *fakeContext) ShouldBindQuery(any) error                      { c.bindQueryCalled = true; return nil }
+func (c *fakeContext) BindJSON(v any) error                           { return c.ShouldBindJSON(v) }
+func (c *fakeContext) FormFile(string) (*multipart.FileHeader, error) { return nil, nil }
+func (c *fakeContext) JSON(int, any)                                  {}
+func (c *fakeContext) FileAttachment(string, string)                  {}
+func (c *fakeContext) AbortWithStatusJSON(int, any)                   {}
 
 type fakeRouter struct {
 	used   int

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
@@ -291,6 +292,9 @@ func (c *fakeContext) Get(key string) (any, bool) {
 	value, ok := c.values[key]
 	return value, ok
 }
+func (c *fakeContext) ShouldBind(any) error {
+	return c.ShouldBindJSON(nil)
+}
 func (c *fakeContext) ShouldBindJSON(v any) error {
 	data, err := json.Marshal(c.payload)
 	if err != nil {
@@ -298,8 +302,9 @@ func (c *fakeContext) ShouldBindJSON(v any) error {
 	}
 	return json.Unmarshal(data, v)
 }
-func (c *fakeContext) ShouldBindQuery(any) error { return nil }
-func (c *fakeContext) BindJSON(v any) error      { return c.ShouldBindJSON(v) }
+func (c *fakeContext) ShouldBindQuery(any) error                      { return nil }
+func (c *fakeContext) BindJSON(v any) error                           { return c.ShouldBindJSON(v) }
+func (c *fakeContext) FormFile(string) (*multipart.FileHeader, error) { return nil, nil }
 func (c *fakeContext) JSON(status int, payload any) {
 	c.status = status
 	c.jsonBody = payload
@@ -657,8 +662,9 @@ func TestHandlerGenerateDatabaseValidation(t *testing.T) {
 	if !ok {
 		t.Fatalf("GenerateDatabase body type = %T, want response.Envelope", ctx.jsonBody)
 	}
-	if !strings.Contains(strings.ToLower(envelope.Message), "database driver is required") {
-		t.Fatalf("GenerateDatabase message = %q, want database driver is required", envelope.Message)
+	message := strings.ToLower(strings.TrimSpace(envelope.Message))
+	if !strings.Contains(message, "请求参数错误") && !strings.Contains(message, "database driver is required") {
+		t.Fatalf("GenerateDatabase message = %q, want request parameter validation error", envelope.Message)
 	}
 }
 

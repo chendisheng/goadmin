@@ -3,7 +3,9 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { createDictionaryCategory, deleteDictionaryCategory, fetchDictionaryCategories, updateDictionaryCategory, } from '@/api/dictionary';
+import { useAppI18n } from '@/i18n';
 import { formatDateTime, statusTagType } from '@/utils/admin';
+const { t } = useAppI18n();
 const tableLoading = ref(false);
 const dialogLoading = ref(false);
 const dialogVisible = ref(false);
@@ -58,11 +60,11 @@ function openEdit(row) {
     dialogVisible.value = true;
 }
 function statusLabel(status) {
-    return status === 'disabled' ? '禁用' : '启用';
+    return status === 'disabled' ? t('dictionary.category.disabled', 'Disabled') : t('dictionary.category.enabled', 'Enabled');
 }
 async function submitForm() {
     if (form.code.trim() === '' || form.name.trim() === '') {
-        ElMessage.warning('请输入字典编码和名称');
+        ElMessage.warning(t('dictionary.category.validation_required', 'Enter the dictionary code and name'));
         return;
     }
     dialogLoading.value = true;
@@ -78,11 +80,11 @@ async function submitForm() {
         };
         if (editingId.value) {
             await updateDictionaryCategory(editingId.value, payload);
-            ElMessage.success('字典分类已更新');
+            ElMessage.success(t('dictionary.category.updated', 'Dictionary category updated'));
         }
         else {
             await createDictionaryCategory(payload);
-            ElMessage.success('字典分类已创建');
+            ElMessage.success(t('dictionary.category.created', 'Dictionary category created'));
         }
         dialogVisible.value = false;
         await loadCategories();
@@ -92,13 +94,13 @@ async function submitForm() {
     }
 }
 async function removeRow(row) {
-    await ElMessageBox.confirm(`确认删除字典分类 ${row.name} 吗？`, '删除分类', {
+    await ElMessageBox.confirm(t('dictionary.category.confirm_delete', 'Delete dictionary category {name}?', { name: row.name }), t('dictionary.category.delete_title', 'Delete category'), {
         type: 'warning',
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
+        confirmButtonText: t('common.delete', 'Delete'),
+        cancelButtonText: t('common.cancel', 'Cancel'),
     });
     await deleteDictionaryCategory(row.id);
-    ElMessage.success('字典分类已删除');
+    ElMessage.success(t('dictionary.category.deleted', 'Dictionary category deleted'));
     await loadCategories();
 }
 function handleSearch() {
@@ -133,13 +135,13 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 /** @type {[typeof AdminTable, typeof AdminTable, ]} */ ;
 // @ts-ignore
 const __VLS_0 = __VLS_asFunctionalComponent(AdminTable, new AdminTable({
-    title: "字典分类管理",
-    description: "维护字典分类编码、名称与启停状态，供系统内其他模块复用。",
+    title: (__VLS_ctx.t('dictionary.category.title', 'Dictionary categories')),
+    description: (__VLS_ctx.t('dictionary.category.description', 'Maintain dictionary category codes, names, and enable/disable status for reuse by other modules.')),
     loading: (__VLS_ctx.tableLoading),
 }));
 const __VLS_1 = __VLS_0({
-    title: "字典分类管理",
-    description: "维护字典分类编码、名称与启停状态，供系统内其他模块复用。",
+    title: (__VLS_ctx.t('dictionary.category.title', 'Dictionary categories')),
+    description: (__VLS_ctx.t('dictionary.category.description', 'Maintain dictionary category codes, names, and enable/disable status for reuse by other modules.')),
     loading: (__VLS_ctx.tableLoading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
 __VLS_2.slots.default;
@@ -163,6 +165,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.loadCategories)
     };
     __VLS_6.slots.default;
+    (__VLS_ctx.t('common.refresh', 'Refresh'));
     var __VLS_6;
     const __VLS_11 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -183,6 +186,7 @@ __VLS_2.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('dictionary:category:create') }, null, null);
     __VLS_14.slots.default;
+    (__VLS_ctx.t('dictionary.category.create', 'Add category'));
     var __VLS_14;
 }
 {
@@ -205,10 +209,10 @@ __VLS_2.slots.default;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_24 = __VLS_asFunctionalComponent(__VLS_23, new __VLS_23({
-        label: "关键字",
+        label: (__VLS_ctx.t('dictionary.category.keyword', 'Keyword')),
     }));
     const __VLS_25 = __VLS_24({
-        label: "关键字",
+        label: (__VLS_ctx.t('dictionary.category.keyword', 'Keyword')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_24));
     __VLS_26.slots.default;
     const __VLS_27 = {}.ElInput;
@@ -217,22 +221,22 @@ __VLS_2.slots.default;
     const __VLS_28 = __VLS_asFunctionalComponent(__VLS_27, new __VLS_27({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: "编码 / 名称 / 备注",
+        placeholder: (__VLS_ctx.t('dictionary.category.keyword_placeholder', 'Code / name / remark')),
     }));
     const __VLS_29 = __VLS_28({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: "编码 / 名称 / 备注",
+        placeholder: (__VLS_ctx.t('dictionary.category.keyword_placeholder', 'Code / name / remark')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_28));
     var __VLS_26;
     const __VLS_31 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_32 = __VLS_asFunctionalComponent(__VLS_31, new __VLS_31({
-        label: "状态",
+        label: (__VLS_ctx.t('dictionary.category.status', 'Status')),
     }));
     const __VLS_33 = __VLS_32({
-        label: "状态",
+        label: (__VLS_ctx.t('dictionary.category.status', 'Status')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_32));
     __VLS_34.slots.default;
     const __VLS_35 = {}.ElSelect;
@@ -241,13 +245,13 @@ __VLS_2.slots.default;
     const __VLS_36 = __VLS_asFunctionalComponent(__VLS_35, new __VLS_35({
         modelValue: (__VLS_ctx.query.status),
         clearable: true,
-        placeholder: "全部状态",
+        placeholder: (__VLS_ctx.t('dictionary.category.all_status', 'All statuses')),
         ...{ style: {} },
     }));
     const __VLS_37 = __VLS_36({
         modelValue: (__VLS_ctx.query.status),
         clearable: true,
-        placeholder: "全部状态",
+        placeholder: (__VLS_ctx.t('dictionary.category.all_status', 'All statuses')),
         ...{ style: {} },
     }, ...__VLS_functionalComponentArgsRest(__VLS_36));
     __VLS_38.slots.default;
@@ -255,22 +259,22 @@ __VLS_2.slots.default;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_40 = __VLS_asFunctionalComponent(__VLS_39, new __VLS_39({
-        label: "启用",
+        label: (__VLS_ctx.t('dictionary.category.enabled', 'Enabled')),
         value: "enabled",
     }));
     const __VLS_41 = __VLS_40({
-        label: "启用",
+        label: (__VLS_ctx.t('dictionary.category.enabled', 'Enabled')),
         value: "enabled",
     }, ...__VLS_functionalComponentArgsRest(__VLS_40));
     const __VLS_43 = {}.ElOption;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_44 = __VLS_asFunctionalComponent(__VLS_43, new __VLS_43({
-        label: "禁用",
+        label: (__VLS_ctx.t('dictionary.category.disabled', 'Disabled')),
         value: "disabled",
     }));
     const __VLS_45 = __VLS_44({
-        label: "禁用",
+        label: (__VLS_ctx.t('dictionary.category.disabled', 'Disabled')),
         value: "disabled",
     }, ...__VLS_functionalComponentArgsRest(__VLS_44));
     var __VLS_38;
@@ -299,6 +303,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleSearch)
     };
     __VLS_54.slots.default;
+    (__VLS_ctx.t('common.search', 'Search'));
     var __VLS_54;
     const __VLS_59 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -316,6 +321,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleReset)
     };
     __VLS_62.slots.default;
+    (__VLS_ctx.t('common.reset', 'Reset'));
     var __VLS_62;
     var __VLS_50;
     var __VLS_22;
@@ -340,12 +346,12 @@ const __VLS_71 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_72 = __VLS_asFunctionalComponent(__VLS_71, new __VLS_71({
     prop: "code",
-    label: "分类编码",
+    label: (__VLS_ctx.t('dictionary.category.code', 'Category code')),
     minWidth: "160",
 }));
 const __VLS_73 = __VLS_72({
     prop: "code",
-    label: "分类编码",
+    label: (__VLS_ctx.t('dictionary.category.code', 'Category code')),
     minWidth: "160",
 }, ...__VLS_functionalComponentArgsRest(__VLS_72));
 const __VLS_75 = {}.ElTableColumn;
@@ -353,12 +359,12 @@ const __VLS_75 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_76 = __VLS_asFunctionalComponent(__VLS_75, new __VLS_75({
     prop: "name",
-    label: "分类名称",
+    label: (__VLS_ctx.t('dictionary.category.name', 'Category name')),
     minWidth: "160",
 }));
 const __VLS_77 = __VLS_76({
     prop: "name",
-    label: "分类名称",
+    label: (__VLS_ctx.t('dictionary.category.name', 'Category name')),
     minWidth: "160",
 }, ...__VLS_functionalComponentArgsRest(__VLS_76));
 const __VLS_79 = {}.ElTableColumn;
@@ -366,13 +372,13 @@ const __VLS_79 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_80 = __VLS_asFunctionalComponent(__VLS_79, new __VLS_79({
     prop: "description",
-    label: "描述",
+    label: (__VLS_ctx.t('dictionary.category.description_label', 'Description')),
     minWidth: "220",
     showOverflowTooltip: true,
 }));
 const __VLS_81 = __VLS_80({
     prop: "description",
-    label: "描述",
+    label: (__VLS_ctx.t('dictionary.category.description_label', 'Description')),
     minWidth: "220",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_80));
@@ -380,11 +386,11 @@ const __VLS_83 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_84 = __VLS_asFunctionalComponent(__VLS_83, new __VLS_83({
-    label: "状态",
+    label: (__VLS_ctx.t('dictionary.category.status', 'Status')),
     width: "100",
 }));
 const __VLS_85 = __VLS_84({
-    label: "状态",
+    label: (__VLS_ctx.t('dictionary.category.status', 'Status')),
     width: "100",
 }, ...__VLS_functionalComponentArgsRest(__VLS_84));
 __VLS_86.slots.default;
@@ -412,12 +418,12 @@ const __VLS_91 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_92 = __VLS_asFunctionalComponent(__VLS_91, new __VLS_91({
     prop: "sort",
-    label: "排序",
+    label: (__VLS_ctx.t('dictionary.category.sort', 'Sort')),
     width: "90",
 }));
 const __VLS_93 = __VLS_92({
     prop: "sort",
-    label: "排序",
+    label: (__VLS_ctx.t('dictionary.category.sort', 'Sort')),
     width: "90",
 }, ...__VLS_functionalComponentArgsRest(__VLS_92));
 const __VLS_95 = {}.ElTableColumn;
@@ -425,13 +431,13 @@ const __VLS_95 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_96 = __VLS_asFunctionalComponent(__VLS_95, new __VLS_95({
     prop: "remark",
-    label: "备注",
+    label: (__VLS_ctx.t('dictionary.category.remark', 'Remark')),
     minWidth: "180",
     showOverflowTooltip: true,
 }));
 const __VLS_97 = __VLS_96({
     prop: "remark",
-    label: "备注",
+    label: (__VLS_ctx.t('dictionary.category.remark', 'Remark')),
     minWidth: "180",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_96));
@@ -439,11 +445,11 @@ const __VLS_99 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_100 = __VLS_asFunctionalComponent(__VLS_99, new __VLS_99({
-    label: "更新时间",
+    label: (__VLS_ctx.t('dictionary.category.updated_at', 'Updated at')),
     minWidth: "180",
 }));
 const __VLS_101 = __VLS_100({
-    label: "更新时间",
+    label: (__VLS_ctx.t('dictionary.category.updated_at', 'Updated at')),
     minWidth: "180",
 }, ...__VLS_functionalComponentArgsRest(__VLS_100));
 __VLS_102.slots.default;
@@ -457,12 +463,12 @@ const __VLS_103 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_104 = __VLS_asFunctionalComponent(__VLS_103, new __VLS_103({
-    label: "操作",
+    label: (__VLS_ctx.t('common.actions', 'Actions')),
     width: "180",
     fixed: "right",
 }));
 const __VLS_105 = __VLS_104({
-    label: "操作",
+    label: (__VLS_ctx.t('common.actions', 'Actions')),
     width: "180",
     fixed: "right",
 }, ...__VLS_functionalComponentArgsRest(__VLS_104));
@@ -493,6 +499,7 @@ __VLS_106.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('dictionary:category:update') }, null, null);
     __VLS_110.slots.default;
+    (__VLS_ctx.t('common.edit', 'Edit'));
     var __VLS_110;
     const __VLS_115 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -517,6 +524,7 @@ __VLS_106.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('dictionary:category:delete') }, null, null);
     __VLS_118.slots.default;
+    (__VLS_ctx.t('common.delete', 'Delete'));
     var __VLS_118;
 }
 var __VLS_106;
@@ -566,14 +574,14 @@ var __VLS_2;
 const __VLS_132 = __VLS_asFunctionalComponent(AdminFormDialog, new AdminFormDialog({
     ...{ 'onConfirm': {} },
     modelValue: (__VLS_ctx.dialogVisible),
-    title: (__VLS_ctx.editingId ? '编辑字典分类' : '新增字典分类'),
+    title: (__VLS_ctx.editingId ? __VLS_ctx.t('dictionary.category.edit_title', 'Edit dictionary category') : __VLS_ctx.t('dictionary.category.create_title', 'New dictionary category')),
     loading: (__VLS_ctx.dialogLoading),
     width: "720px",
 }));
 const __VLS_133 = __VLS_132({
     ...{ 'onConfirm': {} },
     modelValue: (__VLS_ctx.dialogVisible),
-    title: (__VLS_ctx.editingId ? '编辑字典分类' : '新增字典分类'),
+    title: (__VLS_ctx.editingId ? __VLS_ctx.t('dictionary.category.edit_title', 'Edit dictionary category') : __VLS_ctx.t('dictionary.category.create_title', 'New dictionary category')),
     loading: (__VLS_ctx.dialogLoading),
     width: "720px",
 }, ...__VLS_functionalComponentArgsRest(__VLS_132));
@@ -600,11 +608,11 @@ const __VLS_143 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_144 = __VLS_asFunctionalComponent(__VLS_143, new __VLS_143({
-    label: "分类编码",
+    label: (__VLS_ctx.t('dictionary.category.code', 'Category code')),
     required: true,
 }));
 const __VLS_145 = __VLS_144({
-    label: "分类编码",
+    label: (__VLS_ctx.t('dictionary.category.code', 'Category code')),
     required: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_144));
 __VLS_146.slots.default;
@@ -613,22 +621,22 @@ const __VLS_147 = {}.ElInput;
 // @ts-ignore
 const __VLS_148 = __VLS_asFunctionalComponent(__VLS_147, new __VLS_147({
     modelValue: (__VLS_ctx.form.code),
-    placeholder: "请输入分类编码",
+    placeholder: (__VLS_ctx.t('dictionary.category.code_placeholder', 'Enter category code')),
 }));
 const __VLS_149 = __VLS_148({
     modelValue: (__VLS_ctx.form.code),
-    placeholder: "请输入分类编码",
+    placeholder: (__VLS_ctx.t('dictionary.category.code_placeholder', 'Enter category code')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_148));
 var __VLS_146;
 const __VLS_151 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_152 = __VLS_asFunctionalComponent(__VLS_151, new __VLS_151({
-    label: "分类名称",
+    label: (__VLS_ctx.t('dictionary.category.name', 'Category name')),
     required: true,
 }));
 const __VLS_153 = __VLS_152({
-    label: "分类名称",
+    label: (__VLS_ctx.t('dictionary.category.name', 'Category name')),
     required: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_152));
 __VLS_154.slots.default;
@@ -637,21 +645,21 @@ const __VLS_155 = {}.ElInput;
 // @ts-ignore
 const __VLS_156 = __VLS_asFunctionalComponent(__VLS_155, new __VLS_155({
     modelValue: (__VLS_ctx.form.name),
-    placeholder: "请输入分类名称",
+    placeholder: (__VLS_ctx.t('dictionary.category.name_placeholder', 'Enter category name')),
 }));
 const __VLS_157 = __VLS_156({
     modelValue: (__VLS_ctx.form.name),
-    placeholder: "请输入分类名称",
+    placeholder: (__VLS_ctx.t('dictionary.category.name_placeholder', 'Enter category name')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_156));
 var __VLS_154;
 const __VLS_159 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_160 = __VLS_asFunctionalComponent(__VLS_159, new __VLS_159({
-    label: "描述",
+    label: (__VLS_ctx.t('dictionary.category.description_label', 'Description')),
 }));
 const __VLS_161 = __VLS_160({
-    label: "描述",
+    label: (__VLS_ctx.t('dictionary.category.description_label', 'Description')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_160));
 __VLS_162.slots.default;
 const __VLS_163 = {}.ElInput;
@@ -661,23 +669,23 @@ const __VLS_164 = __VLS_asFunctionalComponent(__VLS_163, new __VLS_163({
     modelValue: (__VLS_ctx.form.description),
     type: "textarea",
     rows: (3),
-    placeholder: "请输入描述",
+    placeholder: (__VLS_ctx.t('dictionary.category.description_placeholder', 'Enter description')),
 }));
 const __VLS_165 = __VLS_164({
     modelValue: (__VLS_ctx.form.description),
     type: "textarea",
     rows: (3),
-    placeholder: "请输入描述",
+    placeholder: (__VLS_ctx.t('dictionary.category.description_placeholder', 'Enter description')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_164));
 var __VLS_162;
 const __VLS_167 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_168 = __VLS_asFunctionalComponent(__VLS_167, new __VLS_167({
-    label: "状态",
+    label: (__VLS_ctx.t('dictionary.category.status', 'Status')),
 }));
 const __VLS_169 = __VLS_168({
-    label: "状态",
+    label: (__VLS_ctx.t('dictionary.category.status', 'Status')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_168));
 __VLS_170.slots.default;
 const __VLS_171 = {}.ElSelect;
@@ -696,22 +704,22 @@ const __VLS_175 = {}.ElOption;
 /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
 // @ts-ignore
 const __VLS_176 = __VLS_asFunctionalComponent(__VLS_175, new __VLS_175({
-    label: "启用",
+    label: (__VLS_ctx.t('dictionary.category.enabled', 'Enabled')),
     value: "enabled",
 }));
 const __VLS_177 = __VLS_176({
-    label: "启用",
+    label: (__VLS_ctx.t('dictionary.category.enabled', 'Enabled')),
     value: "enabled",
 }, ...__VLS_functionalComponentArgsRest(__VLS_176));
 const __VLS_179 = {}.ElOption;
 /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
 // @ts-ignore
 const __VLS_180 = __VLS_asFunctionalComponent(__VLS_179, new __VLS_179({
-    label: "禁用",
+    label: (__VLS_ctx.t('dictionary.category.disabled', 'Disabled')),
     value: "disabled",
 }));
 const __VLS_181 = __VLS_180({
-    label: "禁用",
+    label: (__VLS_ctx.t('dictionary.category.disabled', 'Disabled')),
     value: "disabled",
 }, ...__VLS_functionalComponentArgsRest(__VLS_180));
 var __VLS_174;
@@ -720,10 +728,10 @@ const __VLS_183 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_184 = __VLS_asFunctionalComponent(__VLS_183, new __VLS_183({
-    label: "排序",
+    label: (__VLS_ctx.t('dictionary.category.sort', 'Sort')),
 }));
 const __VLS_185 = __VLS_184({
-    label: "排序",
+    label: (__VLS_ctx.t('dictionary.category.sort', 'Sort')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_184));
 __VLS_186.slots.default;
 const __VLS_187 = {}.ElInputNumber;
@@ -746,10 +754,10 @@ const __VLS_191 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_192 = __VLS_asFunctionalComponent(__VLS_191, new __VLS_191({
-    label: "备注",
+    label: (__VLS_ctx.t('dictionary.category.remark', 'Remark')),
 }));
 const __VLS_193 = __VLS_192({
-    label: "备注",
+    label: (__VLS_ctx.t('dictionary.category.remark', 'Remark')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_192));
 __VLS_194.slots.default;
 const __VLS_195 = {}.ElInput;
@@ -759,13 +767,13 @@ const __VLS_196 = __VLS_asFunctionalComponent(__VLS_195, new __VLS_195({
     modelValue: (__VLS_ctx.form.remark),
     type: "textarea",
     rows: (3),
-    placeholder: "请输入备注",
+    placeholder: (__VLS_ctx.t('dictionary.category.remark_placeholder', 'Enter remark')),
 }));
 const __VLS_197 = __VLS_196({
     modelValue: (__VLS_ctx.form.remark),
     type: "textarea",
     rows: (3),
-    placeholder: "请输入备注",
+    placeholder: (__VLS_ctx.t('dictionary.category.remark_placeholder', 'Enter remark')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_196));
 var __VLS_194;
 var __VLS_142;
@@ -782,6 +790,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             AdminTable: AdminTable,
             formatDateTime: formatDateTime,
             statusTagType: statusTagType,
+            t: t,
             tableLoading: tableLoading,
             dialogLoading: dialogLoading,
             dialogVisible: dialogVisible,

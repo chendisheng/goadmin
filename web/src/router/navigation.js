@@ -25,7 +25,7 @@ export function normalizeMenuRoots(nodes) {
     return nodes;
 }
 function resolveTitleKey(meta) {
-    return (meta.titleKey || meta.title || '').trim();
+    return (meta.titleKey || meta.titleDefault || meta.title || '').trim();
 }
 function componentNameToModulePath(componentName) {
     const normalized = componentName.trim();
@@ -197,7 +197,7 @@ export function mapPluginMenusToBackendRoutes(items) {
         type: item.type,
         alwaysShow: item.type === 'directory',
         meta: {
-            title: item.name,
+            title: item.titleDefault || item.name,
             titleKey: item.titleKey,
             titleDefault: item.titleDefault,
             icon: item.icon,

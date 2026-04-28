@@ -9,13 +9,17 @@
     "build:vite": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "vue-tsc -b",
+    "i18n:check-locales": "node scripts/i18n-validate-locales.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:i18n": "npm run i18n:check-locales && vitest run tests/i18n-loader.test.ts"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.7.9",
     "element-plus": "^2.8.8",
+    "i18next": "^23.16.8",
+    "i18next-browser-languagedetector": "^8.0.0",
     "pinia": "^2.2.6",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"

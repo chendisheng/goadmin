@@ -172,21 +172,21 @@ function removePermissionRow(index) {
 async function submitForm() {
     const name = form.name.trim();
     if (name === '') {
-        ElMessage.warning(t('plugin.validation_name', '请输入插件名称'));
+        ElMessage.warning(t('plugin.validation_name', 'Enter the plugin name'));
         return;
     }
     const menus = form.menus
         .map((item) => normalizeMenuRow(item))
         .filter((item) => item.name !== '' || item.path !== '' || item.component !== '' || item.permission !== '');
     if (menus.some((item) => item.name === '' || item.path === '')) {
-        ElMessage.warning(t('plugin.validation_menu', '请补全插件菜单名称和路径'));
+        ElMessage.warning(t('plugin.validation_menu', 'Complete the plugin menu name and path'));
         return;
     }
     const permissions = form.permissions
         .map((item) => normalizePermissionRow(item))
         .filter((item) => item.object !== '' || item.action !== '' || item.description !== '');
     if (permissions.some((item) => item.object === '' || item.action === '')) {
-        ElMessage.warning(t('plugin.validation_permission', '请补全插件权限的对象和动作'));
+        ElMessage.warning(t('plugin.validation_permission', 'Complete the plugin permission object and action'));
         return;
     }
     const payload = {
@@ -200,11 +200,11 @@ async function submitForm() {
     try {
         if (editingName.value) {
             await updatePlugin(editingName.value, payload);
-            ElMessage.success(t('plugin.updated', '插件已更新'));
+            ElMessage.success(t('plugin.updated', 'Plugin updated'));
         }
         else {
             await createPlugin(payload);
-            ElMessage.success(t('plugin.created', '插件已创建'));
+            ElMessage.success(t('plugin.created', 'Plugin created'));
         }
         dialogVisible.value = false;
         await loadPlugins();
@@ -214,26 +214,26 @@ async function submitForm() {
     }
 }
 async function removeRow(row) {
-    await ElMessageBox.confirm(t('plugin.confirm_delete', '确认删除插件 {name} 吗？', { name: row.name }), t('plugin.delete_title', '删除插件'), {
+    await ElMessageBox.confirm(t('plugin.confirm_delete', 'Delete plugin {name}?', { name: row.name }), t('plugin.delete_title', 'Delete plugin'), {
         type: 'warning',
-        confirmButtonText: t('plugin.delete_confirm', '删除'),
-        cancelButtonText: t('plugin.delete_cancel', '取消'),
+        confirmButtonText: t('plugin.delete_confirm', 'Delete'),
+        cancelButtonText: t('plugin.delete_cancel', 'Cancel'),
     });
     await deletePlugin(row.name);
-    ElMessage.success(t('plugin.deleted', '插件已删除'));
+    ElMessage.success(t('plugin.deleted', 'Plugin deleted'));
     await loadPlugins();
 }
 function statusLabel(enabled) {
-    return enabled ? t('menu.status.active', '启用') : t('menu.status.inactive', '禁用');
+    return enabled ? t('menu.status.active', 'Enabled') : t('menu.status.inactive', 'Disabled');
 }
 function menuTypeLabel(type) {
     switch (type) {
         case 'directory':
-            return t('menu.type.directory', '目录');
+            return t('menu.type.directory', 'Directory');
         case 'button':
-            return t('menu.type.button', '按钮');
+            return t('menu.type.button', 'Button');
         default:
-            return t('menu.type.menu', '菜单');
+            return t('menu.type.menu', 'Menu');
     }
 }
 onMounted(() => {
@@ -249,13 +249,13 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 /** @type {[typeof AdminTable, typeof AdminTable, ]} */ ;
 // @ts-ignore
 const __VLS_0 = __VLS_asFunctionalComponent(AdminTable, new AdminTable({
-    title: (__VLS_ctx.t('plugin.title', '插件中心')),
-    description: (__VLS_ctx.t('plugin.description', '管理插件基础信息、插件菜单和插件权限定义。')),
+    title: (__VLS_ctx.t('plugin.title', 'Plugin center')),
+    description: (__VLS_ctx.t('plugin.description', 'Manage plugin metadata, plugin menus, and plugin permission definitions.')),
     loading: (__VLS_ctx.tableLoading),
 }));
 const __VLS_1 = __VLS_0({
-    title: (__VLS_ctx.t('plugin.title', '插件中心')),
-    description: (__VLS_ctx.t('plugin.description', '管理插件基础信息、插件菜单和插件权限定义。')),
+    title: (__VLS_ctx.t('plugin.title', 'Plugin center')),
+    description: (__VLS_ctx.t('plugin.description', 'Manage plugin metadata, plugin menus, and plugin permission definitions.')),
     loading: (__VLS_ctx.tableLoading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
 __VLS_2.slots.default;
@@ -279,7 +279,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.loadPlugins)
     };
     __VLS_6.slots.default;
-    (__VLS_ctx.t('plugin.refresh', '刷新'));
+    (__VLS_ctx.t('plugin.refresh', 'Refresh'));
     var __VLS_6;
     const __VLS_11 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -300,7 +300,7 @@ __VLS_2.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('plugin:create') }, null, null);
     __VLS_14.slots.default;
-    (__VLS_ctx.t('common.create', '新增'));
+    (__VLS_ctx.t('common.create', 'Create'));
     var __VLS_14;
 }
 {
@@ -323,10 +323,10 @@ __VLS_2.slots.default;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_24 = __VLS_asFunctionalComponent(__VLS_23, new __VLS_23({
-        label: (__VLS_ctx.t('common.search', '查询')),
+        label: (__VLS_ctx.t('common.search', 'Search')),
     }));
     const __VLS_25 = __VLS_24({
-        label: (__VLS_ctx.t('common.search', '查询')),
+        label: (__VLS_ctx.t('common.search', 'Search')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_24));
     __VLS_26.slots.default;
     const __VLS_27 = {}.ElInput;
@@ -335,22 +335,22 @@ __VLS_2.slots.default;
     const __VLS_28 = __VLS_asFunctionalComponent(__VLS_27, new __VLS_27({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: (__VLS_ctx.t('plugin.keyword_placeholder', '插件名称 / 描述')),
+        placeholder: (__VLS_ctx.t('plugin.keyword_placeholder', 'Plugin name / description')),
     }));
     const __VLS_29 = __VLS_28({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: (__VLS_ctx.t('plugin.keyword_placeholder', '插件名称 / 描述')),
+        placeholder: (__VLS_ctx.t('plugin.keyword_placeholder', 'Plugin name / description')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_28));
     var __VLS_26;
     const __VLS_31 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_32 = __VLS_asFunctionalComponent(__VLS_31, new __VLS_31({
-        label: (__VLS_ctx.t('plugin.status', '状态')),
+        label: (__VLS_ctx.t('plugin.status', 'Status')),
     }));
     const __VLS_33 = __VLS_32({
-        label: (__VLS_ctx.t('plugin.status', '状态')),
+        label: (__VLS_ctx.t('plugin.status', 'Status')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_32));
     __VLS_34.slots.default;
     const __VLS_35 = {}.ElSelect;
@@ -359,13 +359,13 @@ __VLS_2.slots.default;
     const __VLS_36 = __VLS_asFunctionalComponent(__VLS_35, new __VLS_35({
         modelValue: (__VLS_ctx.query.enabled),
         clearable: true,
-        placeholder: (__VLS_ctx.t('plugin.all_status', '全部状态')),
+        placeholder: (__VLS_ctx.t('plugin.all_status', 'All statuses')),
         ...{ style: {} },
     }));
     const __VLS_37 = __VLS_36({
         modelValue: (__VLS_ctx.query.enabled),
         clearable: true,
-        placeholder: (__VLS_ctx.t('plugin.all_status', '全部状态')),
+        placeholder: (__VLS_ctx.t('plugin.all_status', 'All statuses')),
         ...{ style: {} },
     }, ...__VLS_functionalComponentArgsRest(__VLS_36));
     __VLS_38.slots.default;
@@ -373,22 +373,22 @@ __VLS_2.slots.default;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_40 = __VLS_asFunctionalComponent(__VLS_39, new __VLS_39({
-        label: (__VLS_ctx.t('menu.status.active', '启用')),
+        label: (__VLS_ctx.t('menu.status.active', 'Enabled')),
         value: "true",
     }));
     const __VLS_41 = __VLS_40({
-        label: (__VLS_ctx.t('menu.status.active', '启用')),
+        label: (__VLS_ctx.t('menu.status.active', 'Enabled')),
         value: "true",
     }, ...__VLS_functionalComponentArgsRest(__VLS_40));
     const __VLS_43 = {}.ElOption;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_44 = __VLS_asFunctionalComponent(__VLS_43, new __VLS_43({
-        label: (__VLS_ctx.t('menu.status.inactive', '禁用')),
+        label: (__VLS_ctx.t('menu.status.inactive', 'Disabled')),
         value: "false",
     }));
     const __VLS_45 = __VLS_44({
-        label: (__VLS_ctx.t('menu.status.inactive', '禁用')),
+        label: (__VLS_ctx.t('menu.status.inactive', 'Disabled')),
         value: "false",
     }, ...__VLS_functionalComponentArgsRest(__VLS_44));
     var __VLS_38;
@@ -417,7 +417,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleSearch)
     };
     __VLS_54.slots.default;
-    (__VLS_ctx.t('common.search', '查询'));
+    (__VLS_ctx.t('common.search', 'Search'));
     var __VLS_54;
     const __VLS_59 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -435,7 +435,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleReset)
     };
     __VLS_62.slots.default;
-    (__VLS_ctx.t('common.reset', '重置'));
+    (__VLS_ctx.t('common.reset', 'Reset'));
     var __VLS_62;
     var __VLS_50;
     var __VLS_22;
@@ -444,16 +444,16 @@ const __VLS_67 = {}.ElAlert;
 /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
 // @ts-ignore
 const __VLS_68 = __VLS_asFunctionalComponent(__VLS_67, new __VLS_67({
-    title: (__VLS_ctx.t('plugin.info_title', '插件中心说明')),
-    description: (__VLS_ctx.t('plugin.info_description', '此页面用于管理插件定义、插件菜单和插件权限。插件页面本身由菜单中的 view/plugin/center/index 动态加载。')),
+    title: (__VLS_ctx.t('plugin.info_title', 'Plugin center notes')),
+    description: (__VLS_ctx.t('plugin.info_description', 'This page manages plugin definitions, plugin menus, and plugin permissions. The plugin page itself is loaded dynamically from the menu entry view/plugin/center/index.')),
     type: "info",
     showIcon: true,
     closable: (false),
     ...{ class: "mb-16" },
 }));
 const __VLS_69 = __VLS_68({
-    title: (__VLS_ctx.t('plugin.info_title', '插件中心说明')),
-    description: (__VLS_ctx.t('plugin.info_description', '此页面用于管理插件定义、插件菜单和插件权限。插件页面本身由菜单中的 view/plugin/center/index 动态加载。')),
+    title: (__VLS_ctx.t('plugin.info_title', 'Plugin center notes')),
+    description: (__VLS_ctx.t('plugin.info_description', 'This page manages plugin definitions, plugin menus, and plugin permissions. The plugin page itself is loaded dynamically from the menu entry view/plugin/center/index.')),
     type: "info",
     showIcon: true,
     closable: (false),
@@ -497,11 +497,11 @@ const __VLS_83 = {}.ElStatistic;
 /** @type {[typeof __VLS_components.ElStatistic, typeof __VLS_components.elStatistic, ]} */ ;
 // @ts-ignore
 const __VLS_84 = __VLS_asFunctionalComponent(__VLS_83, new __VLS_83({
-    title: (__VLS_ctx.t('plugin.total_label', '插件总数')),
+    title: (__VLS_ctx.t('plugin.total_label', 'Total plugins')),
     value: (__VLS_ctx.pluginCount),
 }));
 const __VLS_85 = __VLS_84({
-    title: (__VLS_ctx.t('plugin.total_label', '插件总数')),
+    title: (__VLS_ctx.t('plugin.total_label', 'Total plugins')),
     value: (__VLS_ctx.pluginCount),
 }, ...__VLS_functionalComponentArgsRest(__VLS_84));
 var __VLS_82;
@@ -532,11 +532,11 @@ const __VLS_95 = {}.ElStatistic;
 /** @type {[typeof __VLS_components.ElStatistic, typeof __VLS_components.elStatistic, ]} */ ;
 // @ts-ignore
 const __VLS_96 = __VLS_asFunctionalComponent(__VLS_95, new __VLS_95({
-    title: (__VLS_ctx.t('plugin.enabled_label', '启用插件')),
+    title: (__VLS_ctx.t('plugin.enabled_label', 'Enabled plugins')),
     value: (__VLS_ctx.enabledCount),
 }));
 const __VLS_97 = __VLS_96({
-    title: (__VLS_ctx.t('plugin.enabled_label', '启用插件')),
+    title: (__VLS_ctx.t('plugin.enabled_label', 'Enabled plugins')),
     value: (__VLS_ctx.enabledCount),
 }, ...__VLS_functionalComponentArgsRest(__VLS_96));
 var __VLS_94;
@@ -562,12 +562,12 @@ const __VLS_103 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_104 = __VLS_asFunctionalComponent(__VLS_103, new __VLS_103({
     prop: "name",
-    label: (__VLS_ctx.t('plugin.name', '插件名称')),
+    label: (__VLS_ctx.t('plugin.name', 'Plugin name')),
     minWidth: "160",
 }));
 const __VLS_105 = __VLS_104({
     prop: "name",
-    label: (__VLS_ctx.t('plugin.name', '插件名称')),
+    label: (__VLS_ctx.t('plugin.name', 'Plugin name')),
     minWidth: "160",
 }, ...__VLS_functionalComponentArgsRest(__VLS_104));
 const __VLS_107 = {}.ElTableColumn;
@@ -575,13 +575,13 @@ const __VLS_107 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_108 = __VLS_asFunctionalComponent(__VLS_107, new __VLS_107({
     prop: "description",
-    label: (__VLS_ctx.t('plugin.description_column', '描述')),
+    label: (__VLS_ctx.t('plugin.description_column', 'Description')),
     minWidth: "220",
     showOverflowTooltip: true,
 }));
 const __VLS_109 = __VLS_108({
     prop: "description",
-    label: (__VLS_ctx.t('plugin.description_column', '描述')),
+    label: (__VLS_ctx.t('plugin.description_column', 'Description')),
     minWidth: "220",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_108));
@@ -589,11 +589,11 @@ const __VLS_111 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_112 = __VLS_asFunctionalComponent(__VLS_111, new __VLS_111({
-    label: (__VLS_ctx.t('plugin.status', '状态')),
+    label: (__VLS_ctx.t('plugin.status', 'Status')),
     width: "110",
 }));
 const __VLS_113 = __VLS_112({
-    label: (__VLS_ctx.t('plugin.status', '状态')),
+    label: (__VLS_ctx.t('plugin.status', 'Status')),
     width: "110",
 }, ...__VLS_functionalComponentArgsRest(__VLS_112));
 __VLS_114.slots.default;
@@ -620,11 +620,11 @@ const __VLS_119 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_120 = __VLS_asFunctionalComponent(__VLS_119, new __VLS_119({
-    label: (__VLS_ctx.t('plugin.menus', '菜单数')),
+    label: (__VLS_ctx.t('plugin.menus', 'Menu count')),
     width: "100",
 }));
 const __VLS_121 = __VLS_120({
-    label: (__VLS_ctx.t('plugin.menus', '菜单数')),
+    label: (__VLS_ctx.t('plugin.menus', 'Menu count')),
     width: "100",
 }, ...__VLS_functionalComponentArgsRest(__VLS_120));
 __VLS_122.slots.default;
@@ -638,11 +638,11 @@ const __VLS_123 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_124 = __VLS_asFunctionalComponent(__VLS_123, new __VLS_123({
-    label: (__VLS_ctx.t('plugin.permissions', '权限数')),
+    label: (__VLS_ctx.t('plugin.permissions', 'Permission count')),
     width: "100",
 }));
 const __VLS_125 = __VLS_124({
-    label: (__VLS_ctx.t('plugin.permissions', '权限数')),
+    label: (__VLS_ctx.t('plugin.permissions', 'Permission count')),
     width: "100",
 }, ...__VLS_functionalComponentArgsRest(__VLS_124));
 __VLS_126.slots.default;
@@ -656,11 +656,11 @@ const __VLS_127 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_128 = __VLS_asFunctionalComponent(__VLS_127, new __VLS_127({
-    label: (__VLS_ctx.t('plugin.created_at', '创建时间')),
+    label: (__VLS_ctx.t('plugin.created_at', 'Created at')),
     minWidth: "180",
 }));
 const __VLS_129 = __VLS_128({
-    label: (__VLS_ctx.t('plugin.created_at', '创建时间')),
+    label: (__VLS_ctx.t('plugin.created_at', 'Created at')),
     minWidth: "180",
 }, ...__VLS_functionalComponentArgsRest(__VLS_128));
 __VLS_130.slots.default;
@@ -674,12 +674,12 @@ const __VLS_131 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_132 = __VLS_asFunctionalComponent(__VLS_131, new __VLS_131({
-    label: (__VLS_ctx.t('plugin.actions', '操作')),
+    label: (__VLS_ctx.t('plugin.actions', 'Actions')),
     width: "180",
     fixed: "right",
 }));
 const __VLS_133 = __VLS_132({
-    label: (__VLS_ctx.t('plugin.actions', '操作')),
+    label: (__VLS_ctx.t('plugin.actions', 'Actions')),
     width: "180",
     fixed: "right",
 }, ...__VLS_functionalComponentArgsRest(__VLS_132));
@@ -709,7 +709,7 @@ __VLS_134.slots.default;
         }
     };
     __VLS_138.slots.default;
-    (__VLS_ctx.t('plugin.detail', '详情'));
+    (__VLS_ctx.t('plugin.detail', 'Details'));
     var __VLS_138;
     const __VLS_143 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -734,7 +734,7 @@ __VLS_134.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('plugin:update') }, null, null);
     __VLS_146.slots.default;
-    (__VLS_ctx.t('common.edit', '编辑'));
+    (__VLS_ctx.t('common.edit', 'Edit'));
     var __VLS_146;
     const __VLS_151 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -759,7 +759,7 @@ __VLS_134.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('plugin:delete') }, null, null);
     __VLS_154.slots.default;
-    (__VLS_ctx.t('common.delete', '删除'));
+    (__VLS_ctx.t('common.delete', 'Delete'));
     var __VLS_154;
 }
 var __VLS_134;
@@ -770,14 +770,14 @@ var __VLS_2;
 const __VLS_159 = __VLS_asFunctionalComponent(AdminFormDialog, new AdminFormDialog({
     ...{ 'onConfirm': {} },
     modelValue: (__VLS_ctx.dialogVisible),
-    title: (__VLS_ctx.editingName ? __VLS_ctx.t('plugin.edit_title', '编辑插件') : __VLS_ctx.t('plugin.create_title', '新增插件')),
+    title: (__VLS_ctx.editingName ? __VLS_ctx.t('plugin.edit_title', 'Edit plugin') : __VLS_ctx.t('plugin.create_title', 'New plugin')),
     loading: (__VLS_ctx.dialogLoading),
     width: "1180px",
 }));
 const __VLS_160 = __VLS_159({
     ...{ 'onConfirm': {} },
     modelValue: (__VLS_ctx.dialogVisible),
-    title: (__VLS_ctx.editingName ? __VLS_ctx.t('plugin.edit_title', '编辑插件') : __VLS_ctx.t('plugin.create_title', '新增插件')),
+    title: (__VLS_ctx.editingName ? __VLS_ctx.t('plugin.edit_title', 'Edit plugin') : __VLS_ctx.t('plugin.create_title', 'New plugin')),
     loading: (__VLS_ctx.dialogLoading),
     width: "1180px",
 }, ...__VLS_functionalComponentArgsRest(__VLS_159));
@@ -804,11 +804,11 @@ const __VLS_170 = {}.ElTabPane;
 /** @type {[typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, ]} */ ;
 // @ts-ignore
 const __VLS_171 = __VLS_asFunctionalComponent(__VLS_170, new __VLS_170({
-    label: (__VLS_ctx.t('plugin.basic_tab', '基础信息')),
+    label: (__VLS_ctx.t('plugin.basic_tab', 'Basic info')),
     name: "basic",
 }));
 const __VLS_172 = __VLS_171({
-    label: (__VLS_ctx.t('plugin.basic_tab', '基础信息')),
+    label: (__VLS_ctx.t('plugin.basic_tab', 'Basic info')),
     name: "basic",
 }, ...__VLS_functionalComponentArgsRest(__VLS_171));
 __VLS_173.slots.default;
@@ -828,11 +828,11 @@ const __VLS_178 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_179 = __VLS_asFunctionalComponent(__VLS_178, new __VLS_178({
-    label: (__VLS_ctx.t('plugin.name', '插件名称')),
+    label: (__VLS_ctx.t('plugin.name', 'Plugin name')),
     required: true,
 }));
 const __VLS_180 = __VLS_179({
-    label: (__VLS_ctx.t('plugin.name', '插件名称')),
+    label: (__VLS_ctx.t('plugin.name', 'Plugin name')),
     required: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_179));
 __VLS_181.slots.default;
@@ -842,22 +842,22 @@ const __VLS_182 = {}.ElInput;
 const __VLS_183 = __VLS_asFunctionalComponent(__VLS_182, new __VLS_182({
     modelValue: (__VLS_ctx.form.name),
     disabled: (Boolean(__VLS_ctx.editingName)),
-    placeholder: (__VLS_ctx.t('plugin.validation_name', '请输入插件名称')),
+    placeholder: (__VLS_ctx.t('plugin.validation_name', 'Enter the plugin name')),
 }));
 const __VLS_184 = __VLS_183({
     modelValue: (__VLS_ctx.form.name),
     disabled: (Boolean(__VLS_ctx.editingName)),
-    placeholder: (__VLS_ctx.t('plugin.validation_name', '请输入插件名称')),
+    placeholder: (__VLS_ctx.t('plugin.validation_name', 'Enter the plugin name')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_183));
 var __VLS_181;
 const __VLS_186 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_187 = __VLS_asFunctionalComponent(__VLS_186, new __VLS_186({
-    label: (__VLS_ctx.t('plugin.description_label', '插件描述')),
+    label: (__VLS_ctx.t('plugin.description_label', 'Plugin description')),
 }));
 const __VLS_188 = __VLS_187({
-    label: (__VLS_ctx.t('plugin.description_label', '插件描述')),
+    label: (__VLS_ctx.t('plugin.description_label', 'Plugin description')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_187));
 __VLS_189.slots.default;
 const __VLS_190 = {}.ElInput;
@@ -867,23 +867,23 @@ const __VLS_191 = __VLS_asFunctionalComponent(__VLS_190, new __VLS_190({
     modelValue: (__VLS_ctx.form.description),
     type: "textarea",
     rows: (3),
-    placeholder: (__VLS_ctx.t('plugin.description_placeholder', '请输入插件描述')),
+    placeholder: (__VLS_ctx.t('plugin.description_placeholder', 'Enter plugin description')),
 }));
 const __VLS_192 = __VLS_191({
     modelValue: (__VLS_ctx.form.description),
     type: "textarea",
     rows: (3),
-    placeholder: (__VLS_ctx.t('plugin.description_placeholder', '请输入插件描述')),
+    placeholder: (__VLS_ctx.t('plugin.description_placeholder', 'Enter plugin description')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_191));
 var __VLS_189;
 const __VLS_194 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_195 = __VLS_asFunctionalComponent(__VLS_194, new __VLS_194({
-    label: (__VLS_ctx.t('plugin.enabled_status', '启用状态')),
+    label: (__VLS_ctx.t('plugin.enabled_status', 'Enabled status')),
 }));
 const __VLS_196 = __VLS_195({
-    label: (__VLS_ctx.t('plugin.enabled_status', '启用状态')),
+    label: (__VLS_ctx.t('plugin.enabled_status', 'Enabled status')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_195));
 __VLS_197.slots.default;
 const __VLS_198 = {}.ElSwitch;
@@ -902,11 +902,11 @@ const __VLS_202 = {}.ElTabPane;
 /** @type {[typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, ]} */ ;
 // @ts-ignore
 const __VLS_203 = __VLS_asFunctionalComponent(__VLS_202, new __VLS_202({
-    label: (__VLS_ctx.t('plugin.menus_tab', '插件菜单')),
+    label: (__VLS_ctx.t('plugin.menus_tab', 'Plugin menus')),
     name: "menus",
 }));
 const __VLS_204 = __VLS_203({
-    label: (__VLS_ctx.t('plugin.menus_tab', '插件菜单')),
+    label: (__VLS_ctx.t('plugin.menus_tab', 'Plugin menus')),
     name: "menus",
 }, ...__VLS_functionalComponentArgsRest(__VLS_203));
 __VLS_205.slots.default;
@@ -933,7 +933,7 @@ const __VLS_213 = {
     onClick: (__VLS_ctx.appendMenuRow)
 };
 __VLS_209.slots.default;
-(__VLS_ctx.t('plugin.add_menu_row', '新增菜单行'));
+(__VLS_ctx.t('plugin.add_menu_row', 'Add menu row'));
 var __VLS_209;
 const __VLS_214 = {}.ElTable;
 /** @type {[typeof __VLS_components.ElTable, typeof __VLS_components.elTable, typeof __VLS_components.ElTable, typeof __VLS_components.elTable, ]} */ ;
@@ -955,11 +955,11 @@ const __VLS_218 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_219 = __VLS_asFunctionalComponent(__VLS_218, new __VLS_218({
-    label: (__VLS_ctx.t('plugin.menu_name', '名称')),
+    label: (__VLS_ctx.t('plugin.menu_name', 'Name')),
     minWidth: "150",
 }));
 const __VLS_220 = __VLS_219({
-    label: (__VLS_ctx.t('plugin.menu_name', '名称')),
+    label: (__VLS_ctx.t('plugin.menu_name', 'Name')),
     minWidth: "150",
 }, ...__VLS_functionalComponentArgsRest(__VLS_219));
 __VLS_221.slots.default;
@@ -971,11 +971,11 @@ __VLS_221.slots.default;
     // @ts-ignore
     const __VLS_223 = __VLS_asFunctionalComponent(__VLS_222, new __VLS_222({
         modelValue: (row.name),
-        placeholder: (__VLS_ctx.t('plugin.menu_name_placeholder', '菜单名称')),
+        placeholder: (__VLS_ctx.t('plugin.menu_name_placeholder', 'Menu name')),
     }));
     const __VLS_224 = __VLS_223({
         modelValue: (row.name),
-        placeholder: (__VLS_ctx.t('plugin.menu_name_placeholder', '菜单名称')),
+        placeholder: (__VLS_ctx.t('plugin.menu_name_placeholder', 'Menu name')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_223));
 }
 var __VLS_221;
@@ -983,11 +983,11 @@ const __VLS_226 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_227 = __VLS_asFunctionalComponent(__VLS_226, new __VLS_226({
-    label: (__VLS_ctx.t('plugin.menu_title_key', '标题 Key')),
+    label: (__VLS_ctx.t('plugin.menu_title_key', 'Title key')),
     minWidth: "170",
 }));
 const __VLS_228 = __VLS_227({
-    label: (__VLS_ctx.t('plugin.menu_title_key', '标题 Key')),
+    label: (__VLS_ctx.t('plugin.menu_title_key', 'Title key')),
     minWidth: "170",
 }, ...__VLS_functionalComponentArgsRest(__VLS_227));
 __VLS_229.slots.default;
@@ -999,11 +999,11 @@ __VLS_229.slots.default;
     // @ts-ignore
     const __VLS_231 = __VLS_asFunctionalComponent(__VLS_230, new __VLS_230({
         modelValue: (row.titleKey),
-        placeholder: (__VLS_ctx.t('plugin.menu_title_key_placeholder', '例如 route.dashboard')),
+        placeholder: (__VLS_ctx.t('plugin.menu_title_key_placeholder', 'For example, route.dashboard')),
     }));
     const __VLS_232 = __VLS_231({
         modelValue: (row.titleKey),
-        placeholder: (__VLS_ctx.t('plugin.menu_title_key_placeholder', '例如 route.dashboard')),
+        placeholder: (__VLS_ctx.t('plugin.menu_title_key_placeholder', 'For example, route.dashboard')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_231));
 }
 var __VLS_229;
@@ -1011,11 +1011,11 @@ const __VLS_234 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_235 = __VLS_asFunctionalComponent(__VLS_234, new __VLS_234({
-    label: (__VLS_ctx.t('plugin.menu_title_default', '标题默认值')),
+    label: (__VLS_ctx.t('plugin.menu_title_default', 'Default title')),
     minWidth: "170",
 }));
 const __VLS_236 = __VLS_235({
-    label: (__VLS_ctx.t('plugin.menu_title_default', '标题默认值')),
+    label: (__VLS_ctx.t('plugin.menu_title_default', 'Default title')),
     minWidth: "170",
 }, ...__VLS_functionalComponentArgsRest(__VLS_235));
 __VLS_237.slots.default;
@@ -1027,11 +1027,11 @@ __VLS_237.slots.default;
     // @ts-ignore
     const __VLS_239 = __VLS_asFunctionalComponent(__VLS_238, new __VLS_238({
         modelValue: (row.titleDefault),
-        placeholder: (__VLS_ctx.t('plugin.menu_title_default_placeholder', '例如 仪表盘')),
+        placeholder: (__VLS_ctx.t('plugin.menu_title_default_placeholder', 'For example, Dashboard')),
     }));
     const __VLS_240 = __VLS_239({
         modelValue: (row.titleDefault),
-        placeholder: (__VLS_ctx.t('plugin.menu_title_default_placeholder', '例如 仪表盘')),
+        placeholder: (__VLS_ctx.t('plugin.menu_title_default_placeholder', 'For example, Dashboard')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_239));
 }
 var __VLS_237;
@@ -1039,11 +1039,11 @@ const __VLS_242 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_243 = __VLS_asFunctionalComponent(__VLS_242, new __VLS_242({
-    label: (__VLS_ctx.t('plugin.menu_path', '路径')),
+    label: (__VLS_ctx.t('plugin.menu_path', 'Path')),
     minWidth: "180",
 }));
 const __VLS_244 = __VLS_243({
-    label: (__VLS_ctx.t('plugin.menu_path', '路径')),
+    label: (__VLS_ctx.t('plugin.menu_path', 'Path')),
     minWidth: "180",
 }, ...__VLS_functionalComponentArgsRest(__VLS_243));
 __VLS_245.slots.default;
@@ -1067,11 +1067,11 @@ const __VLS_250 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_251 = __VLS_asFunctionalComponent(__VLS_250, new __VLS_250({
-    label: (__VLS_ctx.t('plugin.menu_component', '组件')),
+    label: (__VLS_ctx.t('plugin.menu_component', 'Component')),
     minWidth: "170",
 }));
 const __VLS_252 = __VLS_251({
-    label: (__VLS_ctx.t('plugin.menu_component', '组件')),
+    label: (__VLS_ctx.t('plugin.menu_component', 'Component')),
     minWidth: "170",
 }, ...__VLS_functionalComponentArgsRest(__VLS_251));
 __VLS_253.slots.default;
@@ -1095,11 +1095,11 @@ const __VLS_258 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_259 = __VLS_asFunctionalComponent(__VLS_258, new __VLS_258({
-    label: (__VLS_ctx.t('plugin.menu_parent', '父级')),
+    label: (__VLS_ctx.t('plugin.menu_parent', 'Parent')),
     minWidth: "160",
 }));
 const __VLS_260 = __VLS_259({
-    label: (__VLS_ctx.t('plugin.menu_parent', '父级')),
+    label: (__VLS_ctx.t('plugin.menu_parent', 'Parent')),
     minWidth: "160",
 }, ...__VLS_functionalComponentArgsRest(__VLS_259));
 __VLS_261.slots.default;
@@ -1113,24 +1113,24 @@ __VLS_261.slots.default;
         modelValue: (row.parent_id),
         clearable: true,
         filterable: true,
-        placeholder: (__VLS_ctx.t('plugin.menu_parent_placeholder', '无父级')),
+        placeholder: (__VLS_ctx.t('plugin.menu_parent_placeholder', 'No parent')),
     }));
     const __VLS_264 = __VLS_263({
         modelValue: (row.parent_id),
         clearable: true,
         filterable: true,
-        placeholder: (__VLS_ctx.t('plugin.menu_parent_placeholder', '无父级')),
+        placeholder: (__VLS_ctx.t('plugin.menu_parent_placeholder', 'No parent')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_263));
     __VLS_265.slots.default;
     const __VLS_266 = {}.ElOption;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_267 = __VLS_asFunctionalComponent(__VLS_266, new __VLS_266({
-        label: (__VLS_ctx.t('plugin.menu_parent_placeholder', '无父级')),
+        label: (__VLS_ctx.t('plugin.menu_parent_placeholder', 'No parent')),
         value: "",
     }));
     const __VLS_268 = __VLS_267({
-        label: (__VLS_ctx.t('plugin.menu_parent_placeholder', '无父级')),
+        label: (__VLS_ctx.t('plugin.menu_parent_placeholder', 'No parent')),
         value: "",
     }, ...__VLS_functionalComponentArgsRest(__VLS_267));
     for (const [option] of __VLS_getVForSourceType((__VLS_ctx.parentMenuOptions($index)))) {
@@ -1155,11 +1155,11 @@ const __VLS_274 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_275 = __VLS_asFunctionalComponent(__VLS_274, new __VLS_274({
-    label: (__VLS_ctx.t('plugin.menu_type', '类型')),
+    label: (__VLS_ctx.t('plugin.menu_type', 'Type')),
     width: "110",
 }));
 const __VLS_276 = __VLS_275({
-    label: (__VLS_ctx.t('plugin.menu_type', '类型')),
+    label: (__VLS_ctx.t('plugin.menu_type', 'Type')),
     width: "110",
 }, ...__VLS_functionalComponentArgsRest(__VLS_275));
 __VLS_277.slots.default;
@@ -1182,33 +1182,33 @@ __VLS_277.slots.default;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_283 = __VLS_asFunctionalComponent(__VLS_282, new __VLS_282({
-        label: (__VLS_ctx.t('plugin.menu_type_directory', '目录')),
+        label: (__VLS_ctx.t('plugin.menu_type_directory', 'Directory')),
         value: "directory",
     }));
     const __VLS_284 = __VLS_283({
-        label: (__VLS_ctx.t('plugin.menu_type_directory', '目录')),
+        label: (__VLS_ctx.t('plugin.menu_type_directory', 'Directory')),
         value: "directory",
     }, ...__VLS_functionalComponentArgsRest(__VLS_283));
     const __VLS_286 = {}.ElOption;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_287 = __VLS_asFunctionalComponent(__VLS_286, new __VLS_286({
-        label: (__VLS_ctx.t('plugin.menu_type_menu', '菜单')),
+        label: (__VLS_ctx.t('plugin.menu_type_menu', 'Menu')),
         value: "menu",
     }));
     const __VLS_288 = __VLS_287({
-        label: (__VLS_ctx.t('plugin.menu_type_menu', '菜单')),
+        label: (__VLS_ctx.t('plugin.menu_type_menu', 'Menu')),
         value: "menu",
     }, ...__VLS_functionalComponentArgsRest(__VLS_287));
     const __VLS_290 = {}.ElOption;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_291 = __VLS_asFunctionalComponent(__VLS_290, new __VLS_290({
-        label: (__VLS_ctx.t('plugin.menu_type_button', '按钮')),
+        label: (__VLS_ctx.t('plugin.menu_type_button', 'Button')),
         value: "button",
     }));
     const __VLS_292 = __VLS_291({
-        label: (__VLS_ctx.t('plugin.menu_type_button', '按钮')),
+        label: (__VLS_ctx.t('plugin.menu_type_button', 'Button')),
         value: "button",
     }, ...__VLS_functionalComponentArgsRest(__VLS_291));
     var __VLS_281;
@@ -1218,11 +1218,11 @@ const __VLS_294 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_295 = __VLS_asFunctionalComponent(__VLS_294, new __VLS_294({
-    label: (__VLS_ctx.t('plugin.menu_permission', '权限')),
+    label: (__VLS_ctx.t('plugin.menu_permission', 'Permission')),
     minWidth: "140",
 }));
 const __VLS_296 = __VLS_295({
-    label: (__VLS_ctx.t('plugin.menu_permission', '权限')),
+    label: (__VLS_ctx.t('plugin.menu_permission', 'Permission')),
     minWidth: "140",
 }, ...__VLS_functionalComponentArgsRest(__VLS_295));
 __VLS_297.slots.default;
@@ -1246,11 +1246,11 @@ const __VLS_302 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_303 = __VLS_asFunctionalComponent(__VLS_302, new __VLS_302({
-    label: (__VLS_ctx.t('plugin.menu_sort', '排序')),
+    label: (__VLS_ctx.t('plugin.menu_sort', 'Sort')),
     width: "90",
 }));
 const __VLS_304 = __VLS_303({
-    label: (__VLS_ctx.t('plugin.menu_sort', '排序')),
+    label: (__VLS_ctx.t('plugin.menu_sort', 'Sort')),
     width: "90",
 }, ...__VLS_functionalComponentArgsRest(__VLS_303));
 __VLS_305.slots.default;
@@ -1278,11 +1278,11 @@ const __VLS_310 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_311 = __VLS_asFunctionalComponent(__VLS_310, new __VLS_310({
-    label: (__VLS_ctx.t('plugin.menu_visible', '可见')),
+    label: (__VLS_ctx.t('plugin.menu_visible', 'Visible')),
     width: "90",
 }));
 const __VLS_312 = __VLS_311({
-    label: (__VLS_ctx.t('plugin.menu_visible', '可见')),
+    label: (__VLS_ctx.t('plugin.menu_visible', 'Visible')),
     width: "90",
 }, ...__VLS_functionalComponentArgsRest(__VLS_311));
 __VLS_313.slots.default;
@@ -1304,11 +1304,11 @@ const __VLS_318 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_319 = __VLS_asFunctionalComponent(__VLS_318, new __VLS_318({
-    label: (__VLS_ctx.t('plugin.menu_enabled', '启用')),
+    label: (__VLS_ctx.t('plugin.menu_enabled', 'Enabled')),
     width: "90",
 }));
 const __VLS_320 = __VLS_319({
-    label: (__VLS_ctx.t('plugin.menu_enabled', '启用')),
+    label: (__VLS_ctx.t('plugin.menu_enabled', 'Enabled')),
     width: "90",
 }, ...__VLS_functionalComponentArgsRest(__VLS_319));
 __VLS_321.slots.default;
@@ -1330,12 +1330,12 @@ const __VLS_326 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_327 = __VLS_asFunctionalComponent(__VLS_326, new __VLS_326({
-    label: (__VLS_ctx.t('plugin.actions', '操作')),
+    label: (__VLS_ctx.t('plugin.actions', 'Actions')),
     width: "90",
     fixed: "right",
 }));
 const __VLS_328 = __VLS_327({
-    label: (__VLS_ctx.t('plugin.actions', '操作')),
+    label: (__VLS_ctx.t('plugin.actions', 'Actions')),
     width: "90",
     fixed: "right",
 }, ...__VLS_functionalComponentArgsRest(__VLS_327));
@@ -1365,7 +1365,7 @@ __VLS_329.slots.default;
         }
     };
     __VLS_333.slots.default;
-    (__VLS_ctx.t('common.delete', '删除'));
+    (__VLS_ctx.t('common.delete', 'Delete'));
     var __VLS_333;
 }
 var __VLS_329;
@@ -1375,11 +1375,11 @@ const __VLS_338 = {}.ElTabPane;
 /** @type {[typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, ]} */ ;
 // @ts-ignore
 const __VLS_339 = __VLS_asFunctionalComponent(__VLS_338, new __VLS_338({
-    label: (__VLS_ctx.t('plugin.permissions_tab', '插件权限')),
+    label: (__VLS_ctx.t('plugin.permissions_tab', 'Plugin permissions')),
     name: "permissions",
 }));
 const __VLS_340 = __VLS_339({
-    label: (__VLS_ctx.t('plugin.permissions_tab', '插件权限')),
+    label: (__VLS_ctx.t('plugin.permissions_tab', 'Plugin permissions')),
     name: "permissions",
 }, ...__VLS_functionalComponentArgsRest(__VLS_339));
 __VLS_341.slots.default;
@@ -1406,7 +1406,7 @@ const __VLS_349 = {
     onClick: (__VLS_ctx.appendPermissionRow)
 };
 __VLS_345.slots.default;
-(__VLS_ctx.t('plugin.add_permission_row', '新增权限行'));
+(__VLS_ctx.t('plugin.add_permission_row', 'Add permission row'));
 var __VLS_345;
 const __VLS_350 = {}.ElTable;
 /** @type {[typeof __VLS_components.ElTable, typeof __VLS_components.elTable, typeof __VLS_components.ElTable, typeof __VLS_components.elTable, ]} */ ;
@@ -1428,11 +1428,11 @@ const __VLS_354 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_355 = __VLS_asFunctionalComponent(__VLS_354, new __VLS_354({
-    label: (__VLS_ctx.t('plugin.permission_object', '对象')),
+    label: (__VLS_ctx.t('plugin.permission_object', 'Object')),
     minWidth: "180",
 }));
 const __VLS_356 = __VLS_355({
-    label: (__VLS_ctx.t('plugin.permission_object', '对象')),
+    label: (__VLS_ctx.t('plugin.permission_object', 'Object')),
     minWidth: "180",
 }, ...__VLS_functionalComponentArgsRest(__VLS_355));
 __VLS_357.slots.default;
@@ -1456,11 +1456,11 @@ const __VLS_362 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_363 = __VLS_asFunctionalComponent(__VLS_362, new __VLS_362({
-    label: (__VLS_ctx.t('plugin.permission_action', '动作')),
+    label: (__VLS_ctx.t('plugin.permission_action', 'Action')),
     minWidth: "140",
 }));
 const __VLS_364 = __VLS_363({
-    label: (__VLS_ctx.t('plugin.permission_action', '动作')),
+    label: (__VLS_ctx.t('plugin.permission_action', 'Action')),
     minWidth: "140",
 }, ...__VLS_functionalComponentArgsRest(__VLS_363));
 __VLS_365.slots.default;
@@ -1484,11 +1484,11 @@ const __VLS_370 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_371 = __VLS_asFunctionalComponent(__VLS_370, new __VLS_370({
-    label: (__VLS_ctx.t('plugin.permission_description', '描述')),
+    label: (__VLS_ctx.t('plugin.permission_description', 'Description')),
     minWidth: "260",
 }));
 const __VLS_372 = __VLS_371({
-    label: (__VLS_ctx.t('plugin.permission_description', '描述')),
+    label: (__VLS_ctx.t('plugin.permission_description', 'Description')),
     minWidth: "260",
 }, ...__VLS_functionalComponentArgsRest(__VLS_371));
 __VLS_373.slots.default;
@@ -1500,11 +1500,11 @@ __VLS_373.slots.default;
     // @ts-ignore
     const __VLS_375 = __VLS_asFunctionalComponent(__VLS_374, new __VLS_374({
         modelValue: (row.description),
-        placeholder: (__VLS_ctx.t('plugin.permission_description_placeholder', '权限描述')),
+        placeholder: (__VLS_ctx.t('plugin.permission_description_placeholder', 'Permission description')),
     }));
     const __VLS_376 = __VLS_375({
         modelValue: (row.description),
-        placeholder: (__VLS_ctx.t('plugin.permission_description_placeholder', '权限描述')),
+        placeholder: (__VLS_ctx.t('plugin.permission_description_placeholder', 'Permission description')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_375));
 }
 var __VLS_373;
@@ -1512,12 +1512,12 @@ const __VLS_378 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_379 = __VLS_asFunctionalComponent(__VLS_378, new __VLS_378({
-    label: (__VLS_ctx.t('plugin.actions', '操作')),
+    label: (__VLS_ctx.t('plugin.actions', 'Actions')),
     width: "90",
     fixed: "right",
 }));
 const __VLS_380 = __VLS_379({
-    label: (__VLS_ctx.t('plugin.actions', '操作')),
+    label: (__VLS_ctx.t('plugin.actions', 'Actions')),
     width: "90",
     fixed: "right",
 }, ...__VLS_functionalComponentArgsRest(__VLS_379));
@@ -1547,7 +1547,7 @@ __VLS_381.slots.default;
         }
     };
     __VLS_385.slots.default;
-    (__VLS_ctx.t('common.delete', '删除'));
+    (__VLS_ctx.t('common.delete', 'Delete'));
     var __VLS_385;
 }
 var __VLS_381;

@@ -1,9 +1,32 @@
 import axios, { AxiosHeaders, } from 'axios';
+import { useAppI18n } from '@/i18n';
 import { getStoredAccessToken } from '@/store/session';
 import { ApiError } from './types';
 let unauthorizedHandler = null;
 export function setUnauthorizedHandler(handler) {
     unauthorizedHandler = handler;
+}
+function resolveHttpErrorMessage(code, message = '') {
+    const { t } = useAppI18n();
+    const normalizedMessage = message.trim();
+    if (code === 401) {
+        return normalizedMessage || t('common.authentication_required', 'Authentication required');
+    }
+    if (code === 403) {
+        return normalizedMessage || t('common.permission_denied', 'Access denied');
+    }
+    if (normalizedMessage !== '') {
+        return normalizedMessage;
+    }
+    return t('common.request_failed', 'Request failed');
+}
+function resolveNetworkErrorMessage(message = '') {
+    const { t } = useAppI18n();
+    const normalizedMessage = message.trim();
+    if (normalizedMessage !== '') {
+        return normalizedMessage;
+    }
+    return t('common.network_error', 'Network error');
 }
 function isApiEnvelope(value) {
     return typeof value === 'object' && value !== null && 'code' in value && 'msg' in value;
@@ -30,7 +53,7 @@ function createHttpClient() {
         const payload = response.data;
         if (isApiEnvelope(payload)) {
             if (payload.code !== 200) {
-                return Promise.reject(new ApiError(payload.msg || 'Request failed', payload.code, payload.data, payload.request_id));
+                return Promise.reject(new ApiError(resolveHttpErrorMessage(payload.code, payload.msg), payload.code, payload.data, payload.request_id));
             }
             return payload.data;
         }
@@ -40,6 +63,10 @@ function createHttpClient() {
             if (error.code === 401) {
                 unauthorizedHandler?.(error);
             }
+            const normalizedMessage = resolveHttpErrorMessage(error.code, error.message);
+            if (normalizedMessage !== error.message) {
+                return Promise.reject(new ApiError(normalizedMessage, error.code, error.payload, error.requestId));
+            }
             return Promise.reject(error);
         }
         if (axios.isAxiosError(error)) {
@@ -48,10 +75,13 @@ function createHttpClient() {
             if (axiosError.response?.status === 401) {
                 unauthorizedHandler?.(axiosError);
             }
-            if (isApiEnvelope(data)) {
-                return Promise.reject(new ApiError(data.msg || axiosError.message, data.code, data.data, data.request_id));
+            if (axiosError.response?.status === 403) {
+                return Promise.reject(new ApiError(resolveHttpErrorMessage(403, isApiEnvelope(data) ? data.msg : axiosError.message), 403, data, isApiEnvelope(data) ? data.request_id : undefined));
             }
-            return Promise.reject(new ApiError(axiosError.message || 'Network error', axiosError.response?.status ?? 500, data));
+            if (isApiEnvelope(data)) {
+                return Promise.reject(new ApiError(resolveHttpErrorMessage(data.code, data.msg), data.code, data.data, data.request_id));
+            }
+            return Promise.reject(new ApiError(resolveNetworkErrorMessage(axiosError.message), axiosError.response?.status ?? 500, data));
         }
         return Promise.reject(error);
     }));

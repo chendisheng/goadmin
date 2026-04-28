@@ -1,37 +1,39 @@
 import { computed, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { fetchHealth } from '@/api';
+import { useAppI18n } from '@/i18n';
 import { useAppStore } from '@/store/app';
 import { useSessionStore } from '@/store/session';
 const appTitle = import.meta.env.VITE_APP_TITLE || 'GoAdmin';
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 const appStore = useAppStore();
 const sessionStore = useSessionStore();
+const { t } = useAppI18n();
 const healthState = ref(null);
 const loading = ref(false);
 const errorMessage = ref('');
-const shellStatus = computed(() => (appStore.sidebarCollapsed ? 'Sidebar collapsed' : 'Sidebar expanded'));
+const shellStatus = computed(() => (appStore.sidebarCollapsed ? t('dashboard.sidebar_collapsed', 'Sidebar collapsed') : t('dashboard.sidebar_expanded', 'Sidebar expanded')));
 const currentUser = computed(() => sessionStore.currentUser);
 const dashboardMetrics = computed(() => [
     {
-        label: 'API 基址',
+        label: t('dashboard.metric.api_base_url', 'API base URL'),
         value: apiBaseUrl,
-        note: 'Axios 统一请求入口',
+        note: t('dashboard.metric.api_base_url_note', 'Unified Axios request entry'),
     },
     {
-        label: '布局状态',
+        label: t('dashboard.metric.layout_state', 'Layout state'),
         value: shellStatus.value,
-        note: '侧边栏折叠状态已持久化',
+        note: t('dashboard.metric.layout_state_note', 'Sidebar collapse state persisted'),
     },
     {
-        label: '当前用户',
-        value: sessionStore.displayName || 'System Admin',
-        note: '会话信息已加载',
+        label: t('dashboard.metric.current_user', 'Current user'),
+        value: sessionStore.displayName || t('dashboard.metric.default_user', 'System administrator'),
+        note: t('dashboard.metric.current_user_note', 'Session information loaded'),
     },
     {
-        label: '登录模式',
-        value: 'JWT / RBAC',
-        note: '按钮权限与菜单权限待扩展',
+        label: t('dashboard.metric.login_mode', 'Login mode'),
+        value: t('dashboard.metric.login_mode_value', 'JWT / RBAC'),
+        note: t('dashboard.metric.login_mode_note', 'Button and menu permissions will be extended'),
     },
 ]);
 async function onPingHealth() {
@@ -39,10 +41,10 @@ async function onPingHealth() {
     errorMessage.value = '';
     try {
         healthState.value = await fetchHealth();
-        ElMessage.success('健康检查请求成功');
+        ElMessage.success(t('dashboard.health_success', 'Health check request succeeded'));
     }
     catch (error) {
-        const message = error instanceof Error ? error.message : '健康检查请求失败';
+        const message = error instanceof Error ? error.message : t('dashboard.health_failed', 'Health check request failed');
         errorMessage.value = message;
         ElMessage.error(message);
     }
@@ -154,6 +156,7 @@ __VLS_23.slots.default;
         ...{ class: "page-card__header" },
     });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+    (__VLS_ctx.t('dashboard.hero_title', 'System overview'));
     const __VLS_24 = {}.ElTag;
     /** @type {[typeof __VLS_components.ElTag, typeof __VLS_components.elTag, typeof __VLS_components.ElTag, typeof __VLS_components.elTag, ]} */ ;
     // @ts-ignore
@@ -168,6 +171,7 @@ __VLS_23.slots.default;
         type: "success",
     }, ...__VLS_functionalComponentArgsRest(__VLS_25));
     __VLS_27.slots.default;
+    (__VLS_ctx.t('dashboard.status_online', 'Online'));
     var __VLS_27;
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -175,8 +179,9 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
-(__VLS_ctx.appTitle);
+(__VLS_ctx.t('dashboard.hero_heading', '{title} admin console', { title: __VLS_ctx.appTitle }));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
+(__VLS_ctx.t('dashboard.hero_description', 'Unified sidebar, top navigation, and dashboard home, ready to host Auth, CRUD, and Plugin modules later.'));
 const __VLS_28 = {}.ElDescriptions;
 /** @type {[typeof __VLS_components.ElDescriptions, typeof __VLS_components.elDescriptions, typeof __VLS_components.ElDescriptions, typeof __VLS_components.elDescriptions, ]} */ ;
 // @ts-ignore
@@ -195,10 +200,10 @@ const __VLS_32 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
-    label: "应用标题",
+    label: (__VLS_ctx.t('dashboard.hero_app_title', 'Application title')),
 }));
 const __VLS_34 = __VLS_33({
-    label: "应用标题",
+    label: (__VLS_ctx.t('dashboard.hero_app_title', 'Application title')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_33));
 __VLS_35.slots.default;
 (__VLS_ctx.appTitle);
@@ -207,10 +212,10 @@ const __VLS_36 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_37 = __VLS_asFunctionalComponent(__VLS_36, new __VLS_36({
-    label: "API 基址",
+    label: (__VLS_ctx.t('dashboard.hero_api_base_url', 'API base URL')),
 }));
 const __VLS_38 = __VLS_37({
-    label: "API 基址",
+    label: (__VLS_ctx.t('dashboard.hero_api_base_url', 'API base URL')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_37));
 __VLS_39.slots.default;
 (__VLS_ctx.apiBaseUrl);
@@ -219,10 +224,10 @@ const __VLS_40 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_41 = __VLS_asFunctionalComponent(__VLS_40, new __VLS_40({
-    label: "布局状态",
+    label: (__VLS_ctx.t('dashboard.hero_layout_state', 'Layout state')),
 }));
 const __VLS_42 = __VLS_41({
-    label: "布局状态",
+    label: (__VLS_ctx.t('dashboard.hero_layout_state', 'Layout state')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_41));
 __VLS_43.slots.default;
 (__VLS_ctx.shellStatus);
@@ -231,10 +236,10 @@ const __VLS_44 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_45 = __VLS_asFunctionalComponent(__VLS_44, new __VLS_44({
-    label: "当前用户",
+    label: (__VLS_ctx.t('dashboard.hero_current_user', 'Current user')),
 }));
 const __VLS_46 = __VLS_45({
-    label: "当前用户",
+    label: (__VLS_ctx.t('dashboard.hero_current_user', 'Current user')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_45));
 __VLS_47.slots.default;
 (__VLS_ctx.sessionStore.displayName);
@@ -272,6 +277,7 @@ __VLS_55.slots.default;
         ...{ class: "page-card__header" },
     });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+    (__VLS_ctx.t('dashboard.quick_actions_title', 'API validation'));
     const __VLS_56 = {}.ElTag;
     /** @type {[typeof __VLS_components.ElTag, typeof __VLS_components.elTag, typeof __VLS_components.ElTag, typeof __VLS_components.elTag, ]} */ ;
     // @ts-ignore
@@ -286,12 +292,14 @@ __VLS_55.slots.default;
         type: "info",
     }, ...__VLS_functionalComponentArgsRest(__VLS_57));
     __VLS_59.slots.default;
+    (__VLS_ctx.t('dashboard.quick_actions_tag', 'Connectivity'));
     var __VLS_59;
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "dashboard-quick-actions__body" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
+(__VLS_ctx.t('dashboard.quick_actions_description', 'Click the button to send a health check request and quickly verify frontend-backend connectivity and Axios interceptors.'));
 const __VLS_60 = {}.ElButton;
 /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
 // @ts-ignore
@@ -312,6 +320,7 @@ const __VLS_67 = {
     onClick: (__VLS_ctx.onPingHealth)
 };
 __VLS_63.slots.default;
+(__VLS_ctx.t('dashboard.health_check_button', 'Send health check'));
 var __VLS_63;
 const __VLS_68 = {}.ElDivider;
 /** @type {[typeof __VLS_components.ElDivider, typeof __VLS_components.elDivider, ]} */ ;
@@ -338,10 +347,10 @@ if (__VLS_ctx.healthState) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_77 = __VLS_asFunctionalComponent(__VLS_76, new __VLS_76({
-        label: "status",
+        label: (__VLS_ctx.t('dashboard.health_status', 'status')),
     }));
     const __VLS_78 = __VLS_77({
-        label: "status",
+        label: (__VLS_ctx.t('dashboard.health_status', 'status')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_77));
     __VLS_79.slots.default;
     (__VLS_ctx.healthState.status);
@@ -350,10 +359,10 @@ if (__VLS_ctx.healthState) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_81 = __VLS_asFunctionalComponent(__VLS_80, new __VLS_80({
-        label: "uptime",
+        label: (__VLS_ctx.t('dashboard.health_uptime', 'uptime')),
     }));
     const __VLS_82 = __VLS_81({
-        label: "uptime",
+        label: (__VLS_ctx.t('dashboard.health_uptime', 'uptime')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_81));
     __VLS_83.slots.default;
     (__VLS_ctx.healthState.uptime);
@@ -362,10 +371,10 @@ if (__VLS_ctx.healthState) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_85 = __VLS_asFunctionalComponent(__VLS_84, new __VLS_84({
-        label: "timestamp",
+        label: (__VLS_ctx.t('dashboard.health_timestamp', 'timestamp')),
     }));
     const __VLS_86 = __VLS_85({
-        label: "timestamp",
+        label: (__VLS_ctx.t('dashboard.health_timestamp', 'timestamp')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_85));
     __VLS_87.slots.default;
     (__VLS_ctx.healthState.timestamp);
@@ -411,10 +420,10 @@ if (__VLS_ctx.currentUser) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_101 = __VLS_asFunctionalComponent(__VLS_100, new __VLS_100({
-        label: "username",
+        label: (__VLS_ctx.t('dashboard.user_username', 'username')),
     }));
     const __VLS_102 = __VLS_101({
-        label: "username",
+        label: (__VLS_ctx.t('dashboard.user_username', 'username')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_101));
     __VLS_103.slots.default;
     (__VLS_ctx.currentUser.username);
@@ -423,10 +432,10 @@ if (__VLS_ctx.currentUser) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_105 = __VLS_asFunctionalComponent(__VLS_104, new __VLS_104({
-        label: "user_id",
+        label: (__VLS_ctx.t('dashboard.user_id', 'user_id')),
     }));
     const __VLS_106 = __VLS_105({
-        label: "user_id",
+        label: (__VLS_ctx.t('dashboard.user_id', 'user_id')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_105));
     __VLS_107.slots.default;
     (__VLS_ctx.currentUser.user_id);
@@ -435,10 +444,10 @@ if (__VLS_ctx.currentUser) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_109 = __VLS_asFunctionalComponent(__VLS_108, new __VLS_108({
-        label: "roles",
+        label: (__VLS_ctx.t('dashboard.user_roles', 'roles')),
     }));
     const __VLS_110 = __VLS_109({
-        label: "roles",
+        label: (__VLS_ctx.t('dashboard.user_roles', 'roles')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_109));
     __VLS_111.slots.default;
     (__VLS_ctx.currentUser.roles?.join(', ') || '-');
@@ -486,13 +495,17 @@ const __VLS_122 = __VLS_121({
 __VLS_123.slots.default;
 {
     const { header: __VLS_thisSlot } = __VLS_123.slots;
+    (__VLS_ctx.t('dashboard.section.engineering', 'Engineering standards'));
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
     ...{ class: "dashboard-list" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.engineering.vue', 'Vue 3 + TypeScript'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.engineering.vite', 'Vite build and hot reload'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.engineering.element_plus', 'Unified Element Plus UI'));
 var __VLS_123;
 var __VLS_119;
 const __VLS_124 = {}.ElCol;
@@ -521,13 +534,17 @@ const __VLS_130 = __VLS_129({
 __VLS_131.slots.default;
 {
     const { header: __VLS_thisSlot } = __VLS_131.slots;
+    (__VLS_ctx.t('dashboard.section.status', 'Status center'));
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
     ...{ class: "dashboard-list" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.status.pinia', 'Pinia global store initialized'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.status.sidebar_persisted', 'Sidebar collapse state persisted'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.status.token_reserved', 'Session token foundation reserved'));
 var __VLS_131;
 var __VLS_127;
 const __VLS_132 = {}.ElCol;
@@ -556,13 +573,17 @@ const __VLS_138 = __VLS_137({
 __VLS_139.slots.default;
 {
     const { header: __VLS_thisSlot } = __VLS_139.slots;
+    (__VLS_ctx.t('dashboard.section.plan', 'Feature roadmap'));
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
     ...{ class: "dashboard-list" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.plan.modules', 'Admin Modules base management page'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.plan.permissions', 'Permission control and button-level authorization'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({});
+(__VLS_ctx.t('dashboard.plan.plugin_ui', 'Plugin UI and dynamic extension'));
 var __VLS_139;
 var __VLS_135;
 var __VLS_115;
@@ -596,6 +617,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             appTitle: appTitle,
             apiBaseUrl: apiBaseUrl,
             sessionStore: sessionStore,
+            t: t,
             healthState: healthState,
             loading: loading,
             errorMessage: errorMessage,

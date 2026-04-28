@@ -6,9 +6,9 @@ const router = useRouter();
 const { t } = useAppI18n();
 const pageTitle = computed(() => {
     const localized = resolveRouteLocaleMeta(route);
-    return localized.title.trim() !== '' ? localized.title : t('common.placeholder_route', '页面占位');
+    return localized.title.trim() !== '' ? localized.title : t('common.placeholder_route', 'Route placeholder');
 });
-const componentName = computed(() => String(route.meta.componentName || t('common.unknown', '未知')));
+const componentName = computed(() => String(route.meta.componentName || t('common.unknown', 'Unknown')));
 const routePermission = computed(() => String(route.meta.permission || '-'));
 const routeLink = computed(() => String(route.meta.link || '-'));
 const routePath = computed(() => route.path);
@@ -65,15 +65,15 @@ const __VLS_8 = {}.ElAlert;
 /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
 // @ts-ignore
 const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
-    title: (__VLS_ctx.t('route.placeholder.info', '该路由已由后端菜单驱动注册')),
-    description: (__VLS_ctx.t('route.placeholder.description', '当前页面用于承接尚未实现的业务模块，占位逻辑会在后续 Phase 13/14 中替换为真实页面。')),
+    title: (__VLS_ctx.t('route.placeholder.info', 'This route has been registered from backend menu data')),
+    description: (__VLS_ctx.t('route.placeholder.description', 'This page serves as a placeholder for business modules that are not implemented yet. The placeholder logic will be replaced by real pages in later phases.')),
     type: "info",
     showIcon: true,
     closable: (false),
 }));
 const __VLS_10 = __VLS_9({
-    title: (__VLS_ctx.t('route.placeholder.info', '该路由已由后端菜单驱动注册')),
-    description: (__VLS_ctx.t('route.placeholder.description', '当前页面用于承接尚未实现的业务模块，占位逻辑会在后续 Phase 13/14 中替换为真实页面。')),
+    title: (__VLS_ctx.t('route.placeholder.info', 'This route has been registered from backend menu data')),
+    description: (__VLS_ctx.t('route.placeholder.description', 'This page serves as a placeholder for business modules that are not implemented yet. The placeholder logic will be replaced by real pages in later phases.')),
     type: "info",
     showIcon: true,
     closable: (false),
@@ -98,10 +98,10 @@ const __VLS_16 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
-    label: (__VLS_ctx.t('route.placeholder.route_path', '路由路径')),
+    label: (__VLS_ctx.t('route.placeholder.route_path', 'Route path')),
 }));
 const __VLS_18 = __VLS_17({
-    label: (__VLS_ctx.t('route.placeholder.route_path', '路由路径')),
+    label: (__VLS_ctx.t('route.placeholder.route_path', 'Route path')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_17));
 __VLS_19.slots.default;
 (__VLS_ctx.routePath);
@@ -110,10 +110,10 @@ const __VLS_20 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
-    label: (__VLS_ctx.t('route.placeholder.component_name', '组件标识')),
+    label: (__VLS_ctx.t('route.placeholder.component_name', 'Component name')),
 }));
 const __VLS_22 = __VLS_21({
-    label: (__VLS_ctx.t('route.placeholder.component_name', '组件标识')),
+    label: (__VLS_ctx.t('route.placeholder.component_name', 'Component name')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_21));
 __VLS_23.slots.default;
 (__VLS_ctx.componentName);
@@ -122,10 +122,10 @@ const __VLS_24 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
-    label: (__VLS_ctx.t('route.placeholder.permission', '权限标识')),
+    label: (__VLS_ctx.t('route.placeholder.permission', 'Permission key')),
 }));
 const __VLS_26 = __VLS_25({
-    label: (__VLS_ctx.t('route.placeholder.permission', '权限标识')),
+    label: (__VLS_ctx.t('route.placeholder.permission', 'Permission key')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_25));
 __VLS_27.slots.default;
 (__VLS_ctx.routePermission);
@@ -134,10 +134,10 @@ const __VLS_28 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_29 = __VLS_asFunctionalComponent(__VLS_28, new __VLS_28({
-    label: (__VLS_ctx.t('route.placeholder.link', '外链地址')),
+    label: (__VLS_ctx.t('route.placeholder.link', 'External URL')),
 }));
 const __VLS_30 = __VLS_29({
-    label: (__VLS_ctx.t('route.placeholder.link', '外链地址')),
+    label: (__VLS_ctx.t('route.placeholder.link', 'External URL')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_29));
 __VLS_31.slots.default;
 (__VLS_ctx.routeLink);
@@ -164,7 +164,7 @@ const __VLS_39 = {
     onClick: (__VLS_ctx.goDashboard)
 };
 __VLS_35.slots.default;
-(__VLS_ctx.t('route.placeholder.back', '返回工作台'));
+(__VLS_ctx.t('route.placeholder.back', 'Back to dashboard'));
 var __VLS_35;
 var __VLS_3;
 /** @type {__VLS_StyleScopedClasses['route-placeholder-page']} */ ;

@@ -6,6 +6,7 @@ const route = {
     title: 'rules',
     titleKey: 'route.casbin_rules',
     titleDefault: 'Policy management',
+    i18nNamespaces: ['casbin_rule'],
     icon: 'menu',
   },
 }

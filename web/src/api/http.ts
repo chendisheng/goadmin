@@ -6,7 +6,7 @@ import axios, {
   type AxiosResponse,
 } from 'axios';
 
-import { translate } from '@/i18n';
+import { useAppI18n } from '@/i18n';
 import { getStoredAccessToken } from '@/store/session';
 
 import { ApiError, type ApiEnvelope } from './types';
@@ -20,25 +20,27 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
 }
 
 function resolveHttpErrorMessage(code: number, message = ''): string {
+  const { t } = useAppI18n();
   const normalizedMessage = message.trim();
   if (code === 401) {
-    return normalizedMessage || translate('common.authentication_required', 'Authentication required');
+    return normalizedMessage || t('common.authentication_required', 'Authentication required');
   }
   if (code === 403) {
-    return normalizedMessage || translate('common.permission_denied', 'Access denied');
+    return normalizedMessage || t('common.permission_denied', 'Access denied');
   }
   if (normalizedMessage !== '') {
     return normalizedMessage;
   }
-  return translate('common.request_failed', 'Request failed');
+  return t('common.request_failed', 'Request failed');
 }
 
 function resolveNetworkErrorMessage(message = ''): string {
+  const { t } = useAppI18n();
   const normalizedMessage = message.trim();
   if (normalizedMessage !== '') {
     return normalizedMessage;
   }
-  return translate('common.network_error', 'Network error');
+  return t('common.network_error', 'Network error');
 }
 
 function isApiEnvelope<T = unknown>(value: unknown): value is ApiEnvelope<T> {

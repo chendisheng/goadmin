@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { translate } from '@/i18n';
+import { useAppI18n } from '@/i18n';
 import type { AuthUser, LoginResponse } from '@/types/auth';
 
 const ACCESS_TOKEN_KEY = 'goadmin.access_token';
@@ -95,6 +95,7 @@ export function getStoredAccessToken(): string {
 }
 
 export const useSessionStore = defineStore('session', () => {
+  const { t } = useAppI18n();
   const accessToken = ref(readAccessToken());
   const refreshToken = ref(readStringValue(REFRESH_TOKEN_KEY));
   const tokenType = ref(readStringValue(TOKEN_TYPE_KEY) || 'Bearer');
@@ -104,7 +105,10 @@ export const useSessionStore = defineStore('session', () => {
   const currentUser = ref<AuthUser | null>(null);
 
   const isAuthenticated = computed(() => accessToken.value.trim().length > 0);
-  const displayName = computed(() => currentUser.value?.display_name || currentUser.value?.username || translate('common.visitor'));
+  const displayName = computed(() => {
+    void language.value;
+    return currentUser.value?.display_name || currentUser.value?.username || t('common.visitor');
+  });
   const roleLabels = computed(() => currentUser.value?.roles ?? []);
   const permissions = computed(() => currentUser.value?.permissions ?? []);
 

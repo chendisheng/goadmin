@@ -2,10 +2,15 @@ import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { pingExamplePlugin } from '@/api/plugins';
+import { resolveRouteLocaleMeta, useAppI18n } from '@/i18n';
 const route = useRoute();
+const { t } = useAppI18n();
 const loading = ref(false);
 const pingResult = ref(null);
-const pageTitle = computed(() => (typeof route.meta.title === 'string' && route.meta.title.trim() !== '' ? route.meta.title : '插件示例'));
+const pageTitle = computed(() => {
+    const localized = resolveRouteLocaleMeta(route);
+    return localized.title.trim() !== '' ? localized.title : t('plugin.example_title', 'Plugin example');
+});
 const componentName = computed(() => String(route.meta.componentName || 'view/plugin/example/index'));
 const routePath = computed(() => route.path);
 const routePermission = computed(() => String(route.meta.permission || 'plugin:example:view'));
@@ -13,10 +18,10 @@ async function handlePing() {
     loading.value = true;
     try {
         pingResult.value = await pingExamplePlugin();
-        ElMessage.success('插件接口调用成功');
+        ElMessage.success(t('plugin.example_call_success', 'Plugin API call succeeded'));
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '插件接口调用失败');
+        ElMessage.error(error instanceof Error ? error.message : t('plugin.example_call_failed', 'Plugin API call failed'));
     }
     finally {
         loading.value = false;
@@ -62,21 +67,22 @@ __VLS_3.slots.default;
         type: "success",
     }, ...__VLS_functionalComponentArgsRest(__VLS_5));
     __VLS_7.slots.default;
+    (__VLS_ctx.t('plugin.example_badge', 'Plugin UI'));
     var __VLS_7;
 }
 const __VLS_8 = {}.ElAlert;
 /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
 // @ts-ignore
 const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
-    title: "这是一个由插件注册的动态页面",
-    description: "页面组件路径来自后端菜单配置 `view/plugin/example/index`，并通过前端动态组件映射加载。",
+    title: (__VLS_ctx.t('plugin.example_alert_title', 'This is a dynamic page registered by a plugin')),
+    description: (__VLS_ctx.t('plugin.example_alert_description', 'The component path comes from backend menu configuration `view/plugin/example/index` and is loaded through the frontend dynamic component map.')),
     type: "success",
     showIcon: true,
     closable: (false),
 }));
 const __VLS_10 = __VLS_9({
-    title: "这是一个由插件注册的动态页面",
-    description: "页面组件路径来自后端菜单配置 `view/plugin/example/index`，并通过前端动态组件映射加载。",
+    title: (__VLS_ctx.t('plugin.example_alert_title', 'This is a dynamic page registered by a plugin')),
+    description: (__VLS_ctx.t('plugin.example_alert_description', 'The component path comes from backend menu configuration `view/plugin/example/index` and is loaded through the frontend dynamic component map.')),
     type: "success",
     showIcon: true,
     closable: (false),
@@ -101,10 +107,10 @@ const __VLS_16 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
-    label: "路由路径",
+    label: (__VLS_ctx.t('plugin.example_route_path', 'Route path')),
 }));
 const __VLS_18 = __VLS_17({
-    label: "路由路径",
+    label: (__VLS_ctx.t('plugin.example_route_path', 'Route path')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_17));
 __VLS_19.slots.default;
 (__VLS_ctx.routePath);
@@ -113,10 +119,10 @@ const __VLS_20 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
-    label: "组件标识",
+    label: (__VLS_ctx.t('plugin.example_component_name', 'Component name')),
 }));
 const __VLS_22 = __VLS_21({
-    label: "组件标识",
+    label: (__VLS_ctx.t('plugin.example_component_name', 'Component name')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_21));
 __VLS_23.slots.default;
 (__VLS_ctx.componentName);
@@ -125,10 +131,10 @@ const __VLS_24 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
-    label: "权限标识",
+    label: (__VLS_ctx.t('plugin.example_permission', 'Permission key')),
 }));
 const __VLS_26 = __VLS_25({
-    label: "权限标识",
+    label: (__VLS_ctx.t('plugin.example_permission', 'Permission key')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_25));
 __VLS_27.slots.default;
 (__VLS_ctx.routePermission);
@@ -157,6 +163,7 @@ const __VLS_35 = {
     onClick: (__VLS_ctx.handlePing)
 };
 __VLS_31.slots.default;
+(__VLS_ctx.t('plugin.example_call', 'Call plugin API'));
 var __VLS_31;
 if (__VLS_ctx.pingResult) {
     const __VLS_36 = {}.ElResult;
@@ -164,12 +171,12 @@ if (__VLS_ctx.pingResult) {
     // @ts-ignore
     const __VLS_37 = __VLS_asFunctionalComponent(__VLS_36, new __VLS_36({
         icon: "success",
-        title: "插件接口返回成功",
+        title: (__VLS_ctx.t('plugin.example_result_title', 'Plugin API returned successfully')),
         subTitle: (`${__VLS_ctx.pingResult.message} (${__VLS_ctx.pingResult.plugin})`),
     }));
     const __VLS_38 = __VLS_37({
         icon: "success",
-        title: "插件接口返回成功",
+        title: (__VLS_ctx.t('plugin.example_result_title', 'Plugin API returned successfully')),
         subTitle: (`${__VLS_ctx.pingResult.message} (${__VLS_ctx.pingResult.plugin})`),
     }, ...__VLS_functionalComponentArgsRest(__VLS_37));
 }
@@ -183,6 +190,7 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
+            t: t,
             loading: loading,
             pingResult: pingResult,
             pageTitle: pageTitle,

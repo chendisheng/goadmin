@@ -1,0 +1,22 @@
+{
+  "casbin.title": "授权治理",
+  "casbin.description": "统一管理授权运行时、默认策略与模型、策略入口。",
+  "casbin.status_panel": "运行状态",
+  "casbin.refresh_status": "刷新状态",
+  "casbin.reload_runtime": "重载运行时",
+  "casbin.seed_default": "补齐默认策略",
+  "casbin.models": "模型管理",
+  "casbin.rules": "策略管理",
+  "casbin.enabled_status": "启用状态",
+  "casbin.source": "来源",
+  "casbin.model_path": "模型路径",
+  "casbin.policy_path": "策略路径",
+  "casbin.summary_title": "治理摘要",
+  "casbin.no_summary": "暂无摘要",
+  "casbin.legacy_modules": "关联入口",
+  "casbin.available_routes": "可用接口",
+  "casbin.enabled": "已启用",
+  "casbin.disabled": "未启用",
+  "casbin.reload_success": "授权模块已重新加载",
+  "casbin.seed_success": "授权模块默认策略已补齐"
+}

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { appRoutes } from './routes';
-import { resolveRouteLocaleMeta } from '@/i18n';
+import { preloadRouteNamespaces, resolveRouteLocaleMeta } from '@/i18n';
+import { collectNamespacesFromRouteMeta } from '@/i18n/namespaces';
 import { useMenuStore } from '@/store/menu';
 import { useTabsStore } from '@/store/tabs';
 import { useSessionStore } from '@/store/session';
@@ -15,7 +16,9 @@ const router = createRouter({
 router.beforeEach(async (to) => {
     const sessionStore = useSessionStore();
     const menuStore = useMenuStore();
-    const localized = resolveRouteLocaleMeta(to);
+    await preloadRouteNamespaces(to);
+    const resolvedRoute = router.resolve(to.fullPath);
+    const localized = resolveRouteLocaleMeta(resolvedRoute);
     const pageTitle = localized.title.trim() !== '' ? localized.title : (typeof to.meta.title === 'string' && to.meta.title.trim() !== '' ? to.meta.title : appTitle);
     document.title = `${pageTitle} | ${appTitle}`;
     const publicRoute = to.meta.public === true || to.meta.requiresAuth === false || to.path === '/login';

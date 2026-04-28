@@ -1,0 +1,8 @@
+{
+  "tabs.title": "Page",
+  "tabs.aria": "Opened pages",
+  "tabs.more": "More actions {title}",
+  "tabs.close": "Close {title}",
+  "tabs.page": "Page",
+  "tabs.not_closable": "This tab cannot be closed"
+}

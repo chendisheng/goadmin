@@ -4,6 +4,7 @@ import { downloadCodegenArtifact, executeCodegenDelete, generateCodegenDatabase,
 import { fetchPublicConfig } from '@/api/health';
 import { fetchMenuTree } from '@/api/system-menus';
 import { ApiError } from '@/api/types';
+import { useAppI18n } from '@/i18n';
 const activeMode = ref('dsl');
 const dslText = ref('');
 const force = ref(false);
@@ -55,6 +56,7 @@ let artifactTicker = null;
 let copyFeedbackTimer = null;
 const dbMountMenuOptions = ref([]);
 const publicConfig = ref(null);
+const { t } = useAppI18n();
 const currentReport = computed(() => (activeMode.value === 'db' ? dbReport.value : dslReport.value));
 const dbParsedTables = computed(() => parseTableNames(dbTablesText.value));
 const dbDriverLabel = computed(() => {
@@ -63,14 +65,14 @@ const dbDriverLabel = computed(() => {
         postgres: 'PostgreSQL',
         sqlite: 'SQLite',
     };
-    return map[dbDriver.value] || dbDriver.value || '未选择';
+    return map[dbDriver.value] || dbDriver.value || '—';
 });
 const dbOptionSummary = computed(() => {
     const parts = [];
-    parts.push(dbForce.value ? '覆盖现有文件' : '安全覆盖关闭');
-    parts.push(dbGenerateFrontend.value ? '生成前端' : '跳过前端');
-    parts.push(dbGeneratePolicy.value ? '生成权限' : '跳过权限');
-    parts.push(dbMountParentPath.value ? `挂载：${dbMountMenuLabel.value}` : '挂载：顶层根菜单');
+    parts.push(dbForce.value ? t('codegen.cover_existing', '覆盖现有文件') : t('codegen.safe_cover_off', '安全覆盖关闭'));
+    parts.push(dbGenerateFrontend.value ? t('codegen.generate_frontend', '生成前端') : t('codegen.skip_frontend', '跳过前端'));
+    parts.push(dbGeneratePolicy.value ? t('codegen.generate_policy', '生成权限') : t('codegen.skip_policy', '跳过权限'));
+    parts.push(dbMountParentPath.value ? `${t('codegen.mount_root_prefix', '挂载：')}${dbMountMenuLabel.value}` : t('codegen.mount_root_top_label', '挂载：顶层根菜单'));
     return parts.join(' · ');
 });
 const dbGeneratedModuleName = computed(() => dbReport.value?.resources?.[0]?.module?.trim() || '');
@@ -80,7 +82,7 @@ const deletePlanItems = computed(() => mapDeletePlanToPreviewRows(deletePreviewP
 const deleteConflicts = computed(() => deletePreviewPlan.value?.conflicts ?? []);
 const deleteRequestSnapshotLabel = computed(() => {
     if (!deleteRequestCache.value) {
-        return '未预览';
+        return t('codegen.no_preview', '未预览');
     }
     return `${deleteRequestCache.value.module || '-'} · ${deleteRequestCache.value.dry_run ? 'dry-run' : 'execute'}`;
 });
@@ -91,12 +93,12 @@ const deletePlanStatusMessage = computed(() => {
     const conflicts = deleteConflicts.value.length;
     const total = deletePlanItems.value.length;
     if (conflicts > 0) {
-        return `删除预览完成：${total} 项计划中包含 ${conflicts} 个冲突，请确认后再执行。`;
+        return t('codegen.delete_preview_complete_conflict', '删除预览完成：{total} 项计划中包含 {conflicts} 个冲突，请确认后再执行。', { total, conflicts });
     }
     if (warnings.length > 0) {
-        return `删除预览完成：${total} 项计划，存在 ${warnings.length} 条风险提示。`;
+        return t('codegen.delete_preview_complete_warning', '删除预览完成：{total} 项计划，存在 {warnings} 条风险提示。', { total, warnings: warnings.length });
     }
-    return `删除预览完成：共 ${total} 项计划，可继续确认执行。`;
+    return t('codegen.delete_preview_complete_normal', '删除预览完成：共 {total} 项计划，可继续确认执行。', { total });
 });
 const deletePlanStatusType = computed(() => {
     if (deleteConflicts.value.length > 0) {
@@ -117,22 +119,26 @@ const deleteResultSummaryText = computed(() => {
     if (!summary) {
         return '-';
     }
-    return `已处理 ${summary.total_deleted ?? 0} 项 · 跳过 ${summary.skipped ?? 0} 项 · 异常 ${summary.failed ?? 0} 项`;
+    return t('codegen.delete_result_summary', '已处理 {deleted} 项 · 跳过 {skipped} 项 · 异常 {failed} 项', {
+        deleted: summary.total_deleted ?? 0,
+        skipped: summary.skipped ?? 0,
+        failed: summary.failed ?? 0,
+    });
 });
 const deleteResultStatusLabel = computed(() => {
     switch (deleteResult.value?.status ?? '') {
         case 'succeeded':
-            return '成功';
+            return t('common.ok', '成功');
         case 'partial':
-            return '部分成功';
+            return t('codegen.delete_partial', '部分成功');
         case 'failed':
-            return '失败';
+            return t('codegen.delete_failed', '失败');
         case 'dry_run':
             return 'Dry-run';
         case 'planned':
-            return '已计划';
+            return t('codegen.delete_planned', '已计划');
         default:
-            return '未知';
+            return t('common.unknown', '未知');
     }
 });
 const deleteResultStatusType = computed(() => {
@@ -169,45 +175,48 @@ const deleteResultStatusMessage = computed(() => {
     }
     const summary = result.summary;
     if (result.status === 'succeeded') {
-        return `删除已完成，共处理 ${summary?.total_deleted ?? 0} 项。`;
+        return t('codegen.delete_result_completed_summary', '删除已完成，共处理 {total} 项。', { total: summary?.total_deleted ?? 0 });
     }
     if (result.status === 'partial') {
-        return `删除已完成，但有 ${summary?.skipped ?? 0} 项被跳过、${summary?.failed ?? 0} 项出现异常。`;
+        return t('codegen.delete_result_partial_summary', '删除已完成，但有 {skipped} 项被跳过、{failed} 项出现异常。', {
+            skipped: summary?.skipped ?? 0,
+            failed: summary?.failed ?? 0,
+        });
     }
     if (result.status === 'failed') {
-        return `删除执行未完成，请先查看异常明细。`;
+        return t('codegen.delete_failed', '删除执行未完成，请先查看异常明细。');
     }
-    return `删除执行已结束，当前状态为 ${deleteResultStatusLabel.value}。`;
+    return t('codegen.delete_result_ended_status', '删除执行已结束，当前状态为 {status}。', { status: deleteResultStatusLabel.value });
 });
 const deleteMessages = computed(() => {
     const messages = [];
     if (deletePreviewPlan.value) {
-        messages.push(...(deletePreviewPlan.value.warnings ?? []).map((message) => `预览提示：${message}`));
+        messages.push(...(deletePreviewPlan.value.warnings ?? []).map((message) => `${t('codegen.delete_preview_hint_prefix', '预览提示：')}${message}`));
         if ((deletePreviewPlan.value.warnings ?? []).length === 0 && (deletePreviewPlan.value.conflicts?.length ?? 0) === 0) {
-            messages.push('预览提示：未发现额外风险提示。');
+            messages.push(t('codegen.delete_preview_no_extra_risk', '预览提示：未发现额外风险提示。'));
         }
     }
     if (deleteResult.value) {
-        messages.push(...(deleteResult.value.warnings ?? []).map((message) => `执行提示：${message}`));
+        messages.push(...(deleteResult.value.warnings ?? []).map((message) => `${t('codegen.delete_execute_hint_prefix', '执行提示：')}${message}`));
         for (const failure of deleteResult.value.failures ?? []) {
-            const detail = failure.reason || '未提供原因';
-            messages.push(`异常：${detail}${failure.item ? `（${describeDeleteItem(failure.item)}）` : ''}`);
+            const detail = failure.reason || t('codegen.delete_failure_reason_unknown', '未提供原因');
+            messages.push(`${t('codegen.delete_failure_prefix', '异常：')}${detail}${failure.item ? `（${describeDeleteItem(failure.item)}）` : ''}`);
         }
         if ((deleteResult.value.warnings ?? []).length === 0 && (deleteResult.value.failures ?? []).length === 0) {
-            messages.push('执行提示：未发现额外异常。');
+            messages.push(t('codegen.delete_execute_no_extra_exception', '执行提示：未发现额外异常。'));
         }
     }
     return messages;
 });
-const messagePanelTitle = computed(() => (activeMode.value === 'delete' ? '删除提示' : '消息'));
+const messagePanelTitle = computed(() => (activeMode.value === 'delete' ? t('codegen.delete_messages_title', '删除提示') : t('codegen.messages_title', '消息')));
 const messagePanelSubtitle = computed(() => activeMode.value === 'delete'
-    ? '汇总删除预览提示、执行提示与异常信息。'
-    : '包含 dry-run 提示、生成摘要和校验信息。');
-const messagePanelEmptyText = computed(() => (activeMode.value === 'delete' ? '暂无删除提示' : '暂无消息'));
+    ? t('codegen.delete_messages_subtitle', '汇总删除预览提示、执行提示与异常信息。')
+    : t('codegen.messages_subtitle', '包含 dry-run 提示、生成摘要和校验信息。'));
+const messagePanelEmptyText = computed(() => (activeMode.value === 'delete' ? t('codegen.no_delete_messages', '暂无删除提示') : t('codegen.no_messages', '暂无消息')));
 const deleteExecuteEnabled = computed(() => activeMode.value === 'delete' && deletePreviewReport.value !== null);
 const dbMountMenuLabel = computed(() => {
     if (!dbMountParentPath.value) {
-        return '顶层根菜单';
+        return t('codegen.db_mount_root_top_label', '顶层根菜单');
     }
     const option = dbMountMenuOptions.value.find((item) => item.value === dbMountParentPath.value);
     return option?.label || dbMountParentPath.value;
@@ -280,30 +289,30 @@ const artifactStatusMessage = computed(() => {
         return '';
     }
     if (downloadLoading.value) {
-        return '正在准备下载包，请稍候，浏览器即将开始下载。';
+        return t('codegen.downloading', '正在准备下载包，请稍候，浏览器即将开始下载。');
     }
     if (isArtifactExpired.value) {
-        return '当前下载包已过期，请重新执行“生成并下载”以获得新的代码包。';
+        return t('codegen.artifact_expired', '当前下载包已过期，请重新执行“生成并下载”以获得新的代码包。');
     }
-    return '下载包已就绪，你可以重新下载，或复制下载地址用于当前登录态调试。';
+    return t('codegen.artifact_ready', '下载包已就绪，你可以重新下载，或复制下载地址用于当前登录态调试。');
 });
 const artifactStatusLabel = computed(() => {
     if (downloadLoading.value) {
-        return '下载准备中';
+        return t('codegen.download_preparing', '下载准备中');
     }
     if (isArtifactExpired.value) {
-        return '已过期';
+        return t('codegen.artifact_expired_label', '已过期');
     }
-    return '可下载';
+    return t('codegen.artifact_downloadable', '可下载');
 });
 const artifactStatusSummary = computed(() => {
     if (downloadLoading.value) {
-        return '浏览器即将开始下载';
+        return t('codegen.download_preparing_detail', '浏览器即将开始下载');
     }
     if (isArtifactExpired.value) {
-        return '需要重新生成新的代码包';
+        return t('codegen.artifact_expired_detail', '需要重新生成新的代码包');
     }
-    return '支持重新下载和复制完整地址';
+    return t('codegen.artifact_ready_detail', '支持重新下载和复制完整地址');
 });
 const artifactStatusTone = computed(() => {
     if (downloadLoading.value) {
@@ -328,13 +337,13 @@ const artifactLastErrorText = computed(() => lastArtifactError.value || '无');
 const artifactLastFailureText = computed(() => formatDateTime(lastArtifactErrorAt.value));
 const artifactLastErrorTypeText = computed(() => {
     const map = {
-        auth: '登录失效',
-        notfound: '资源不存在',
-        expired: '已过期',
-        server: '服务异常',
-        unknown: '其他',
+        auth: t('codegen.error_auth', '登录失效'),
+        notfound: t('codegen.error_notfound', '资源不存在'),
+        expired: t('codegen.error_expired', '已过期'),
+        server: t('codegen.error_server', '服务异常'),
+        unknown: t('codegen.error_unknown', '其他'),
     };
-    return map[lastArtifactErrorType.value] || '其他';
+    return map[lastArtifactErrorType.value] || t('codegen.error_unknown', '其他');
 });
 const artifactLastErrorTypeTag = computed(() => {
     const map = {
@@ -393,7 +402,7 @@ resources:
         path: /system/codegen
         component: system/codegen/index
 `;
-    ElMessage.success('示例 DSL 已载入');
+    ElMessage.success(t('codegen.load_sample_success', '示例已载入'));
 }
 function loadDbSample() {
     activeMode.value = 'db';
@@ -404,7 +413,7 @@ function loadDbSample() {
     dbGenerateFrontend.value = true;
     dbGeneratePolicy.value = true;
     dbMountParentPath.value = '';
-    ElMessage.success('示例数据库配置已载入');
+    ElMessage.success(t('codegen.load_db_sample_success', '示例数据库配置已载入'));
 }
 function loadDeleteSample() {
     activeMode.value = 'delete';
@@ -417,7 +426,7 @@ function loadDeleteSample() {
     deleteWithRegistry.value = true;
     deleteForce.value = false;
     deleteNotes.value = '先预览再确认执行';
-    ElMessage.success('示例删除配置已载入');
+    ElMessage.success(t('codegen.load_delete_sample_success', '示例删除配置已载入'));
 }
 function applyDbPreset(driver) {
     const presets = {
@@ -451,7 +460,7 @@ function applyDbConfigDefaults() {
 }
 async function handleDeleteExecute() {
     if (!deleteExecuteEnabled.value || !deletePreviewReport.value || !deleteRequestCache.value) {
-        ElMessage.warning('请先完成删除预览');
+        ElMessage.warning(t('codegen.delete_preview_required', '请先完成删除预览'));
         return;
     }
     const preview = deletePreviewReport.value;
@@ -459,16 +468,21 @@ async function handleDeleteExecute() {
     const warnings = preview.plan.warnings?.length ?? 0;
     const total = preview.plan.summary?.total ?? deletePlanItems.value.length;
     try {
-        await ElMessageBox.confirm(`即将对模块 ${preview.plan.module || deleteModule.value} 执行删除，共 ${total} 项。当前方案包含 ${warnings} 条提示和 ${conflicts} 个冲突。确认后将调用后端删除执行接口。`, '确认删除方案', {
-            confirmButtonText: '确认执行',
-            cancelButtonText: '返回修改',
+        await ElMessageBox.confirm(t('codegen.delete_execute_confirm', '即将对模块 {module} 执行删除，共 {total} 项。当前方案包含 {warnings} 条提示和 {conflicts} 个冲突。确认后将调用后端删除执行接口。', {
+            module: preview.plan.module || deleteModule.value,
+            total,
+            warnings,
+            conflicts,
+        }), t('codegen.confirm_delete_title', '确认删除方案'), {
+            confirmButtonText: t('codegen.confirm_execute', '确认执行'),
+            cancelButtonText: t('codegen.return_modify', '返回修改'),
             type: 'warning',
             distinguishCancelAndClose: true,
         });
     }
     catch (error) {
         if (error === 'cancel' || error === 'close') {
-            ElMessage.info('已取消删除操作');
+            ElMessage.info(t('codegen.delete_cancelled', '已取消删除操作'));
             return;
         }
         throw error;
@@ -497,7 +511,7 @@ async function handleDeleteExecute() {
         ElMessage.success(deleteResultStatusMessage.value || '删除执行完成');
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '删除执行失败');
+        ElMessage.error(error instanceof Error ? error.message : t('codegen.delete_failed', '删除执行失败'));
     }
     finally {
         deleteLoading.value = false;
@@ -592,10 +606,10 @@ async function handleFileChange(event) {
     try {
         const content = await file.text();
         dslText.value = content;
-        ElMessage.success(`已载入 ${file.name}`);
+        ElMessage.success(t('codegen.file_loaded', '已载入 {name}', { name: file.name }));
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '读取 DSL 文件失败');
+        ElMessage.error(error instanceof Error ? error.message : t('codegen.file_read_failed', '读取 DSL 文件失败'));
     }
     finally {
         if (input) {
@@ -621,22 +635,22 @@ async function handlePreview() {
     try {
         if (activeMode.value === 'db') {
             dbReport.value = await previewCodegenDatabase(buildDatabaseRequest());
-            operationStatus.value = '数据库 Dry-run 预览完成';
-            ElMessage.success('数据库 Dry-run 预览完成');
+            operationStatus.value = t('codegen.db_dry_run_complete', '数据库 Dry-run 预览完成');
+            ElMessage.success(t('codegen.db_dry_run_complete', '数据库 Dry-run 预览完成'));
             lastRunSuccess.value = true;
             return;
         }
         if (!dslText.value.trim()) {
-            ElMessage.warning('请先填写 DSL 内容');
+            ElMessage.warning(t('codegen.fill_dsl', '请先填写 DSL 内容'));
             return;
         }
         dslReport.value = await previewCodegenDsl({ dsl: dslText.value, force: force.value });
         lastRunSuccess.value = true;
-        operationStatus.value = 'Dry-run 预览完成';
-        ElMessage.success('Dry-run 预览完成');
+        operationStatus.value = t('codegen.dry_run_complete', 'Dry-run 预览完成');
+        ElMessage.success(t('codegen.dry_run_complete', 'Dry-run 预览完成'));
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : 'Dry-run 预览失败');
+        ElMessage.error(error instanceof Error ? error.message : t('codegen.dry_run_failed', 'Dry-run 预览失败'));
     }
     finally {
         previewLoading.value = false;
@@ -657,21 +671,21 @@ async function handleGenerate() {
         if (activeMode.value === 'db') {
             dbReport.value = await generateCodegenDatabase(buildDatabaseRequest());
             lastRunSuccess.value = true;
-            operationStatus.value = '数据库代码已直接生成到服务端工程';
-            ElMessage.success('数据库生成已完成');
+            operationStatus.value = t('codegen.db_generated_status', '数据库代码已直接生成到服务端工程');
+            ElMessage.success(t('codegen.db_generate_complete', '数据库生成已完成'));
             return;
         }
         if (!dslText.value.trim()) {
-            ElMessage.warning('请先填写 DSL 内容');
+            ElMessage.warning(t('codegen.fill_dsl', '请先填写 DSL 内容'));
             return;
         }
         dslReport.value = await generateCodegenDsl({ dsl: dslText.value, force: force.value });
         lastRunSuccess.value = true;
-        operationStatus.value = '代码已直接生成到服务端工程';
-        ElMessage.success('生成已完成');
+        operationStatus.value = t('codegen.generated_status', '代码已直接生成到服务端工程');
+        ElMessage.success(t('codegen.generate_complete', '生成已完成'));
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '生成失败');
+        ElMessage.error(error instanceof Error ? error.message : t('codegen.generate_failed', '生成失败'));
     }
     finally {
         generateLoading.value = false;
@@ -679,7 +693,7 @@ async function handleGenerate() {
 }
 async function handleGenerateAndInstall() {
     if (activeMode.value !== 'db') {
-        ElMessage.warning('请先切换到 DB 模式');
+        ElMessage.warning(t('codegen.switch_db_mode', '请先切换到 DB 模式'));
         return;
     }
     const validationError = validateDatabaseInputs();
@@ -693,31 +707,36 @@ async function handleGenerateAndInstall() {
     try {
         dbReport.value = await generateCodegenDatabase(buildDatabaseRequest());
         lastRunSuccess.value = true;
-        operationStatus.value = '数据库代码已生成，等待确认安装到系统';
-        ElMessage.success('数据库生成已完成');
+        operationStatus.value = t('codegen.db_generated_waiting_install', '数据库代码已生成，等待确认安装到系统');
+        ElMessage.success(t('codegen.db_generate_complete', '数据库生成已完成'));
         if (!dbGeneratedModuleName.value) {
-            ElMessage.warning('无法识别生成模块，请先重新生成');
+            ElMessage.warning(t('codegen.db_cannot_identify_module', '无法识别生成模块，请先重新生成'));
             return;
         }
-        await ElMessageBox.confirm(`即将把模块 ${dbGeneratedModuleName.value} 的 manifest 安装到系统菜单中，是否继续？`, '确认安装到系统', {
-            confirmButtonText: '继续安装',
-            cancelButtonText: '取消',
+        await ElMessageBox.confirm(t('codegen.db_install_prompt', '即将把模块 {module} 的 manifest 安装到系统菜单中，是否继续？', {
+            module: dbGeneratedModuleName.value,
+        }), t('codegen.install_confirm_title', '确认安装到系统'), {
+            confirmButtonText: t('codegen.install_confirm_continue', '继续安装'),
+            cancelButtonText: t('common.cancel', '取消'),
             type: 'warning',
             distinguishCancelAndClose: true,
         });
         installLoading.value = true;
         const result = await installCodegenManifest({ module: dbGeneratedModuleName.value });
         lastRunSuccess.value = true;
-        operationStatus.value = `模块 ${result.module || dbGeneratedModuleName.value} 已安装到系统，共 ${result.menu_total} 个菜单`;
-        ElMessage.success('安装到系统完成');
+        operationStatus.value = t('codegen.install_result_summary', '模块 {module} 已安装到系统，共 {total} 个菜单', {
+            module: result.module || dbGeneratedModuleName.value,
+            total: result.menu_total,
+        });
+        ElMessage.success(t('codegen.db_install_complete', '安装到系统完成'));
         await loadDbMountMenuOptions();
     }
     catch (error) {
         if (error === 'cancel' || error === 'close') {
-            ElMessage.info('已取消安装');
+            ElMessage.info(t('codegen.install_cancelled', '已取消安装'));
             return;
         }
-        ElMessage.error(error instanceof Error ? error.message : '生成并安装失败');
+        ElMessage.error(error instanceof Error ? error.message : t('codegen.generate_install_failed', '生成并安装失败'));
     }
     finally {
         installLoading.value = false;
@@ -741,13 +760,13 @@ async function handleDeletePreview() {
         deleteResult.value = null;
         lastRunSuccess.value = true;
         operationStatus.value = deletePlanStatusMessage.value;
-        ElMessage.success('删除预览完成');
+        ElMessage.success(t('codegen.delete_preview_complete', '删除预览完成'));
     }
     catch (error) {
         deletePreviewReport.value = null;
         deleteRequestCache.value = null;
         deleteResult.value = null;
-        ElMessage.error(error instanceof Error ? error.message : '删除预览失败');
+        ElMessage.error(error instanceof Error ? error.message : t('codegen.delete_preview_failed', '删除预览失败'));
     }
     finally {
         previewLoading.value = false;
@@ -763,7 +782,7 @@ async function handleGenerateDownload() {
         }
     }
     else if (!dslText.value.trim()) {
-        ElMessage.warning('请先填写 DSL 内容');
+        ElMessage.warning(t('codegen.fill_dsl', '请先填写 DSL 内容'));
         return;
     }
     downloadLoading.value = true;
@@ -793,10 +812,10 @@ async function handleGenerateDownload() {
         await downloadCodegenArtifact(artifact.download_url, artifact.filename);
         lastDownloadAt.value = new Date().toISOString();
         lastDownloadDuration.value = downloadStartAt.value ? Date.now() - downloadStartAt.value : 0;
-        ElMessage.success(`下载已开始：${artifact.filename}`);
+        ElMessage.success(t('codegen.download_ready_prefix', '下载已开始：') + artifact.filename);
     }
     catch (error) {
-        handleArtifactError(error, isDbMode ? '生成数据库下载包失败' : '生成下载包失败');
+        handleArtifactError(error, isDbMode ? t('codegen.generate_database_download_failed', '生成数据库下载包失败') : t('codegen.generate_download_failed', '生成下载包失败'));
     }
     finally {
         downloadLoading.value = false;
@@ -805,12 +824,12 @@ async function handleGenerateDownload() {
 }
 async function handleArtifactDownload() {
     if (!artifactInfo.value) {
-        ElMessage.warning('暂无可下载产物');
+        ElMessage.warning(t('codegen.no_artifact', '暂无可下载产物'));
         return;
     }
     if (isArtifactExpired.value) {
         artifactForceExpired.value = true;
-        ElMessage.warning('下载包已过期，请重新执行“生成并下载”');
+        ElMessage.warning(t('codegen.artifact_expired_short', '下载包已过期，请重新执行“生成并下载”'));
         return;
     }
     downloadLoading.value = true;
@@ -822,10 +841,10 @@ async function handleArtifactDownload() {
         lastArtifactError.value = '';
         lastArtifactErrorAt.value = '';
         lastArtifactErrorType.value = 'unknown';
-        ElMessage.success(`下载已开始：${artifactInfo.value.filename}`);
+        ElMessage.success(t('codegen.download_ready_prefix', '下载已开始：') + artifactInfo.value.filename);
     }
     catch (error) {
-        handleArtifactError(error, '下载失败');
+        handleArtifactError(error, t('codegen.download_failed', '下载失败'));
     }
     finally {
         downloadLoading.value = false;
@@ -834,22 +853,22 @@ async function handleArtifactDownload() {
 }
 async function handleCopyDownloadUrl() {
     if (!artifactInfo.value || !canCopyArtifactUrl.value) {
-        ElMessage.warning('暂无可复制地址');
+        ElMessage.warning(t('codegen.no_copy_url', '暂无可复制地址'));
         return;
     }
     const value = artifactDownloadUrlText.value;
     if (!value) {
-        ElMessage.warning('下载地址为空');
+        ElMessage.warning(t('codegen.empty_download_url', '下载地址为空'));
         return;
     }
     try {
         await copyText(value);
         triggerCopyFeedback();
-        ElMessage.success('下载地址已复制');
+        ElMessage.success(t('codegen.copied', '下载地址已复制'));
     }
     catch (error) {
         resetCopyFeedback();
-        ElMessage.error(error instanceof Error ? error.message : '复制下载地址失败');
+        ElMessage.error(error instanceof Error ? error.message : t('codegen.copy_failed', '复制下载地址失败'));
     }
 }
 function handleArtifactError(error, fallbackMessage) {
@@ -858,28 +877,28 @@ function handleArtifactError(error, fallbackMessage) {
             case 401:
                 lastRunSuccess.value = false;
                 lastArtifactErrorType.value = 'auth';
-                rememberArtifactError('登录状态已失效，请重新登录后再下载代码包');
-                ElMessage.error('登录状态已失效，请重新登录后再下载代码包');
+                rememberArtifactError(t('codegen.download_auth_error', '登录状态已失效，请重新登录后再下载代码包'));
+                ElMessage.error(t('codegen.download_auth_error', '登录状态已失效，请重新登录后再下载代码包'));
                 return;
             case 404:
                 lastRunSuccess.value = false;
                 lastArtifactErrorType.value = 'notfound';
-                rememberArtifactError('下载包不存在，可能已被清理，请重新执行“生成并下载”');
-                ElMessage.error('下载包不存在，可能已被清理，请重新执行“生成并下载”');
+                rememberArtifactError(t('codegen.download_notfound_error', '下载包不存在，可能已被清理，请重新执行“生成并下载”'));
+                ElMessage.error(t('codegen.download_notfound_error', '下载包不存在，可能已被清理，请重新执行“生成并下载”'));
                 return;
             case 410:
                 artifactForceExpired.value = true;
-                operationStatus.value = '下载包已过期，请重新执行“生成并下载”。';
+                operationStatus.value = t('codegen.artifact_expired_short', '下载包已过期，请重新执行“生成并下载”。');
                 lastRunSuccess.value = false;
                 lastArtifactErrorType.value = 'expired';
-                rememberArtifactError('下载包已过期，请重新执行“生成并下载”');
-                ElMessage.warning('下载包已过期，请重新执行“生成并下载”');
+                rememberArtifactError(t('codegen.artifact_expired_short', '下载包已过期，请重新执行“生成并下载”'));
+                ElMessage.warning(t('codegen.artifact_expired_short', '下载包已过期，请重新执行“生成并下载”'));
                 return;
             case 500:
                 lastRunSuccess.value = false;
                 lastArtifactErrorType.value = 'server';
-                rememberArtifactError('下载服务暂时不可用，请稍后重试');
-                ElMessage.error('下载服务暂时不可用，请稍后重试');
+                rememberArtifactError(t('codegen.download_server_error', '下载服务暂时不可用，请稍后重试'));
+                ElMessage.error(t('codegen.download_server_error', '下载服务暂时不可用，请稍后重试'));
                 return;
             default:
                 break;
@@ -914,7 +933,7 @@ async function loadDbMountMenuOptions() {
 function flattenMenuMountOptions(items, depth = 0) {
     const options = [];
     for (const item of items) {
-        const name = item.name?.trim() || item.path || '未命名菜单';
+        const name = item.name?.trim() || item.path || t('codegen.unnamed_menu', '未命名菜单');
         const labelPrefix = depth > 0 ? `${'—'.repeat(depth)} ` : '';
         if ((item.type || '').toLowerCase() === 'directory') {
             options.push({
@@ -930,16 +949,16 @@ function flattenMenuMountOptions(items, depth = 0) {
 }
 function validateDatabaseInputs() {
     if (!dbDriver.value.trim()) {
-        return '请先选择数据库驱动';
+        return t('codegen.db_validate_driver', '请先选择数据库驱动');
     }
     if (!dbDatabase.value.trim()) {
-        return '请先填写数据库名';
+        return t('codegen.db_validate_name', '请先填写数据库名');
     }
     return '';
 }
 function validateDeleteInputs() {
     if (!deleteModule.value.trim()) {
-        return '请先填写要删除的模块名';
+        return t('codegen.delete_validate_module', '请先填写要删除的模块名');
     }
     return '';
 }
@@ -1264,9 +1283,11 @@ __VLS_11.slots.default;
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "title" },
     });
+    (__VLS_ctx.t('codegen.console_title', 'CodeGen Console'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "subtitle" },
     });
+    (__VLS_ctx.t('codegen.console_subtitle', '在同一页面中切换 DSL、DB 与删除模式，复用统一结果区。'));
     const __VLS_12 = {}.ElSpace;
     /** @type {[typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, ]} */ ;
     // @ts-ignore
@@ -1294,6 +1315,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.loadSample)
         };
         __VLS_19.slots.default;
+        (__VLS_ctx.t('codegen.load_sample', '载入示例'));
         var __VLS_19;
     }
     else if (__VLS_ctx.activeMode === 'db') {
@@ -1313,6 +1335,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.loadDbSample)
         };
         __VLS_27.slots.default;
+        (__VLS_ctx.t('codegen.load_sample', '载入示例'));
         var __VLS_27;
     }
     else {
@@ -1332,6 +1355,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.loadDeleteSample)
         };
         __VLS_35.slots.default;
+        (__VLS_ctx.t('codegen.load_sample', '载入示例'));
         var __VLS_35;
     }
     const __VLS_40 = {}.ElButton;
@@ -1350,6 +1374,7 @@ __VLS_11.slots.default;
         onClick: (__VLS_ctx.clearCurrentInputs)
     };
     __VLS_43.slots.default;
+    (__VLS_ctx.t('codegen.clear', '清空'));
     var __VLS_43;
     if (__VLS_ctx.activeMode === 'dsl') {
         const __VLS_48 = {}.ElButton;
@@ -1368,6 +1393,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.triggerFileSelect)
         };
         __VLS_51.slots.default;
+        (__VLS_ctx.t('codegen.upload_dsl', '上传 DSL'));
         var __VLS_51;
     }
     if (__VLS_ctx.activeMode === 'dsl') {
@@ -1391,6 +1417,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.handlePreview)
         };
         __VLS_59.slots.default;
+        (__VLS_ctx.t('codegen.preview_dry_run', 'Dry-run 预览'));
         var __VLS_59;
     }
     if (__VLS_ctx.activeMode === 'dsl') {
@@ -1414,6 +1441,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.handleGenerate)
         };
         __VLS_67.slots.default;
+        (__VLS_ctx.t('codegen.generate_once', '一键生成'));
         var __VLS_67;
     }
     if (__VLS_ctx.activeMode === 'dsl') {
@@ -1437,6 +1465,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.handleGenerateDownload)
         };
         __VLS_75.slots.default;
+        (__VLS_ctx.t('codegen.generate_download', '生成并下载'));
         var __VLS_75;
     }
     if (__VLS_ctx.activeMode === 'db') {
@@ -1460,6 +1489,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.handlePreview)
         };
         __VLS_83.slots.default;
+        (__VLS_ctx.t('codegen.preview_dry_run', 'Dry-run 预览'));
         var __VLS_83;
     }
     if (__VLS_ctx.activeMode === 'db') {
@@ -1483,6 +1513,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.handleGenerateAndInstall)
         };
         __VLS_91.slots.default;
+        (__VLS_ctx.t('codegen.generate_install', '生成并安装'));
         var __VLS_91;
     }
     if (__VLS_ctx.activeMode === 'db') {
@@ -1506,6 +1537,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.handleGenerateDownload)
         };
         __VLS_99.slots.default;
+        (__VLS_ctx.t('codegen.generate_download', '生成并下载'));
         var __VLS_99;
     }
     if (__VLS_ctx.activeMode === 'delete') {
@@ -1525,6 +1557,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.loadDeleteSample)
         };
         __VLS_107.slots.default;
+        (__VLS_ctx.t('codegen.load_sample', '载入示例'));
         var __VLS_107;
     }
     if (__VLS_ctx.activeMode === 'delete') {
@@ -1548,6 +1581,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.handleDeletePreview)
         };
         __VLS_115.slots.default;
+        (__VLS_ctx.t('codegen.delete_preview', '删除预览'));
         var __VLS_115;
     }
     if (__VLS_ctx.activeMode === 'delete') {
@@ -1573,6 +1607,7 @@ __VLS_11.slots.default;
             onClick: (__VLS_ctx.handleDeleteExecute)
         };
         __VLS_123.slots.default;
+        (__VLS_ctx.t('codegen.confirm_delete', '确认删除'));
         var __VLS_123;
     }
     var __VLS_15;
@@ -1595,11 +1630,11 @@ const __VLS_132 = {}.ElTabPane;
 /** @type {[typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, ]} */ ;
 // @ts-ignore
 const __VLS_133 = __VLS_asFunctionalComponent(__VLS_132, new __VLS_132({
-    label: "DSL",
+    label: (__VLS_ctx.t('codegen.mode.dsl', 'DSL')),
     name: "dsl",
 }));
 const __VLS_134 = __VLS_133({
-    label: "DSL",
+    label: (__VLS_ctx.t('codegen.mode.dsl', 'DSL')),
     name: "dsl",
 }, ...__VLS_functionalComponentArgsRest(__VLS_133));
 __VLS_135.slots.default;
@@ -1619,10 +1654,10 @@ const __VLS_140 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_141 = __VLS_asFunctionalComponent(__VLS_140, new __VLS_140({
-    label: "Force overwrite",
+    label: (__VLS_ctx.t('codegen.force_overwrite', '强制覆盖')),
 }));
 const __VLS_142 = __VLS_141({
-    label: "Force overwrite",
+    label: (__VLS_ctx.t('codegen.force_overwrite', '强制覆盖')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_141));
 __VLS_143.slots.default;
 const __VLS_144 = {}.ElSwitch;
@@ -1631,24 +1666,24 @@ const __VLS_144 = {}.ElSwitch;
 const __VLS_145 = __VLS_asFunctionalComponent(__VLS_144, new __VLS_144({
     modelValue: (__VLS_ctx.force),
     inlinePrompt: true,
-    activeText: "On",
-    inactiveText: "Off",
+    activeText: (__VLS_ctx.t('common.on', 'On')),
+    inactiveText: (__VLS_ctx.t('common.off', 'Off')),
 }));
 const __VLS_146 = __VLS_145({
     modelValue: (__VLS_ctx.force),
     inlinePrompt: true,
-    activeText: "On",
-    inactiveText: "Off",
+    activeText: (__VLS_ctx.t('common.on', 'On')),
+    inactiveText: (__VLS_ctx.t('common.off', 'Off')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_145));
 var __VLS_143;
 const __VLS_148 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_149 = __VLS_asFunctionalComponent(__VLS_148, new __VLS_148({
-    label: "下载包名称",
+    label: (__VLS_ctx.t('codegen.package_name', '下载包名称')),
 }));
 const __VLS_150 = __VLS_149({
-    label: "下载包名称",
+    label: (__VLS_ctx.t('codegen.package_name', '下载包名称')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_149));
 __VLS_151.slots.default;
 const __VLS_152 = {}.ElInput;
@@ -1656,21 +1691,21 @@ const __VLS_152 = {}.ElInput;
 // @ts-ignore
 const __VLS_153 = __VLS_asFunctionalComponent(__VLS_152, new __VLS_152({
     modelValue: (__VLS_ctx.packageName),
-    placeholder: "留空则由系统自动生成 zip 名称",
+    placeholder: (__VLS_ctx.t('codegen.package_name_placeholder', '留空则由系统自动生成 zip 名称')),
 }));
 const __VLS_154 = __VLS_153({
     modelValue: (__VLS_ctx.packageName),
-    placeholder: "留空则由系统自动生成 zip 名称",
+    placeholder: (__VLS_ctx.t('codegen.package_name_placeholder', '留空则由系统自动生成 zip 名称')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_153));
 var __VLS_151;
 const __VLS_156 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_157 = __VLS_asFunctionalComponent(__VLS_156, new __VLS_156({
-    label: "下载包内容",
+    label: (__VLS_ctx.t('codegen.package_content', '下载包内容')),
 }));
 const __VLS_158 = __VLS_157({
-    label: "下载包内容",
+    label: (__VLS_ctx.t('codegen.package_content', '下载包内容')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_157));
 __VLS_159.slots.default;
 const __VLS_160 = {}.ElSpace;
@@ -1734,10 +1769,10 @@ const __VLS_176 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_177 = __VLS_asFunctionalComponent(__VLS_176, new __VLS_176({
-    label: "DSL 内容",
+    label: (__VLS_ctx.t('codegen.dsl_content', 'DSL 内容')),
 }));
 const __VLS_178 = __VLS_177({
-    label: "DSL 内容",
+    label: (__VLS_ctx.t('codegen.dsl_content', 'DSL 内容')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_177));
 __VLS_179.slots.default;
 const __VLS_180 = {}.ElInput;
@@ -1748,14 +1783,14 @@ const __VLS_181 = __VLS_asFunctionalComponent(__VLS_180, new __VLS_180({
     type: "textarea",
     rows: (28),
     resize: "none",
-    placeholder: "在这里粘贴或编辑 DSL YAML",
+    placeholder: (__VLS_ctx.t('codegen.dsl_placeholder', '在这里粘贴或编辑 DSL YAML')),
 }));
 const __VLS_182 = __VLS_181({
     modelValue: (__VLS_ctx.dslText),
     type: "textarea",
     rows: (28),
     resize: "none",
-    placeholder: "在这里粘贴或编辑 DSL YAML",
+    placeholder: (__VLS_ctx.t('codegen.dsl_placeholder', '在这里粘贴或编辑 DSL YAML')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_181));
 var __VLS_179;
 var __VLS_139;
@@ -1772,11 +1807,11 @@ const __VLS_184 = {}.ElTabPane;
 /** @type {[typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, ]} */ ;
 // @ts-ignore
 const __VLS_185 = __VLS_asFunctionalComponent(__VLS_184, new __VLS_184({
-    label: "DB",
+    label: (__VLS_ctx.t('codegen.mode.db', 'DB')),
     name: "db",
 }));
 const __VLS_186 = __VLS_185({
-    label: "DB",
+    label: (__VLS_ctx.t('codegen.mode.db', 'DB')),
     name: "db",
 }, ...__VLS_functionalComponentArgsRest(__VLS_185));
 __VLS_187.slots.default;
@@ -1790,9 +1825,11 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "db-hero-title" },
 });
+(__VLS_ctx.t('codegen.db_guide_title', '数据库输入向导'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "db-hero-subtitle" },
 });
+(__VLS_ctx.t('codegen.db_guide_subtitle', '先选驱动，再填连接串与扫描范围。建议先预览，确认结果后再生成。'));
 const __VLS_188 = {}.ElSpace;
 /** @type {[typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, ]} */ ;
 // @ts-ignore
@@ -1829,20 +1866,20 @@ const __VLS_198 = __VLS_197({
     effect: "light",
 }, ...__VLS_functionalComponentArgsRest(__VLS_197));
 __VLS_199.slots.default;
-(__VLS_ctx.dbParsedTables.length ? `${__VLS_ctx.dbParsedTables.length} 个表` : '全部表');
+(__VLS_ctx.dbParsedTables.length ? `${__VLS_ctx.dbParsedTables.length} 个表` : __VLS_ctx.t('common.all', '全部表'));
 var __VLS_199;
 var __VLS_191;
 const __VLS_200 = {}.ElAlert;
 /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
 // @ts-ignore
 const __VLS_201 = __VLS_asFunctionalComponent(__VLS_200, new __VLS_200({
-    title: "推荐先执行 Dry-run 预览，确认文件计划和冲突后再执行生成。",
+    title: (__VLS_ctx.t('codegen.db_recommended_preview', '推荐先执行 Dry-run 预览，确认文件计划和冲突后再执行生成。')),
     type: "info",
     closable: (false),
     showIcon: true,
 }));
 const __VLS_202 = __VLS_201({
-    title: "推荐先执行 Dry-run 预览，确认文件计划和冲突后再执行生成。",
+    title: (__VLS_ctx.t('codegen.db_recommended_preview', '推荐先执行 Dry-run 预览，确认文件计划和冲突后再执行生成。')),
     type: "info",
     closable: (false),
     showIcon: true,
@@ -1854,9 +1891,11 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "db-section-title" },
 });
+(__VLS_ctx.t('codegen.db_fast_template', '快速模板'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "db-section-hint" },
 });
+(__VLS_ctx.t('codegen.db_fast_template_hint', '一键预填常见数据库的连接格式。'));
 const __VLS_204 = {}.ElSpace;
 /** @type {[typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, ]} */ ;
 // @ts-ignore
@@ -1981,10 +2020,10 @@ const __VLS_244 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_245 = __VLS_asFunctionalComponent(__VLS_244, new __VLS_244({
-    label: "数据库驱动",
+    label: (__VLS_ctx.t('codegen.db_driver', '数据库驱动')),
 }));
 const __VLS_246 = __VLS_245({
-    label: "数据库驱动",
+    label: (__VLS_ctx.t('codegen.db_driver', '数据库驱动')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_245));
 __VLS_247.slots.default;
 const __VLS_248 = {}.ElSelect;
@@ -1992,12 +2031,12 @@ const __VLS_248 = {}.ElSelect;
 // @ts-ignore
 const __VLS_249 = __VLS_asFunctionalComponent(__VLS_248, new __VLS_248({
     modelValue: (__VLS_ctx.dbDriver),
-    placeholder: "请选择数据库驱动",
+    placeholder: (__VLS_ctx.t('codegen.db_driver_placeholder', '请选择数据库驱动')),
     filterable: true,
 }));
 const __VLS_250 = __VLS_249({
     modelValue: (__VLS_ctx.dbDriver),
-    placeholder: "请选择数据库驱动",
+    placeholder: (__VLS_ctx.t('codegen.db_driver_placeholder', '请选择数据库驱动')),
     filterable: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_249));
 __VLS_251.slots.default;
@@ -2053,10 +2092,10 @@ const __VLS_268 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_269 = __VLS_asFunctionalComponent(__VLS_268, new __VLS_268({
-    label: "数据库名",
+    label: (__VLS_ctx.t('codegen.db_name', '数据库名')),
 }));
 const __VLS_270 = __VLS_269({
-    label: "数据库名",
+    label: (__VLS_ctx.t('codegen.db_name', '数据库名')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_269));
 __VLS_271.slots.default;
 const __VLS_272 = {}.ElInput;
@@ -2064,11 +2103,11 @@ const __VLS_272 = {}.ElInput;
 // @ts-ignore
 const __VLS_273 = __VLS_asFunctionalComponent(__VLS_272, new __VLS_272({
     modelValue: (__VLS_ctx.dbDatabase),
-    placeholder: "请输入数据库名称",
+    placeholder: (__VLS_ctx.t('codegen.db_name_placeholder', '请输入数据库名称')),
 }));
 const __VLS_274 = __VLS_273({
     modelValue: (__VLS_ctx.dbDatabase),
-    placeholder: "请输入数据库名称",
+    placeholder: (__VLS_ctx.t('codegen.db_name_placeholder', '请输入数据库名称')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_273));
 var __VLS_271;
 var __VLS_267;
@@ -2088,10 +2127,10 @@ const __VLS_280 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_281 = __VLS_asFunctionalComponent(__VLS_280, new __VLS_280({
-    label: "Schema",
+    label: (__VLS_ctx.t('codegen.db_schema', 'Schema')),
 }));
 const __VLS_282 = __VLS_281({
-    label: "Schema",
+    label: (__VLS_ctx.t('codegen.db_schema', 'Schema')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_281));
 __VLS_283.slots.default;
 const __VLS_284 = {}.ElInput;
@@ -2099,11 +2138,11 @@ const __VLS_284 = {}.ElInput;
 // @ts-ignore
 const __VLS_285 = __VLS_asFunctionalComponent(__VLS_284, new __VLS_284({
     modelValue: (__VLS_ctx.dbSchema),
-    placeholder: "可选，PostgreSQL 等场景使用",
+    placeholder: (__VLS_ctx.t('codegen.db_schema_placeholder', '可选，PostgreSQL 等场景使用')),
 }));
 const __VLS_286 = __VLS_285({
     modelValue: (__VLS_ctx.dbSchema),
-    placeholder: "可选，PostgreSQL 等场景使用",
+    placeholder: (__VLS_ctx.t('codegen.db_schema_placeholder', '可选，PostgreSQL 等场景使用')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_285));
 var __VLS_283;
 var __VLS_279;
@@ -2123,10 +2162,10 @@ const __VLS_292 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_293 = __VLS_asFunctionalComponent(__VLS_292, new __VLS_292({
-    label: "挂载根菜单",
+    label: (__VLS_ctx.t('codegen.db_mount_root', '挂载根菜单')),
 }));
 const __VLS_294 = __VLS_293({
-    label: "挂载根菜单",
+    label: (__VLS_ctx.t('codegen.db_mount_root', '挂载根菜单')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_293));
 __VLS_295.slots.default;
 const __VLS_296 = {}.ElSelect;
@@ -2136,24 +2175,24 @@ const __VLS_297 = __VLS_asFunctionalComponent(__VLS_296, new __VLS_296({
     modelValue: (__VLS_ctx.dbMountParentPath),
     clearable: true,
     filterable: true,
-    placeholder: "留空为顶层根菜单",
+    placeholder: (__VLS_ctx.t('codegen.db_mount_root_placeholder', '留空为顶层根菜单')),
 }));
 const __VLS_298 = __VLS_297({
     modelValue: (__VLS_ctx.dbMountParentPath),
     clearable: true,
     filterable: true,
-    placeholder: "留空为顶层根菜单",
+    placeholder: (__VLS_ctx.t('codegen.db_mount_root_placeholder', '留空为顶层根菜单')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_297));
 __VLS_299.slots.default;
 const __VLS_300 = {}.ElOption;
 /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
 // @ts-ignore
 const __VLS_301 = __VLS_asFunctionalComponent(__VLS_300, new __VLS_300({
-    label: "顶层根菜单",
+    label: (__VLS_ctx.t('codegen.db_mount_root_top', '顶层根菜单')),
     value: "",
 }));
 const __VLS_302 = __VLS_301({
-    label: "顶层根菜单",
+    label: (__VLS_ctx.t('codegen.db_mount_root_top', '顶层根菜单')),
     value: "",
 }, ...__VLS_functionalComponentArgsRest(__VLS_301));
 for (const [option] of __VLS_getVForSourceType((__VLS_ctx.dbMountMenuOptions))) {
@@ -2179,11 +2218,11 @@ const __VLS_308 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_309 = __VLS_asFunctionalComponent(__VLS_308, new __VLS_308({
-    label: "表名范围",
+    label: (__VLS_ctx.t('codegen.db_table_range', '表名范围')),
     ...{ class: "db-form-item db-form-item--wide" },
 }));
 const __VLS_310 = __VLS_309({
-    label: "表名范围",
+    label: (__VLS_ctx.t('codegen.db_table_range', '表名范围')),
     ...{ class: "db-form-item db-form-item--wide" },
 }, ...__VLS_functionalComponentArgsRest(__VLS_309));
 __VLS_311.slots.default;
@@ -2195,14 +2234,14 @@ const __VLS_313 = __VLS_asFunctionalComponent(__VLS_312, new __VLS_312({
     type: "textarea",
     rows: (6),
     resize: "none",
-    placeholder: "支持逗号、换行分隔，例如：books, orders",
+    placeholder: (__VLS_ctx.t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：books, orders')),
 }));
 const __VLS_314 = __VLS_313({
     modelValue: (__VLS_ctx.dbTablesText),
     type: "textarea",
     rows: (6),
     resize: "none",
-    placeholder: "支持逗号、换行分隔，例如：books, orders",
+    placeholder: (__VLS_ctx.t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：books, orders')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_313));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "db-form-row" },
@@ -2210,6 +2249,7 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
     ...{ class: "db-field-help" },
 });
+(__VLS_ctx.t('codegen.db_table_range_help', '留空则表示扫描全部表；建议优先预填少量表进行预览。'));
 const __VLS_316 = {}.ElSpace;
 /** @type {[typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, ]} */ ;
 // @ts-ignore
@@ -2240,6 +2280,7 @@ const __VLS_327 = {
     onClick: (__VLS_ctx.loadDbSample)
 };
 __VLS_323.slots.default;
+(__VLS_ctx.t('codegen.load_sample', '载入示例'));
 var __VLS_323;
 const __VLS_328 = {}.ElButton;
 /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -2261,6 +2302,7 @@ const __VLS_335 = {
     onClick: (__VLS_ctx.clearDbTables)
 };
 __VLS_331.slots.default;
+(__VLS_ctx.t('codegen.clear', '清空'));
 var __VLS_331;
 var __VLS_319;
 if (__VLS_ctx.dbParsedTables.length) {
@@ -2299,9 +2341,11 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "db-section-title" },
 });
+(__VLS_ctx.t('codegen.generate_options', '生成选项'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "db-section-hint" },
 });
+(__VLS_ctx.t('codegen.generate_options_hint', '控制是否覆盖现有文件、是否输出前端和权限策略。'));
 const __VLS_340 = {}.ElTag;
 /** @type {[typeof __VLS_components.ElTag, typeof __VLS_components.elTag, typeof __VLS_components.ElTag, typeof __VLS_components.elTag, ]} */ ;
 // @ts-ignore
@@ -2380,11 +2424,11 @@ const __VLS_360 = {}.ElTabPane;
 /** @type {[typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, typeof __VLS_components.ElTabPane, typeof __VLS_components.elTabPane, ]} */ ;
 // @ts-ignore
 const __VLS_361 = __VLS_asFunctionalComponent(__VLS_360, new __VLS_360({
-    label: "删除",
+    label: (__VLS_ctx.t('codegen.mode.delete', 'Delete')),
     name: "delete",
 }));
 const __VLS_362 = __VLS_361({
-    label: "删除",
+    label: (__VLS_ctx.t('codegen.mode.delete', 'Delete')),
     name: "delete",
 }, ...__VLS_functionalComponentArgsRest(__VLS_361));
 __VLS_363.slots.default;
@@ -2395,13 +2439,13 @@ const __VLS_364 = {}.ElAlert;
 /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
 // @ts-ignore
 const __VLS_365 = __VLS_asFunctionalComponent(__VLS_364, new __VLS_364({
-    title: "请先执行删除预览，确认计划、风险与冲突后，再点击确认删除。",
+    title: (__VLS_ctx.t('codegen.delete_preview_required', '请先执行删除预览，确认计划、风险与冲突后，再点击确认删除。')),
     type: "warning",
     closable: (false),
     showIcon: true,
 }));
 const __VLS_366 = __VLS_365({
-    title: "请先执行删除预览，确认计划、风险与冲突后，再点击确认删除。",
+    title: (__VLS_ctx.t('codegen.delete_preview_required', '请先执行删除预览，确认计划、风险与冲突后，再点击确认删除。')),
     type: "warning",
     closable: (false),
     showIcon: true,
@@ -2444,10 +2488,10 @@ const __VLS_380 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_381 = __VLS_asFunctionalComponent(__VLS_380, new __VLS_380({
-    label: "模块名",
+    label: (__VLS_ctx.t('codegen.delete_module', '模块名')),
 }));
 const __VLS_382 = __VLS_381({
-    label: "模块名",
+    label: (__VLS_ctx.t('codegen.delete_module', '模块名')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_381));
 __VLS_383.slots.default;
 const __VLS_384 = {}.ElInput;
@@ -2479,10 +2523,10 @@ const __VLS_392 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_393 = __VLS_asFunctionalComponent(__VLS_392, new __VLS_392({
-    label: "模块类型",
+    label: (__VLS_ctx.t('codegen.delete_kind', '模块类型')),
 }));
 const __VLS_394 = __VLS_393({
-    label: "模块类型",
+    label: (__VLS_ctx.t('codegen.delete_kind', '模块类型')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_393));
 __VLS_395.slots.default;
 const __VLS_396 = {}.ElInput;
@@ -2514,10 +2558,10 @@ const __VLS_404 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_405 = __VLS_asFunctionalComponent(__VLS_404, new __VLS_404({
-    label: "Policy Store",
+    label: (__VLS_ctx.t('codegen.delete_policy_store', 'Policy Store')),
 }));
 const __VLS_406 = __VLS_405({
-    label: "Policy Store",
+    label: (__VLS_ctx.t('codegen.delete_policy_store', 'Policy Store')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_405));
 __VLS_407.slots.default;
 const __VLS_408 = {}.ElSelect;
@@ -2527,24 +2571,24 @@ const __VLS_409 = __VLS_asFunctionalComponent(__VLS_408, new __VLS_408({
     modelValue: (__VLS_ctx.deletePolicyStore),
     clearable: true,
     filterable: true,
-    placeholder: "自动识别或手动指定",
+    placeholder: (__VLS_ctx.t('codegen.delete_policy_store_placeholder', '自动识别或手动指定')),
 }));
 const __VLS_410 = __VLS_409({
     modelValue: (__VLS_ctx.deletePolicyStore),
     clearable: true,
     filterable: true,
-    placeholder: "自动识别或手动指定",
+    placeholder: (__VLS_ctx.t('codegen.delete_policy_store_placeholder', '自动识别或手动指定')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_409));
 __VLS_411.slots.default;
 const __VLS_412 = {}.ElOption;
 /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
 // @ts-ignore
 const __VLS_413 = __VLS_asFunctionalComponent(__VLS_412, new __VLS_412({
-    label: "自动识别",
+    label: (__VLS_ctx.t('codegen.delete_policy_store_auto_detect', '自动识别')),
     value: "",
 }));
 const __VLS_414 = __VLS_413({
-    label: "自动识别",
+    label: (__VLS_ctx.t('codegen.delete_policy_store_auto_detect', '自动识别')),
     value: "",
 }, ...__VLS_functionalComponentArgsRest(__VLS_413));
 const __VLS_416 = {}.ElOption;
@@ -2577,10 +2621,10 @@ const __VLS_424 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_425 = __VLS_asFunctionalComponent(__VLS_424, new __VLS_424({
-    label: "删除范围",
+    label: (__VLS_ctx.t('codegen.delete_scope', '删除范围')),
 }));
 const __VLS_426 = __VLS_425({
-    label: "删除范围",
+    label: (__VLS_ctx.t('codegen.delete_scope', '删除范围')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_425));
 __VLS_427.slots.default;
 const __VLS_428 = {}.ElSpace;
@@ -2674,10 +2718,10 @@ const __VLS_452 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_453 = __VLS_asFunctionalComponent(__VLS_452, new __VLS_452({
-    label: "执行说明",
+    label: (__VLS_ctx.t('codegen.execute_notes', '执行说明')),
 }));
 const __VLS_454 = __VLS_453({
-    label: "执行说明",
+    label: (__VLS_ctx.t('codegen.execute_notes', '执行说明')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_453));
 __VLS_455.slots.default;
 const __VLS_456 = {}.ElInput;
@@ -2688,14 +2732,14 @@ const __VLS_457 = __VLS_asFunctionalComponent(__VLS_456, new __VLS_456({
     type: "textarea",
     rows: (5),
     resize: "none",
-    placeholder: "可选：补充删除说明，仅用于界面记录，不会直接传给后端核心",
+    placeholder: (__VLS_ctx.t('codegen.execute_notes_placeholder', '可选：补充删除说明，仅用于界面记录，不会直接传给后端核心')),
 }));
 const __VLS_458 = __VLS_457({
     modelValue: (__VLS_ctx.deleteNotes),
     type: "textarea",
     rows: (5),
     resize: "none",
-    placeholder: "可选：补充删除说明，仅用于界面记录，不会直接传给后端核心",
+    placeholder: (__VLS_ctx.t('codegen.execute_notes_placeholder', '可选：补充删除说明，仅用于界面记录，不会直接传给后端核心')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_457));
 var __VLS_455;
 var __VLS_371;
@@ -2754,9 +2798,11 @@ __VLS_471.slots.default;
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "title" },
     });
+    (__VLS_ctx.t('codegen.result_title', '执行结果'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "subtitle" },
     });
+    (__VLS_ctx.t('codegen.result_subtitle', '预览和生成都会回传资源级动作。'));
 }
 if (__VLS_ctx.statusMessage) {
     const __VLS_472 = {}.ElAlert;
@@ -2779,6 +2825,7 @@ else {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "result-empty" },
     });
+    (__VLS_ctx.t('codegen.no_result', '尚未执行预览或生成。'));
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "preview-table-wrap" },
@@ -2804,12 +2851,12 @@ const __VLS_480 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_481 = __VLS_asFunctionalComponent(__VLS_480, new __VLS_480({
     prop: "index",
-    label: "#",
+    label: (__VLS_ctx.t('codegen.preview.index', '#')),
     width: "60",
 }));
 const __VLS_482 = __VLS_481({
     prop: "index",
-    label: "#",
+    label: (__VLS_ctx.t('codegen.preview.index', '#')),
     width: "60",
 }, ...__VLS_functionalComponentArgsRest(__VLS_481));
 const __VLS_484 = {}.ElTableColumn;
@@ -2817,13 +2864,13 @@ const __VLS_484 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_485 = __VLS_asFunctionalComponent(__VLS_484, new __VLS_484({
     prop: "kind",
-    label: "Kind",
+    label: (__VLS_ctx.t('codegen.preview.kind', 'Kind')),
     minWidth: "130",
     showOverflowTooltip: true,
 }));
 const __VLS_486 = __VLS_485({
     prop: "kind",
-    label: "Kind",
+    label: (__VLS_ctx.t('codegen.preview.kind', 'Kind')),
     minWidth: "130",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_485));
@@ -2832,13 +2879,13 @@ const __VLS_488 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_489 = __VLS_asFunctionalComponent(__VLS_488, new __VLS_488({
     prop: "name",
-    label: "Name",
+    label: (__VLS_ctx.t('codegen.preview.name', 'Name')),
     minWidth: "160",
     showOverflowTooltip: true,
 }));
 const __VLS_490 = __VLS_489({
     prop: "name",
-    label: "Name",
+    label: (__VLS_ctx.t('codegen.preview.name', 'Name')),
     minWidth: "160",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_489));
@@ -2846,11 +2893,11 @@ const __VLS_492 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_493 = __VLS_asFunctionalComponent(__VLS_492, new __VLS_492({
-    label: "Force",
+    label: (__VLS_ctx.t('codegen.preview.force', 'Force')),
     width: "88",
 }));
 const __VLS_494 = __VLS_493({
-    label: "Force",
+    label: (__VLS_ctx.t('codegen.preview.force', 'Force')),
     width: "88",
 }, ...__VLS_functionalComponentArgsRest(__VLS_493));
 __VLS_495.slots.default;
@@ -2869,7 +2916,7 @@ __VLS_495.slots.default;
         effect: "light",
     }, ...__VLS_functionalComponentArgsRest(__VLS_497));
     __VLS_499.slots.default;
-    (scope.row.force ? 'Yes' : 'No');
+    (scope.row.force ? __VLS_ctx.t('common.yes', 'Yes') : __VLS_ctx.t('common.no', 'No'));
     var __VLS_499;
 }
 var __VLS_495;
@@ -2877,11 +2924,11 @@ const __VLS_500 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_501 = __VLS_asFunctionalComponent(__VLS_500, new __VLS_500({
-    label: "Actions",
+    label: (__VLS_ctx.t('codegen.preview.actions', 'Actions')),
     minWidth: "280",
 }));
 const __VLS_502 = __VLS_501({
-    label: "Actions",
+    label: (__VLS_ctx.t('codegen.preview.actions', 'Actions')),
     minWidth: "280",
 }, ...__VLS_functionalComponentArgsRest(__VLS_501));
 __VLS_503.slots.default;
@@ -2937,19 +2984,21 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "title" },
         });
+        (__VLS_ctx.t('codegen.file_plan_title', '文件计划'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "subtitle" },
         });
+        (__VLS_ctx.t('codegen.file_plan_subtitle', '显示数据库预览阶段推导出的文件清单。'));
     }
     if (!__VLS_ctx.filePlans.length) {
         const __VLS_512 = {}.ElEmpty;
         /** @type {[typeof __VLS_components.ElEmpty, typeof __VLS_components.elEmpty, ]} */ ;
         // @ts-ignore
         const __VLS_513 = __VLS_asFunctionalComponent(__VLS_512, new __VLS_512({
-            description: "暂无文件计划",
+            description: (__VLS_ctx.t('codegen.no_file_plan', '暂无文件计划')),
         }));
         const __VLS_514 = __VLS_513({
-            description: "暂无文件计划",
+            description: (__VLS_ctx.t('codegen.no_file_plan', '暂无文件计划')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_513));
     }
     else {
@@ -2974,13 +3023,13 @@ if (__VLS_ctx.activeMode === 'db') {
         // @ts-ignore
         const __VLS_521 = __VLS_asFunctionalComponent(__VLS_520, new __VLS_520({
             prop: "path",
-            label: "Path",
+            label: (__VLS_ctx.t('codegen.file_plan.path', 'Path')),
             minWidth: "220",
             showOverflowTooltip: true,
         }));
         const __VLS_522 = __VLS_521({
             prop: "path",
-            label: "Path",
+            label: (__VLS_ctx.t('codegen.file_plan.path', 'Path')),
             minWidth: "220",
             showOverflowTooltip: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_521));
@@ -2989,12 +3038,12 @@ if (__VLS_ctx.activeMode === 'db') {
         // @ts-ignore
         const __VLS_525 = __VLS_asFunctionalComponent(__VLS_524, new __VLS_524({
             prop: "action",
-            label: "Action",
+            label: (__VLS_ctx.t('codegen.file_plan.action', 'Action')),
             width: "120",
         }));
         const __VLS_526 = __VLS_525({
             prop: "action",
-            label: "Action",
+            label: (__VLS_ctx.t('codegen.file_plan.action', 'Action')),
             width: "120",
         }, ...__VLS_functionalComponentArgsRest(__VLS_525));
         const __VLS_528 = {}.ElTableColumn;
@@ -3002,13 +3051,13 @@ if (__VLS_ctx.activeMode === 'db') {
         // @ts-ignore
         const __VLS_529 = __VLS_asFunctionalComponent(__VLS_528, new __VLS_528({
             prop: "kind",
-            label: "Kind",
+            label: (__VLS_ctx.t('codegen.file_plan.kind', 'Kind')),
             width: "140",
             showOverflowTooltip: true,
         }));
         const __VLS_530 = __VLS_529({
             prop: "kind",
-            label: "Kind",
+            label: (__VLS_ctx.t('codegen.file_plan.kind', 'Kind')),
             width: "140",
             showOverflowTooltip: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_529));
@@ -3016,11 +3065,11 @@ if (__VLS_ctx.activeMode === 'db') {
         /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
         // @ts-ignore
         const __VLS_533 = __VLS_asFunctionalComponent(__VLS_532, new __VLS_532({
-            label: "Exists",
+            label: (__VLS_ctx.t('codegen.file_plan.exists', 'Exists')),
             width: "88",
         }));
         const __VLS_534 = __VLS_533({
-            label: "Exists",
+            label: (__VLS_ctx.t('codegen.file_plan.exists', 'Exists')),
             width: "88",
         }, ...__VLS_functionalComponentArgsRest(__VLS_533));
         __VLS_535.slots.default;
@@ -3039,7 +3088,7 @@ if (__VLS_ctx.activeMode === 'db') {
                 effect: "light",
             }, ...__VLS_functionalComponentArgsRest(__VLS_537));
             __VLS_539.slots.default;
-            (scope.row.exists ? 'Yes' : 'No');
+            (scope.row.exists ? __VLS_ctx.t('common.yes', 'Yes') : __VLS_ctx.t('common.no', 'No'));
             var __VLS_539;
         }
         var __VLS_535;
@@ -3047,11 +3096,11 @@ if (__VLS_ctx.activeMode === 'db') {
         /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
         // @ts-ignore
         const __VLS_541 = __VLS_asFunctionalComponent(__VLS_540, new __VLS_540({
-            label: "Conflict",
+            label: (__VLS_ctx.t('codegen.file_plan.conflict', 'Conflict')),
             width: "96",
         }));
         const __VLS_542 = __VLS_541({
-            label: "Conflict",
+            label: (__VLS_ctx.t('codegen.file_plan.conflict', 'Conflict')),
             width: "96",
         }, ...__VLS_functionalComponentArgsRest(__VLS_541));
         __VLS_543.slots.default;
@@ -3070,7 +3119,7 @@ if (__VLS_ctx.activeMode === 'db') {
                 effect: "light",
             }, ...__VLS_functionalComponentArgsRest(__VLS_545));
             __VLS_547.slots.default;
-            (scope.row.conflict ? 'Yes' : 'No');
+            (scope.row.conflict ? __VLS_ctx.t('common.yes', 'Yes') : __VLS_ctx.t('common.no', 'No'));
             var __VLS_547;
         }
         var __VLS_543;
@@ -3100,19 +3149,21 @@ if (__VLS_ctx.activeMode === 'delete') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "title" },
         });
+        (__VLS_ctx.t('codegen.risk_title', '风险与冲突'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "subtitle" },
         });
+        (__VLS_ctx.t('codegen.risk_subtitle', '展示删除预览中的风险提示和阻断冲突。'));
     }
     if (!__VLS_ctx.deleteConflicts.length) {
         const __VLS_552 = {}.ElEmpty;
         /** @type {[typeof __VLS_components.ElEmpty, typeof __VLS_components.elEmpty, ]} */ ;
         // @ts-ignore
         const __VLS_553 = __VLS_asFunctionalComponent(__VLS_552, new __VLS_552({
-            description: "暂无冲突",
+            description: (__VLS_ctx.t('codegen.no_risk', 'No conflicts')),
         }));
         const __VLS_554 = __VLS_553({
-            description: "暂无冲突",
+            description: (__VLS_ctx.t('codegen.no_risk', 'No conflicts')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_553));
     }
     else {
@@ -3137,13 +3188,13 @@ if (__VLS_ctx.activeMode === 'delete') {
         // @ts-ignore
         const __VLS_561 = __VLS_asFunctionalComponent(__VLS_560, new __VLS_560({
             prop: "kind",
-            label: "Kind",
+            label: (__VLS_ctx.t('codegen.conflict.kind', 'Kind')),
             minWidth: "140",
             showOverflowTooltip: true,
         }));
         const __VLS_562 = __VLS_561({
             prop: "kind",
-            label: "Kind",
+            label: (__VLS_ctx.t('codegen.conflict.kind', 'Kind')),
             minWidth: "140",
             showOverflowTooltip: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_561));
@@ -3152,12 +3203,12 @@ if (__VLS_ctx.activeMode === 'delete') {
         // @ts-ignore
         const __VLS_565 = __VLS_asFunctionalComponent(__VLS_564, new __VLS_564({
             prop: "severity",
-            label: "Severity",
+            label: (__VLS_ctx.t('codegen.conflict.severity', 'Severity')),
             width: "110",
         }));
         const __VLS_566 = __VLS_565({
             prop: "severity",
-            label: "Severity",
+            label: (__VLS_ctx.t('codegen.conflict.severity', 'Severity')),
             width: "110",
         }, ...__VLS_functionalComponentArgsRest(__VLS_565));
         const __VLS_568 = {}.ElTableColumn;
@@ -3165,13 +3216,13 @@ if (__VLS_ctx.activeMode === 'delete') {
         // @ts-ignore
         const __VLS_569 = __VLS_asFunctionalComponent(__VLS_568, new __VLS_568({
             prop: "path",
-            label: "Path",
+            label: (__VLS_ctx.t('codegen.conflict.path', 'Path')),
             minWidth: "200",
             showOverflowTooltip: true,
         }));
         const __VLS_570 = __VLS_569({
             prop: "path",
-            label: "Path",
+            label: (__VLS_ctx.t('codegen.conflict.path', 'Path')),
             minWidth: "200",
             showOverflowTooltip: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_569));
@@ -3180,13 +3231,13 @@ if (__VLS_ctx.activeMode === 'delete') {
         // @ts-ignore
         const __VLS_573 = __VLS_asFunctionalComponent(__VLS_572, new __VLS_572({
             prop: "message",
-            label: "Message",
+            label: (__VLS_ctx.t('codegen.conflict.message', 'Message')),
             minWidth: "280",
             showOverflowTooltip: true,
         }));
         const __VLS_574 = __VLS_573({
             prop: "message",
-            label: "Message",
+            label: (__VLS_ctx.t('codegen.conflict.message', 'Message')),
             minWidth: "280",
             showOverflowTooltip: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_573));
@@ -3216,19 +3267,21 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "title" },
         });
+        (__VLS_ctx.t('codegen.conflict_title', '冲突'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "subtitle" },
         });
+        (__VLS_ctx.t('codegen.conflict_subtitle', '展示文件覆盖风险与路径冲突信息。'));
     }
     if (!__VLS_ctx.conflicts.length) {
         const __VLS_580 = {}.ElEmpty;
         /** @type {[typeof __VLS_components.ElEmpty, typeof __VLS_components.elEmpty, ]} */ ;
         // @ts-ignore
         const __VLS_581 = __VLS_asFunctionalComponent(__VLS_580, new __VLS_580({
-            description: "暂无冲突",
+            description: (__VLS_ctx.t('codegen.no_conflicts', 'No conflicts')),
         }));
         const __VLS_582 = __VLS_581({
-            description: "暂无冲突",
+            description: (__VLS_ctx.t('codegen.no_conflicts', 'No conflicts')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_581));
     }
     else {
@@ -3253,13 +3306,13 @@ if (__VLS_ctx.activeMode === 'db') {
         // @ts-ignore
         const __VLS_589 = __VLS_asFunctionalComponent(__VLS_588, new __VLS_588({
             prop: "path",
-            label: "Path",
+            label: (__VLS_ctx.t('codegen.conflict.path', 'Path')),
             minWidth: "220",
             showOverflowTooltip: true,
         }));
         const __VLS_590 = __VLS_589({
             prop: "path",
-            label: "Path",
+            label: (__VLS_ctx.t('codegen.conflict.path', 'Path')),
             minWidth: "220",
             showOverflowTooltip: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_589));
@@ -3268,13 +3321,13 @@ if (__VLS_ctx.activeMode === 'db') {
         // @ts-ignore
         const __VLS_593 = __VLS_asFunctionalComponent(__VLS_592, new __VLS_592({
             prop: "resource",
-            label: "Resource",
+            label: (__VLS_ctx.t('codegen.conflict.resource', 'Resource')),
             minWidth: "160",
             showOverflowTooltip: true,
         }));
         const __VLS_594 = __VLS_593({
             prop: "resource",
-            label: "Resource",
+            label: (__VLS_ctx.t('codegen.conflict.resource', 'Resource')),
             minWidth: "160",
             showOverflowTooltip: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_593));
@@ -3283,13 +3336,13 @@ if (__VLS_ctx.activeMode === 'db') {
         // @ts-ignore
         const __VLS_597 = __VLS_asFunctionalComponent(__VLS_596, new __VLS_596({
             prop: "reason",
-            label: "Reason",
+            label: (__VLS_ctx.t('codegen.conflict.reason', 'Reason')),
             minWidth: "260",
             showOverflowTooltip: true,
         }));
         const __VLS_598 = __VLS_597({
             prop: "reason",
-            label: "Reason",
+            label: (__VLS_ctx.t('codegen.conflict.reason', 'Reason')),
             minWidth: "260",
             showOverflowTooltip: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_597));
@@ -3319,19 +3372,21 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "title" },
         });
+        (__VLS_ctx.t('codegen.audit_title', '审计'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "subtitle" },
         });
+        (__VLS_ctx.t('codegen.audit_subtitle', '记录输入、执行步骤与输出统计。'));
     }
     if (!__VLS_ctx.auditRecord) {
         const __VLS_604 = {}.ElEmpty;
         /** @type {[typeof __VLS_components.ElEmpty, typeof __VLS_components.elEmpty, ]} */ ;
         // @ts-ignore
         const __VLS_605 = __VLS_asFunctionalComponent(__VLS_604, new __VLS_604({
-            description: "暂无审计记录",
+            description: (__VLS_ctx.t('codegen.no_audit', '暂无审计记录')),
         }));
         const __VLS_606 = __VLS_605({
-            description: "暂无审计记录",
+            description: (__VLS_ctx.t('codegen.no_audit', '暂无审计记录')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_605));
     }
     else {
@@ -3347,6 +3402,7 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-label" },
         });
+        (__VLS_ctx.t('codegen.record_time', '记录时间'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-value" },
         });
@@ -3361,6 +3417,7 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-label" },
         });
+        (__VLS_ctx.t('codegen.input', '输入'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-value" },
         });
@@ -3369,13 +3426,14 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-meta" },
         });
-        (__VLS_ctx.auditRecord.input.dry_run ? 'yes' : 'no');
+        (__VLS_ctx.auditRecord.input.dry_run ? __VLS_ctx.t('common.yes', 'Yes') : __VLS_ctx.t('common.no', 'No'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "artifact-summary-card" },
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-label" },
         });
+        (__VLS_ctx.t('codegen.output_file_count', '输出文件'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-value" },
         });
@@ -3383,13 +3441,14 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-meta" },
         });
-        (__VLS_ctx.auditRecord.output.conflict_count);
+        (__VLS_ctx.t('codegen.conflict_count_label', 'Conflicts: {count}', { count: __VLS_ctx.auditRecord.output.conflict_count }));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "artifact-summary-card" },
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-label" },
         });
+        (__VLS_ctx.t('codegen.table_scope', '表范围'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-value" },
         });
@@ -3407,6 +3466,7 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-label" },
         });
+        (__VLS_ctx.t('codegen.execution_steps', '执行步骤'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
             ...{ class: "message-list compact-list" },
         });
@@ -3424,6 +3484,7 @@ if (__VLS_ctx.activeMode === 'db') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-label" },
         });
+        (__VLS_ctx.t('codegen.output_overview', '输出概览'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-value" },
         });
@@ -3454,9 +3515,11 @@ if (__VLS_ctx.activeMode === 'delete' && __VLS_ctx.deleteResult) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "title" },
         });
+        (__VLS_ctx.t('codegen.delete_result_title', '删除结果'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "subtitle" },
         });
+        (__VLS_ctx.t('codegen.delete_result_subtitle', '展示本次删除的执行概览、异常情况与处理明细。'));
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "artifact-panel" },
@@ -3486,6 +3549,7 @@ if (__VLS_ctx.activeMode === 'delete' && __VLS_ctx.deleteResult) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-summary-label" },
     });
+    (__VLS_ctx.t('codegen.result_status', '结果状态'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-summary-value" },
     });
@@ -3500,6 +3564,7 @@ if (__VLS_ctx.activeMode === 'delete' && __VLS_ctx.deleteResult) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-summary-label" },
     });
+    (__VLS_ctx.t('codegen.processed', '已处理'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-summary-value" },
     });
@@ -3515,6 +3580,7 @@ if (__VLS_ctx.activeMode === 'delete' && __VLS_ctx.deleteResult) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-summary-label" },
     });
+    (__VLS_ctx.t('codegen.skipped_failed', '跳过 / 异常'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-summary-value" },
     });
@@ -3531,6 +3597,7 @@ if (__VLS_ctx.activeMode === 'delete' && __VLS_ctx.deleteResult) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-summary-label" },
     });
+    (__VLS_ctx.t('codegen.elapsed', '执行耗时'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-summary-value" },
     });
@@ -3549,6 +3616,7 @@ if (__VLS_ctx.activeMode === 'delete' && __VLS_ctx.deleteResult) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-label" },
     });
+    (__VLS_ctx.t('codegen.delete_detail', '删除明细'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
         ...{ class: "message-list compact-list" },
     });
@@ -3564,6 +3632,7 @@ if (__VLS_ctx.activeMode === 'delete' && __VLS_ctx.deleteResult) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "artifact-label" },
     });
+    (__VLS_ctx.t('codegen.skip_detail', '跳过明细'));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
         ...{ class: "message-list compact-list" },
     });
@@ -3580,6 +3649,7 @@ if (__VLS_ctx.activeMode === 'delete' && __VLS_ctx.deleteResult) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-label" },
         });
+        (__VLS_ctx.t('codegen.failure_detail', '异常明细'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
             ...{ class: "message-list compact-list" },
         });
@@ -3664,9 +3734,11 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "title" },
         });
+        (__VLS_ctx.t('codegen.artifact_title', '下载产物'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "subtitle" },
         });
+        (__VLS_ctx.t('codegen.artifact_subtitle', '展示最近一次服务端打包结果，并支持重新下载。'));
         if (__VLS_ctx.artifactInfo) {
             const __VLS_628 = {}.ElSpace;
             /** @type {[typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, ]} */ ;
@@ -3726,6 +3798,7 @@ if (__VLS_ctx.artifactInfo) {
                 onClick: (__VLS_ctx.handleArtifactDownload)
             };
             __VLS_643.slots.default;
+            (__VLS_ctx.t('common.refresh', '重新下载'));
             var __VLS_643;
             var __VLS_631;
         }
@@ -3735,10 +3808,10 @@ if (__VLS_ctx.artifactInfo) {
         /** @type {[typeof __VLS_components.ElEmpty, typeof __VLS_components.elEmpty, ]} */ ;
         // @ts-ignore
         const __VLS_649 = __VLS_asFunctionalComponent(__VLS_648, new __VLS_648({
-            description: "尚未生成下载包",
+            description: (__VLS_ctx.t('codegen.no_artifact', '尚未生成下载包')),
         }));
         const __VLS_650 = __VLS_649({
-            description: "尚未生成下载包",
+            description: (__VLS_ctx.t('codegen.no_artifact', '尚未生成下载包')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_649));
     }
     else {
@@ -3770,6 +3843,7 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-label" },
         });
+        (__VLS_ctx.t('codegen.artifact_status', '产物状态'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-value" },
         });
@@ -3784,6 +3858,7 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-label" },
         });
+        (__VLS_ctx.t('codegen.file_overview', '文件概览'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-value" },
         });
@@ -3799,6 +3874,7 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-label" },
         });
+        (__VLS_ctx.t('codegen.valid_until', '有效期'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-value" },
         });
@@ -3813,6 +3889,7 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-label" },
         });
+        (__VLS_ctx.t('codegen.recent_activity', '最近活动'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-summary-value" },
         });
@@ -3853,6 +3930,7 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-label" },
         });
+        (__VLS_ctx.t('codegen.task_id', '任务 ID'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-value monospace" },
         });
@@ -3863,6 +3941,7 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-label" },
         });
+        (__VLS_ctx.t('codegen.filename', '文件名'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-value" },
         });
@@ -3873,6 +3952,7 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-label" },
         });
+        (__VLS_ctx.t('codegen.last_failure_reason', '最近一次失败原因'));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-value" },
         });
@@ -3883,6 +3963,7 @@ if (__VLS_ctx.artifactInfo) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "artifact-label" },
         });
+        (__VLS_ctx.t('codegen.download_url', '下载地址'));
         if (__VLS_ctx.canCopyArtifactUrl) {
             const __VLS_660 = {}.ElButton;
             /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -3917,6 +3998,7 @@ if (__VLS_ctx.artifactInfo) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "artifact-hint" },
             });
+            (__VLS_ctx.t('codegen.expired_hidden', '下载包已过期，旧下载地址已隐藏，请重新生成新的代码包。'));
         }
     }
     var __VLS_627;
@@ -4148,6 +4230,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             lastRunSuccess: lastRunSuccess,
             fileInputRef: fileInputRef,
             dbMountMenuOptions: dbMountMenuOptions,
+            t: t,
             dbParsedTables: dbParsedTables,
             dbDriverLabel: dbDriverLabel,
             dbOptionSummary: dbOptionSummary,

@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 
-import { resolveRouteLocaleMeta, translate } from '../src/i18n';
+import { initializeI18n, resolveRouteLocaleMeta, translate } from '../src/i18n';
 import { useLocaleStore } from '../src/store/locale';
 import { useSessionStore } from '../src/store/session';
 
@@ -13,21 +13,23 @@ beforeEach(() => {
 });
 
 describe('useLocaleStore', () => {
-  it('normalizes and persists the language preference', () => {
+  it('normalizes and persists the language preference', async () => {
     const localeStore = useLocaleStore();
 
     localeStore.setLanguage('en');
+    await initializeI18n(localeStore.language);
 
     expect(localeStore.language).toBe('en-US');
     expect(localStorage.getItem('goadmin.language')).toBe('en-US');
   });
 
-  it('translates the shared unnamed menu fallback in zh-CN', () => {
+  it('translates a shared base namespace fallback in zh-CN', async () => {
     const localeStore = useLocaleStore();
 
     localeStore.setLanguage('zh-CN');
+    await initializeI18n(localeStore.language);
 
-    expect(translate('menu.unnamed', 'Unnamed menu')).toBe('未命名菜单');
+    expect(translate('common.expand_sidebar', 'Expand sidebar')).toBe('展开侧栏');
   });
 
   it('syncs from the authenticated user language during session restore', () => {
@@ -42,9 +44,10 @@ describe('useLocaleStore', () => {
     expect(localStorage.getItem('goadmin.language')).toBe('en-US');
   });
 
-  it('translates keys and resolves route titles with locale fallbacks', () => {
+  it('translates keys and resolves route titles with locale fallbacks', async () => {
     const localeStore = useLocaleStore();
     localeStore.setLanguage('en-US');
+    await initializeI18n(localeStore.language);
 
     expect(translate('menu.title', 'Menu management')).toBe('Menu management');
     expect(translate('route.book', 'Book')).toBe('Book management');

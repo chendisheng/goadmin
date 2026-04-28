@@ -5,7 +5,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { ArrowDown } from '@element-plus/icons-vue';
 
 import { login } from '@/api/auth';
-import { useAppI18n } from '@/i18n';
+import { preloadRouteNamespaces, setI18nLanguage, useAppI18n } from '@/i18n';
 import { useLocaleStore } from '@/store/locale';
 import { useMenuStore } from '@/store/menu';
 import { useSessionStore } from '@/store/session';
@@ -48,7 +48,13 @@ const rules = computed<FormRules<LoginForm>>(() => ({
   password: [{ required: true, message: t('login.form.password_required', 'Enter password'), trigger: 'blur' }],
 }));
 
-function switchLanguage(language: 'zh-CN' | 'en-US') {
+async function switchLanguage(language: 'zh-CN' | 'en-US') {
+  if (localeStore.language === language) {
+    return;
+  }
+
+  await preloadRouteNamespaces(route, language);
+  await setI18nLanguage(language);
   localeStore.setLanguage(language);
   sessionStore.setLanguage(language);
 }

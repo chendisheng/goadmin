@@ -4,6 +4,8 @@ const route = {
     component: () => import('@/views/book/index.vue'),
     meta: {
         title: 'Book',
+        titleKey: 'route.book',
+        titleDefault: 'Book',
         icon: 'menu',
     },
 };

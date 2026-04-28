@@ -8,6 +8,7 @@ declare module 'vue-router' {
     subtitle?: string;
     subtitleKey?: string;
     subtitleDefault?: string;
+    i18nNamespaces?: string[];
     icon?: string;
     componentName?: string;
     alwaysShow?: boolean;

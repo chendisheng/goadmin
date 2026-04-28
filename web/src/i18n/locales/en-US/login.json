@@ -1,0 +1,19 @@
+{
+  "login.title": "Sign in",
+  "login.username": "Username",
+  "login.password": "Password",
+  "login.username_placeholder": "Enter your username",
+  "login.password_placeholder": "Enter your password",
+  "login.submit": "Sign in",
+  "login.success": "Signed in successfully",
+  "login.failure": "Sign in failed",
+  "login.welcome": "Welcome to GoAdmin",
+  "login.description": "Enter the account created on the backend to sign in.",
+  "login.api_base_url": "API base URL",
+  "login.default_account": "Default account: admin / admin123",
+  "login.form.username_required": "Please enter your username",
+  "login.form.password_required": "Please enter your password",
+  "login.highlight.jwt_session": "JWT login and session management",
+  "login.highlight.dynamic_menu": "Dynamic menus and permission-driven access",
+  "login.highlight.element_plus": "Consistent Element Plus visual style"
+}

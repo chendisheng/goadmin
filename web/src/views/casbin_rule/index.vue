@@ -4,7 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
-import { useAppI18n } from '@/i18n';
+import { preloadRouteNamespaces, useAppI18n } from '@/i18n';
 import { createCasbinRule, deleteCasbinRule, listcasbin_rules, updateCasbinRule } from '@/api/casbin_rule';
 import { formatDateTime } from '@/utils/admin';
 
@@ -176,8 +176,13 @@ function handleSizeChange(pageSize: number) {
   void loadItems();
 }
 
-onMounted(() => {
-  void loadItems();
+onMounted(async () => {
+  await preloadRouteNamespaces({
+    meta: {
+      i18nNamespaces: ['casbin_rule'],
+    },
+  } as any);
+  await loadItems();
 });
 </script>
 

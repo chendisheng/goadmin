@@ -39,9 +39,9 @@
                 </el-form-item>
                 <el-form-item :label="t('codegen.package_content', '下载包内容')">
                   <el-space wrap>
-                    <el-switch v-model="includeReadme" inline-prompt active-text="README" inactive-text="README" />
-                    <el-switch v-model="includeReport" inline-prompt active-text="Report" inactive-text="Report" />
-                    <el-switch v-model="includeDsl" inline-prompt active-text="DSL" inactive-text="DSL" />
+                    <el-switch v-model="includeReadme" inline-prompt :active-text="t('codegen.package_content.readme', 'README')" :inactive-text="t('codegen.package_content.readme', 'README')" />
+                    <el-switch v-model="includeReport" inline-prompt :active-text="t('codegen.package_content.report', 'Report')" :inactive-text="t('codegen.package_content.report', 'Report')" />
+                    <el-switch v-model="includeDsl" inline-prompt :active-text="t('codegen.package_content.dsl', 'DSL')" :inactive-text="t('codegen.package_content.dsl', 'DSL')" />
                   </el-space>
                 </el-form-item>
                 <el-form-item :label="t('codegen.dsl_content', 'DSL 内容')">
@@ -83,9 +83,9 @@
                     <div class="db-section-hint">{{ t('codegen.db_fast_template_hint', '一键预填常见数据库的连接格式。') }}</div>
                   </div>
                   <el-space wrap>
-                    <el-button size="small" :type="dbDriver === 'mysql' ? 'primary' : 'default'" plain @click="applyDbPreset('mysql')">MySQL</el-button>
-                    <el-button size="small" :type="dbDriver === 'postgres' ? 'primary' : 'default'" plain @click="applyDbPreset('postgres')">PostgreSQL</el-button>
-                    <el-button size="small" :type="dbDriver === 'sqlite' ? 'primary' : 'default'" plain @click="applyDbPreset('sqlite')">SQLite</el-button>
+                    <el-button size="small" :type="dbDriver === 'mysql' ? 'primary' : 'default'" plain @click="applyDbPreset('mysql')">{{ t('codegen.db_driver.mysql', 'MySQL') }}</el-button>
+                    <el-button size="small" :type="dbDriver === 'postgres' ? 'primary' : 'default'" plain @click="applyDbPreset('postgres')">{{ t('codegen.db_driver.postgres', 'PostgreSQL') }}</el-button>
+                    <el-button size="small" :type="dbDriver === 'sqlite' ? 'primary' : 'default'" plain @click="applyDbPreset('sqlite')">{{ t('codegen.db_driver.sqlite', 'SQLite') }}</el-button>
                   </el-space>
                 </div>
 
@@ -94,9 +94,9 @@
                     <el-col :xs="24" :md="6">
                       <el-form-item :label="t('codegen.db_driver', '数据库驱动')">
                         <el-select v-model="dbDriver" :placeholder="t('codegen.db_driver_placeholder', '请选择数据库驱动')" filterable>
-                          <el-option label="MySQL" value="mysql" />
-                          <el-option label="PostgreSQL" value="postgres" />
-                          <el-option label="SQLite" value="sqlite" />
+                          <el-option :label="t('codegen.db_driver.mysql', 'MySQL')" value="mysql" />
+                          <el-option :label="t('codegen.db_driver.postgres', 'PostgreSQL')" value="postgres" />
+                          <el-option :label="t('codegen.db_driver.sqlite', 'SQLite')" value="sqlite" />
                         </el-select>
                       </el-form-item>
                     </el-col>
@@ -162,9 +162,9 @@
                       <el-tag size="small" type="success" effect="light">{{ dbOptionSummary }}</el-tag>
                     </div>
                     <el-space wrap>
-                      <el-switch v-model="dbForce" inline-prompt active-text="Force" inactive-text="Force" />
-                      <el-switch v-model="dbGenerateFrontend" inline-prompt active-text="Frontend" inactive-text="Frontend" />
-                      <el-switch v-model="dbGeneratePolicy" inline-prompt active-text="Policy" inactive-text="Policy" />
+                      <el-switch v-model="dbForce" inline-prompt :active-text="t('codegen.generate_option.force', 'Force')" :inactive-text="t('codegen.generate_option.force', 'Force')" />
+                      <el-switch v-model="dbGenerateFrontend" inline-prompt :active-text="t('codegen.generate_option.frontend', 'Frontend')" :inactive-text="t('codegen.generate_option.frontend', 'Frontend')" />
+                      <el-switch v-model="dbGeneratePolicy" inline-prompt :active-text="t('codegen.generate_option.policy', 'Policy')" :inactive-text="t('codegen.generate_option.policy', 'Policy')" />
                     </el-space>
                   </div>
                 </el-form>
@@ -184,20 +184,20 @@
                   <el-row :gutter="16">
                     <el-col :xs="24" :md="8">
                       <el-form-item :label="t('codegen.delete_module', '模块名')">
-                        <el-input v-model="deleteModule" placeholder="例如 book" />
+                        <el-input v-model="deleteModule" :placeholder="t('codegen.delete_module_placeholder', '例如 book')" />
                       </el-form-item>
                     </el-col>
                     <el-col :xs="24" :md="8">
                       <el-form-item :label="t('codegen.delete_kind', '模块类型')">
-                        <el-input v-model="deleteKind" placeholder="例如 crud" />
+                        <el-input v-model="deleteKind" :placeholder="t('codegen.delete_kind_placeholder', '例如 crud')" />
                       </el-form-item>
                     </el-col>
                     <el-col :xs="24" :md="8">
                       <el-form-item :label="t('codegen.delete_policy_store', 'Policy Store')">
                         <el-select v-model="deletePolicyStore" clearable filterable :placeholder="t('codegen.delete_policy_store_placeholder', '自动识别或手动指定')">
                           <el-option :label="t('codegen.delete_policy_store_auto_detect', '自动识别')" value="" />
-                          <el-option label="CSV" value="csv" />
-                          <el-option label="DB" value="db" />
+                          <el-option :label="t('codegen.delete_policy_store_csv', 'CSV')" value="csv" />
+                          <el-option :label="t('codegen.delete_policy_store_db', 'DB')" value="db" />
                         </el-select>
                       </el-form-item>
                     </el-col>
@@ -205,11 +205,11 @@
 
                   <el-form-item :label="t('codegen.delete_scope', '删除范围')">
                     <el-space wrap>
-                      <el-switch v-model="deleteWithRuntime" inline-prompt active-text="Runtime" inactive-text="Runtime" />
-                      <el-switch v-model="deleteWithPolicy" inline-prompt active-text="Policy" inactive-text="Policy" />
-                      <el-switch v-model="deleteWithFrontend" inline-prompt active-text="Frontend" inactive-text="Frontend" />
-                      <el-switch v-model="deleteWithRegistry" inline-prompt active-text="Registry" inactive-text="Registry" />
-                      <el-switch v-model="deleteForce" inline-prompt active-text="Force" inactive-text="Force" />
+                      <el-switch v-model="deleteWithRuntime" inline-prompt :active-text="t('codegen.delete_scope.runtime', 'Runtime')" :inactive-text="t('codegen.delete_scope.runtime', 'Runtime')" />
+                      <el-switch v-model="deleteWithPolicy" inline-prompt :active-text="t('codegen.delete_scope.policy', 'Policy')" :inactive-text="t('codegen.delete_scope.policy', 'Policy')" />
+                      <el-switch v-model="deleteWithFrontend" inline-prompt :active-text="t('codegen.delete_scope.frontend', 'Frontend')" :inactive-text="t('codegen.delete_scope.frontend', 'Frontend')" />
+                      <el-switch v-model="deleteWithRegistry" inline-prompt :active-text="t('codegen.delete_scope.registry', 'Registry')" :inactive-text="t('codegen.delete_scope.registry', 'Registry')" />
+                      <el-switch v-model="deleteForce" inline-prompt :active-text="t('codegen.generate_option.force', 'Force')" :inactive-text="t('codegen.generate_option.force', 'Force')" />
                     </el-space>
                   </el-form-item>
 
@@ -667,7 +667,8 @@ const currentTime = ref(Date.now());
 
 let artifactTicker: ReturnType<typeof window.setInterval> | null = null;
 let copyFeedbackTimer: ReturnType<typeof window.setTimeout> | null = null;
-const dbMountMenuOptions = ref<MenuMountOption[]>([]);
+const dbMountMenuTree = ref<MenuItem[]>([]);
+const dbMountMenuOptions = computed(() => flattenMenuMountOptions(dbMountMenuTree.value));
 const publicConfig = ref<PublicConfigPayload | null>(null);
 const { t } = useAppI18n();
 
@@ -675,9 +676,9 @@ const currentReport = computed(() => (activeMode.value === 'db' ? dbReport.value
 const dbParsedTables = computed(() => parseTableNames(dbTablesText.value));
 const dbDriverLabel = computed(() => {
   const map: Record<string, string> = {
-    mysql: 'MySQL',
-    postgres: 'PostgreSQL',
-    sqlite: 'SQLite',
+    mysql: t('codegen.db_driver.mysql', 'MySQL'),
+    postgres: t('codegen.db_driver.postgres', 'PostgreSQL'),
+    sqlite: t('codegen.db_driver.sqlite', 'SQLite'),
   };
   return map[dbDriver.value] || dbDriver.value || '—';
 });
@@ -1562,9 +1563,9 @@ function buildDatabaseRequest(): CodegenDatabaseRequest {
 async function loadDbMountMenuOptions() {
   try {
     const response = await fetchMenuTree();
-    dbMountMenuOptions.value = flattenMenuMountOptions(response.items ?? []);
+    dbMountMenuTree.value = response.items ?? [];
   } catch {
-    dbMountMenuOptions.value = [];
+    dbMountMenuTree.value = [];
   }
 }
 

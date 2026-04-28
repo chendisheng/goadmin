@@ -1,5 +1,7 @@
+import { useAppI18n } from '@/i18n';
 import { useRouter } from 'vue-router';
 const router = useRouter();
+const { t } = useAppI18n();
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
@@ -12,13 +14,13 @@ const __VLS_0 = {}.ElResult;
 // @ts-ignore
 const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
     icon: "warning",
-    title: "页面不存在",
-    subTitle: "请返回工作台继续操作",
+    title: (__VLS_ctx.t('common.not_found', 'Page not found')),
+    subTitle: (__VLS_ctx.t('common.not_found_hint', 'Please return to the dashboard to continue')),
 }));
 const __VLS_2 = __VLS_1({
     icon: "warning",
-    title: "页面不存在",
-    subTitle: "请返回工作台继续操作",
+    title: (__VLS_ctx.t('common.not_found', 'Page not found')),
+    subTitle: (__VLS_ctx.t('common.not_found_hint', 'Please return to the dashboard to continue')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_1));
 __VLS_3.slots.default;
 {
@@ -43,6 +45,7 @@ __VLS_3.slots.default;
         }
     };
     __VLS_7.slots.default;
+    (__VLS_ctx.t('common.back_to_dashboard', 'Back to dashboard'));
     var __VLS_7;
 }
 var __VLS_3;
@@ -52,6 +55,7 @@ const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
             router: router,
+            t: t,
         };
     },
 });

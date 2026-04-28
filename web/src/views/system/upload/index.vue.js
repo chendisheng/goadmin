@@ -1,9 +1,11 @@
 import { computed, nextTick, onActivated, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import AdminTable from '@/components/admin/AdminTable.vue';
+import { useAppI18n } from '@/i18n';
 import { formatDateTime } from '@/utils/admin';
-import { canSubmitUploadForm, isBrowserDirectPublicUrl, formatUploadFileSize, isPreviewableImage, resolveUploadPreviewKind, resolveUploadStatusLabel, resolveUploadStatusTagType, resolveUploadVisibilityLabel, resolveUploadVisibilityTagType, } from '@/utils/upload';
+import { canSubmitUploadForm, isBrowserDirectPublicUrl, formatUploadFileSize, isPreviewableImage, resolveUploadPreviewKind, resolveUploadStatusTagType, resolveUploadVisibilityTagType, } from '@/utils/upload';
 import { bindUploadFile, createUploadFilePreviewUrl, deleteUploadFile, downloadUploadFile, fetchUploadFiles, fetchUploadStorageSetting, previewUploadFile, unbindUploadFile, updateUploadStorageSetting, uploadUploadFile, } from '@/api/upload';
+const { t } = useAppI18n();
 const tableLoading = ref(false);
 const storageSettingLoading = ref(false);
 const storageSettingSaving = ref(false);
@@ -24,15 +26,15 @@ const fileInputRef = ref(null);
 const previewItem = ref(null);
 const previewTargetId = ref('');
 const bindTarget = ref(null);
-const storageDriverOptions = [
-    { value: 'local', label: '本地存储' },
-    { value: 'db', label: '数据库存储' },
-    { value: 's3-compatible', label: 'S3 兼容' },
-    { value: 'oss', label: '阿里云 OSS' },
-    { value: 'cos', label: '腾讯云 COS' },
-    { value: 'qiniu', label: '七牛云' },
-    { value: 'minio', label: 'MinIO' },
-];
+const storageDriverOptions = computed(() => [
+    { value: 'local', label: t('upload.storage.local', 'Local storage') },
+    { value: 'db', label: t('upload.storage.db', 'Database storage') },
+    { value: 's3-compatible', label: t('upload.storage.s3', 'S3 compatible') },
+    { value: 'oss', label: t('upload.storage.oss', 'Alibaba Cloud OSS') },
+    { value: 'cos', label: t('upload.storage.cos', 'Tencent Cloud COS') },
+    { value: 'qiniu', label: t('upload.storage.qiniu', 'Qiniu Cloud') },
+    { value: 'minio', label: t('upload.storage.minio', 'MinIO') },
+]);
 const normalizeStorageDriver = (driver) => {
     const normalized = (driver ?? '').trim().toLowerCase();
     switch (normalized) {
@@ -82,26 +84,26 @@ const defaultBindForm = () => ({
 const uploadForm = reactive(defaultUploadForm());
 const bindForm = reactive(defaultBindForm());
 const uploadRules = {
-    visibility: [{ required: true, message: '请选择文件可见性', trigger: 'change' }],
+    visibility: [{ required: true, message: t('upload.validation.visibility_required', 'Select file visibility'), trigger: 'change' }],
 };
 const bindRules = {
-    biz_module: [{ required: true, message: '请输入业务模块', trigger: 'blur' }],
-    biz_type: [{ required: true, message: '请输入业务类型', trigger: 'blur' }],
-    biz_id: [{ required: true, message: '请输入业务ID', trigger: 'blur' }],
-    biz_field: [{ required: true, message: '请输入业务字段', trigger: 'blur' }],
+    biz_module: [{ required: true, message: t('upload.validation.biz_module_required', 'Enter business module'), trigger: 'blur' }],
+    biz_type: [{ required: true, message: t('upload.validation.biz_type_required', 'Enter business type'), trigger: 'blur' }],
+    biz_id: [{ required: true, message: t('upload.validation.biz_id_required', 'Enter business ID'), trigger: 'blur' }],
+    biz_field: [{ required: true, message: t('upload.validation.biz_field_required', 'Enter business field'), trigger: 'blur' }],
 };
-const visibilityOptions = [
-    { value: 'private', label: '私有' },
-    { value: 'public', label: '公开' },
-];
-const statusOptions = [
-    { value: 'active', label: '有效' },
-    { value: 'archived', label: '已归档' },
-    { value: 'deleted', label: '已删除' },
-];
+const visibilityOptions = computed(() => [
+    { value: 'private', label: t('upload.visibility.private', 'Private') },
+    { value: 'public', label: t('upload.visibility.public', 'Public') },
+]);
+const statusOptions = computed(() => [
+    { value: 'active', label: t('upload.status.active', 'Active') },
+    { value: 'archived', label: t('upload.status.archived', 'Archived') },
+    { value: 'deleted', label: t('upload.status.deleted', 'Deleted') },
+]);
 const selectedFileLabel = computed(() => {
     if (!selectedFile.value) {
-        return '未选择文件';
+        return t('upload.no_file_selected', 'No file selected');
     }
     return `${selectedFile.value.name} · ${formatUploadFileSize(selectedFile.value.size)}`;
 });
@@ -116,10 +118,16 @@ const canDirectPreview = computed(() => {
 });
 const previewTitle = computed(() => {
     if (!previewItem.value) {
-        return '文件预览';
+        return t('upload.preview_title', 'File preview');
     }
-    const kindLabel = previewKind.value === 'image' ? '图片预览' : previewKind.value === 'pdf' ? 'PDF 预览' : previewKind.value === 'text' ? '文本预览' : '仅下载';
-    return `${previewItem.value.original_name || '文件预览'} · ${kindLabel}`;
+    const kindLabel = previewKind.value === 'image'
+        ? t('upload.preview.image', 'Image preview')
+        : previewKind.value === 'pdf'
+            ? t('upload.preview.pdf', 'PDF preview')
+            : previewKind.value === 'text'
+                ? t('upload.preview.text', 'Text preview')
+                : t('upload.preview.download_only', 'Download only');
+    return `${previewItem.value.original_name || t('upload.preview_title', 'File preview')} · ${kindLabel}`;
 });
 const uploadReady = computed(() => canSubmitUploadForm(selectedFile.value, uploadForm));
 function resetUploadForm() {
@@ -132,6 +140,34 @@ function resetUploadForm() {
 function resetBindForm() {
     Object.assign(bindForm, defaultBindForm());
     bindTarget.value = null;
+}
+function resolveUploadVisibilityLabel(value) {
+    if (!value) {
+        return '-';
+    }
+    switch (value) {
+        case 'public':
+            return t('upload.visibility.public', 'Public');
+        case 'private':
+            return t('upload.visibility.private', 'Private');
+        default:
+            return value;
+    }
+}
+function resolveUploadStatusLabel(value) {
+    if (!value) {
+        return '-';
+    }
+    switch (value) {
+        case 'active':
+            return t('upload.status.active', 'Active');
+        case 'archived':
+            return t('upload.status.archived', 'Archived');
+        case 'deleted':
+            return t('upload.status.deleted', 'Deleted');
+        default:
+            return value;
+    }
 }
 function revokePreviewBrowserUrl() {
     if (previewBrowserUrl.value && previewBrowserUrlIsObjectUrl.value) {
@@ -165,16 +201,15 @@ async function loadStorageSetting() {
     }
 }
 async function submitStorageSetting() {
-    const driver = normalizeStorageDriver(storageSetting.driver);
-    storageSetting.driver = driver;
     storageSettingSaving.value = true;
     try {
+        const driver = normalizeStorageDriver(storageSetting.driver);
         const response = await updateUploadStorageSetting({ driver });
         storageSetting.driver = normalizeStorageDriver(response.driver || driver);
-        ElMessage.success('默认存储驱动已保存');
+        ElMessage.success(t('upload.storage.saved', 'Default storage driver saved'));
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '保存失败');
+        ElMessage.error(error instanceof Error ? error.message : t('common.failure', 'Save failed'));
     }
     finally {
         storageSettingSaving.value = false;
@@ -208,7 +243,7 @@ function openBindDialog(row) {
 }
 async function submitUpload() {
     if (!selectedFile.value) {
-        ElMessage.warning('请选择要上传的文件');
+        ElMessage.warning(t('upload.choose_file_first', 'Select a file to upload first'));
         return;
     }
     try {
@@ -220,20 +255,20 @@ async function submitUpload() {
     uploadLoading.value = true;
     try {
         await uploadUploadFile(selectedFile.value, {
-            visibility: uploadForm.visibility.trim() || 'private',
+            visibility: uploadForm.visibility,
             biz_module: uploadForm.biz_module.trim(),
             biz_type: uploadForm.biz_type.trim(),
             biz_id: uploadForm.biz_id.trim(),
             biz_field: uploadForm.biz_field.trim(),
             remark: uploadForm.remark.trim(),
         });
-        ElMessage.success('文件已上传');
+        ElMessage.success(t('upload.uploaded', 'File uploaded'));
         uploadDialogVisible.value = false;
         resetUploadForm();
         await loadFiles();
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '上传失败');
+        ElMessage.error(error instanceof Error ? error.message : t('upload.upload_failed', 'Upload failed'));
     }
     finally {
         uploadLoading.value = false;
@@ -241,7 +276,7 @@ async function submitUpload() {
 }
 async function submitBind() {
     if (!bindTarget.value) {
-        ElMessage.warning('请选择要绑定的文件');
+        ElMessage.warning(t('upload.choose_bind_target', 'Select a file to bind'));
         return;
     }
     try {
@@ -258,13 +293,13 @@ async function submitBind() {
             biz_id: bindForm.biz_id.trim(),
             biz_field: bindForm.biz_field.trim(),
         });
-        ElMessage.success('文件已绑定');
+        ElMessage.success(t('upload.bound', 'File bound'));
         bindDialogVisible.value = false;
         resetBindForm();
         await loadFiles();
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '绑定失败');
+        ElMessage.error(error instanceof Error ? error.message : t('upload.bind_failed', 'Bind failed'));
     }
     finally {
         bindLoading.value = false;
@@ -275,8 +310,8 @@ async function openPreview(row) {
     previewTargetId.value = row.id;
     try {
         revokePreviewBrowserUrl();
-        previewItem.value = await previewUploadFile(row.id);
-        const publicUrl = previewItem.value.public_url ?? '';
+        const item = await previewUploadFile(row.id);
+        const publicUrl = item.public_url ?? '';
         if (previewMode.value === 'download_only' || previewKind.value === 'download-only') {
             previewBrowserUrl.value = '';
             previewBrowserUrlIsObjectUrl.value = false;
@@ -293,7 +328,7 @@ async function openPreview(row) {
     }
     catch (error) {
         revokePreviewBrowserUrl();
-        ElMessage.error(error instanceof Error ? error.message : '预览失败');
+        ElMessage.error(error instanceof Error ? error.message : t('upload.preview_failed', 'Preview failed'));
     }
     finally {
         previewLoading.value = false;
@@ -306,27 +341,27 @@ async function copyPreviewUrl(url) {
     }
     try {
         await navigator.clipboard.writeText(url);
-        ElMessage.success('公开地址已复制');
+        ElMessage.success(t('upload.preview.copied', 'Public URL copied'));
     }
     catch {
-        ElMessage.warning('复制失败，请手动复制');
+        ElMessage.warning(t('upload.preview.copy_failed', 'Copy failed, please copy it manually'));
     }
 }
 async function openPreviewWindow() {
     try {
         const previewUrl = previewBrowserUrl.value;
         if (!previewUrl) {
-            ElMessage.warning('暂无可用的预览地址');
+            ElMessage.warning(t('upload.preview.no_url', 'No preview URL available'));
             return;
         }
         const opened = window.open(previewUrl, '_blank', 'noopener,noreferrer');
         if (!opened) {
-            ElMessage.warning('浏览器拦截了新窗口，请允许弹窗后重试');
+            ElMessage.warning(t('upload.preview.blocked', 'The browser blocked the new window; allow popups and try again'));
             return;
         }
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '打开预览失败');
+        ElMessage.error(error instanceof Error ? error.message : t('upload.preview.open_failed', 'Failed to open preview'));
     }
 }
 function getPreviewSourceLabel() {
@@ -334,40 +369,40 @@ function getPreviewSourceLabel() {
         return '-';
     }
     if (previewMode.value === 'download_only' || previewKind.value === 'download-only') {
-        return '仅下载';
+        return t('upload.preview.download_only', 'Download only');
     }
     if (previewMode.value === 'public_url' && isBrowserDirectPublicUrl(previewItem.value.public_url)) {
-        return '公开直连';
+        return t('upload.preview.public_direct', 'Public direct link');
     }
-    return '鉴权下载';
+    return t('upload.preview.auth_download', 'Authenticated download');
 }
 async function handleDownload(row) {
     try {
         await downloadUploadFile(row.id, row.original_name || row.storage_name || 'upload-file');
-        ElMessage.success('文件已开始下载');
+        ElMessage.success(t('upload.download_started', 'Download started'));
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '下载失败');
+        ElMessage.error(error instanceof Error ? error.message : t('upload.download_failed', 'Download failed'));
     }
 }
 async function handleDelete(row) {
-    await ElMessageBox.confirm(`确认删除文件 ${row.original_name || row.id} 吗？`, '删除文件', {
+    await ElMessageBox.confirm(t('upload.confirm_delete', 'Delete file {name}?', { name: row.original_name || row.id }), t('upload.delete_title', 'Delete file'), {
         type: 'warning',
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
+        confirmButtonText: t('common.delete', 'Delete'),
+        cancelButtonText: t('common.cancel', 'Cancel'),
     });
     await deleteUploadFile(row.id);
-    ElMessage.success('文件已删除');
+    ElMessage.success(t('upload.deleted', 'File deleted'));
     await loadFiles();
 }
 async function handleUnbind(row) {
-    await ElMessageBox.confirm(`确认解除文件 ${row.original_name || row.id} 的绑定吗？`, '解除绑定', {
+    await ElMessageBox.confirm(t('upload.confirm_unbind', 'Unbind file {name}?', { name: row.original_name || row.id }), t('upload.unbind_title', 'Unbind'), {
         type: 'warning',
-        confirmButtonText: '解绑',
-        cancelButtonText: '取消',
+        confirmButtonText: t('upload.unbind', 'Unbind'),
+        cancelButtonText: t('common.cancel', 'Cancel'),
     });
     await unbindUploadFile(row.id);
-    ElMessage.success('文件已解绑');
+    ElMessage.success(t('upload.unbound', 'File unbound'));
     await loadFiles();
 }
 function handleSearch() {
@@ -432,6 +467,7 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "upload-setting-title" },
 });
+(__VLS_ctx.t('upload.storage.title', 'Default storage driver'));
 const __VLS_4 = {}.ElText;
 /** @type {[typeof __VLS_components.ElText, typeof __VLS_components.elText, typeof __VLS_components.ElText, typeof __VLS_components.elText, ]} */ ;
 // @ts-ignore
@@ -442,6 +478,7 @@ const __VLS_6 = __VLS_5({
     type: "info",
 }, ...__VLS_functionalComponentArgsRest(__VLS_5));
 __VLS_7.slots.default;
+(__VLS_ctx.t('upload.storage.description', 'New uploads will use the selected storage implementation by default. The setting is persisted to the database; database storage stores file content and metadata together.'));
 var __VLS_7;
 const __VLS_8 = {}.ElSpace;
 /** @type {[typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, ]} */ ;
@@ -505,19 +542,20 @@ const __VLS_27 = {
     onClick: (__VLS_ctx.submitStorageSetting)
 };
 __VLS_23.slots.default;
+(__VLS_ctx.t('upload.storage.save', 'Save settings'));
 var __VLS_23;
 var __VLS_11;
 var __VLS_3;
 /** @type {[typeof AdminTable, typeof AdminTable, ]} */ ;
 // @ts-ignore
 const __VLS_28 = __VLS_asFunctionalComponent(AdminTable, new AdminTable({
-    title: "文件管理",
-    description: "管理上传文件、绑定业务对象、下载文件与查看文件元数据。",
+    title: (__VLS_ctx.t('upload.title', 'File management')),
+    description: (__VLS_ctx.t('upload.description', 'Manage uploaded files, bind business objects, download files, and inspect file metadata.')),
     loading: (__VLS_ctx.tableLoading),
 }));
 const __VLS_29 = __VLS_28({
-    title: "文件管理",
-    description: "管理上传文件、绑定业务对象、下载文件与查看文件元数据。",
+    title: (__VLS_ctx.t('upload.title', 'File management')),
+    description: (__VLS_ctx.t('upload.description', 'Manage uploaded files, bind business objects, download files, and inspect file metadata.')),
     loading: (__VLS_ctx.tableLoading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_28));
 __VLS_30.slots.default;
@@ -541,6 +579,7 @@ __VLS_30.slots.default;
         onClick: (__VLS_ctx.loadFiles)
     };
     __VLS_34.slots.default;
+    (__VLS_ctx.t('common.refresh', 'Refresh'));
     var __VLS_34;
     const __VLS_39 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -561,6 +600,7 @@ __VLS_30.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('upload:file:create') }, null, null);
     __VLS_42.slots.default;
+    (__VLS_ctx.t('upload.upload_file', 'Upload file'));
     var __VLS_42;
 }
 {
@@ -583,10 +623,10 @@ __VLS_30.slots.default;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_52 = __VLS_asFunctionalComponent(__VLS_51, new __VLS_51({
-        label: "关键字",
+        label: (__VLS_ctx.t('upload.keyword', 'Keyword')),
     }));
     const __VLS_53 = __VLS_52({
-        label: "关键字",
+        label: (__VLS_ctx.t('upload.keyword', 'Keyword')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_52));
     __VLS_54.slots.default;
     const __VLS_55 = {}.ElInput;
@@ -595,22 +635,22 @@ __VLS_30.slots.default;
     const __VLS_56 = __VLS_asFunctionalComponent(__VLS_55, new __VLS_55({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: "文件名 / 存储键 / 备注",
+        placeholder: (__VLS_ctx.t('upload.keyword_placeholder', 'File name / storage key / remark')),
     }));
     const __VLS_57 = __VLS_56({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: "文件名 / 存储键 / 备注",
+        placeholder: (__VLS_ctx.t('upload.keyword_placeholder', 'File name / storage key / remark')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_56));
     var __VLS_54;
     const __VLS_59 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_60 = __VLS_asFunctionalComponent(__VLS_59, new __VLS_59({
-        label: "可见性",
+        label: (__VLS_ctx.t('upload.visibility.label', 'Visibility')),
     }));
     const __VLS_61 = __VLS_60({
-        label: "可见性",
+        label: (__VLS_ctx.t('upload.visibility.label', 'Visibility')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_60));
     __VLS_62.slots.default;
     const __VLS_63 = {}.ElSelect;
@@ -619,13 +659,13 @@ __VLS_30.slots.default;
     const __VLS_64 = __VLS_asFunctionalComponent(__VLS_63, new __VLS_63({
         modelValue: (__VLS_ctx.query.visibility),
         clearable: true,
-        placeholder: "全部可见性",
+        placeholder: (__VLS_ctx.t('upload.all_visibility', 'All visibility')),
         ...{ style: {} },
     }));
     const __VLS_65 = __VLS_64({
         modelValue: (__VLS_ctx.query.visibility),
         clearable: true,
-        placeholder: "全部可见性",
+        placeholder: (__VLS_ctx.t('upload.all_visibility', 'All visibility')),
         ...{ style: {} },
     }, ...__VLS_functionalComponentArgsRest(__VLS_64));
     __VLS_66.slots.default;
@@ -650,10 +690,10 @@ __VLS_30.slots.default;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_72 = __VLS_asFunctionalComponent(__VLS_71, new __VLS_71({
-        label: "状态",
+        label: (__VLS_ctx.t('upload.status.label', 'Status')),
     }));
     const __VLS_73 = __VLS_72({
-        label: "状态",
+        label: (__VLS_ctx.t('upload.status.label', 'Status')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_72));
     __VLS_74.slots.default;
     const __VLS_75 = {}.ElSelect;
@@ -662,13 +702,13 @@ __VLS_30.slots.default;
     const __VLS_76 = __VLS_asFunctionalComponent(__VLS_75, new __VLS_75({
         modelValue: (__VLS_ctx.query.status),
         clearable: true,
-        placeholder: "全部状态",
+        placeholder: (__VLS_ctx.t('upload.all_status', 'All statuses')),
         ...{ style: {} },
     }));
     const __VLS_77 = __VLS_76({
         modelValue: (__VLS_ctx.query.status),
         clearable: true,
-        placeholder: "全部状态",
+        placeholder: (__VLS_ctx.t('upload.all_status', 'All statuses')),
         ...{ style: {} },
     }, ...__VLS_functionalComponentArgsRest(__VLS_76));
     __VLS_78.slots.default;
@@ -693,10 +733,10 @@ __VLS_30.slots.default;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_84 = __VLS_asFunctionalComponent(__VLS_83, new __VLS_83({
-        label: "业务模块",
+        label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
     }));
     const __VLS_85 = __VLS_84({
-        label: "业务模块",
+        label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_84));
     __VLS_86.slots.default;
     const __VLS_87 = {}.ElInput;
@@ -705,22 +745,22 @@ __VLS_30.slots.default;
     const __VLS_88 = __VLS_asFunctionalComponent(__VLS_87, new __VLS_87({
         modelValue: (__VLS_ctx.query.biz_module),
         clearable: true,
-        placeholder: "biz_module",
+        placeholder: (__VLS_ctx.t('upload.biz_module_placeholder', 'biz_module')),
     }));
     const __VLS_89 = __VLS_88({
         modelValue: (__VLS_ctx.query.biz_module),
         clearable: true,
-        placeholder: "biz_module",
+        placeholder: (__VLS_ctx.t('upload.biz_module_placeholder', 'biz_module')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_88));
     var __VLS_86;
     const __VLS_91 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_92 = __VLS_asFunctionalComponent(__VLS_91, new __VLS_91({
-        label: "业务类型",
+        label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
     }));
     const __VLS_93 = __VLS_92({
-        label: "业务类型",
+        label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_92));
     __VLS_94.slots.default;
     const __VLS_95 = {}.ElInput;
@@ -729,22 +769,22 @@ __VLS_30.slots.default;
     const __VLS_96 = __VLS_asFunctionalComponent(__VLS_95, new __VLS_95({
         modelValue: (__VLS_ctx.query.biz_type),
         clearable: true,
-        placeholder: "biz_type",
+        placeholder: (__VLS_ctx.t('upload.biz_type_placeholder', 'biz_type')),
     }));
     const __VLS_97 = __VLS_96({
         modelValue: (__VLS_ctx.query.biz_type),
         clearable: true,
-        placeholder: "biz_type",
+        placeholder: (__VLS_ctx.t('upload.biz_type_placeholder', 'biz_type')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_96));
     var __VLS_94;
     const __VLS_99 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_100 = __VLS_asFunctionalComponent(__VLS_99, new __VLS_99({
-        label: "业务ID",
+        label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
     }));
     const __VLS_101 = __VLS_100({
-        label: "业务ID",
+        label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_100));
     __VLS_102.slots.default;
     const __VLS_103 = {}.ElInput;
@@ -753,22 +793,22 @@ __VLS_30.slots.default;
     const __VLS_104 = __VLS_asFunctionalComponent(__VLS_103, new __VLS_103({
         modelValue: (__VLS_ctx.query.biz_id),
         clearable: true,
-        placeholder: "biz_id",
+        placeholder: (__VLS_ctx.t('upload.biz_id_placeholder', 'biz_id')),
     }));
     const __VLS_105 = __VLS_104({
         modelValue: (__VLS_ctx.query.biz_id),
         clearable: true,
-        placeholder: "biz_id",
+        placeholder: (__VLS_ctx.t('upload.biz_id_placeholder', 'biz_id')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_104));
     var __VLS_102;
     const __VLS_107 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_108 = __VLS_asFunctionalComponent(__VLS_107, new __VLS_107({
-        label: "上传人",
+        label: (__VLS_ctx.t('upload.uploaded_by', 'Uploaded by')),
     }));
     const __VLS_109 = __VLS_108({
-        label: "上传人",
+        label: (__VLS_ctx.t('upload.uploaded_by', 'Uploaded by')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_108));
     __VLS_110.slots.default;
     const __VLS_111 = {}.ElInput;
@@ -777,12 +817,12 @@ __VLS_30.slots.default;
     const __VLS_112 = __VLS_asFunctionalComponent(__VLS_111, new __VLS_111({
         modelValue: (__VLS_ctx.query.uploaded_by),
         clearable: true,
-        placeholder: "uploaded_by",
+        placeholder: (__VLS_ctx.t('upload.uploaded_by_placeholder', 'uploaded_by')),
     }));
     const __VLS_113 = __VLS_112({
         modelValue: (__VLS_ctx.query.uploaded_by),
         clearable: true,
-        placeholder: "uploaded_by",
+        placeholder: (__VLS_ctx.t('upload.uploaded_by_placeholder', 'uploaded_by')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_112));
     var __VLS_110;
     const __VLS_115 = {}.ElFormItem;
@@ -809,6 +849,7 @@ __VLS_30.slots.default;
         onClick: (__VLS_ctx.handleSearch)
     };
     __VLS_122.slots.default;
+    (__VLS_ctx.t('common.search', 'Search'));
     var __VLS_122;
     const __VLS_127 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -826,6 +867,7 @@ __VLS_30.slots.default;
         onClick: (__VLS_ctx.handleReset)
     };
     __VLS_130.slots.default;
+    (__VLS_ctx.t('common.reset', 'Reset'));
     var __VLS_130;
     var __VLS_118;
     var __VLS_50;
@@ -850,13 +892,13 @@ const __VLS_139 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_140 = __VLS_asFunctionalComponent(__VLS_139, new __VLS_139({
     prop: "original_name",
-    label: "文件名",
+    label: (__VLS_ctx.t('upload.file_name', 'File name')),
     minWidth: "220",
     showOverflowTooltip: true,
 }));
 const __VLS_141 = __VLS_140({
     prop: "original_name",
-    label: "文件名",
+    label: (__VLS_ctx.t('upload.file_name', 'File name')),
     minWidth: "220",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_140));
@@ -872,12 +914,12 @@ const __VLS_143 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_144 = __VLS_asFunctionalComponent(__VLS_143, new __VLS_143({
     prop: "visibility",
-    label: "可见性",
+    label: (__VLS_ctx.t('upload.visibility.label', 'Visibility')),
     width: "100",
 }));
 const __VLS_145 = __VLS_144({
     prop: "visibility",
-    label: "可见性",
+    label: (__VLS_ctx.t('upload.visibility.label', 'Visibility')),
     width: "100",
 }, ...__VLS_functionalComponentArgsRest(__VLS_144));
 __VLS_146.slots.default;
@@ -905,12 +947,12 @@ const __VLS_151 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_152 = __VLS_asFunctionalComponent(__VLS_151, new __VLS_151({
     prop: "status",
-    label: "状态",
+    label: (__VLS_ctx.t('upload.status.label', 'Status')),
     width: "110",
 }));
 const __VLS_153 = __VLS_152({
     prop: "status",
-    label: "状态",
+    label: (__VLS_ctx.t('upload.status.label', 'Status')),
     width: "110",
 }, ...__VLS_functionalComponentArgsRest(__VLS_152));
 __VLS_154.slots.default;
@@ -938,13 +980,13 @@ const __VLS_159 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_160 = __VLS_asFunctionalComponent(__VLS_159, new __VLS_159({
     prop: "mime_type",
-    label: "MIME 类型",
+    label: (__VLS_ctx.t('upload.mime_type', 'MIME type')),
     minWidth: "180",
     showOverflowTooltip: true,
 }));
 const __VLS_161 = __VLS_160({
     prop: "mime_type",
-    label: "MIME 类型",
+    label: (__VLS_ctx.t('upload.mime_type', 'MIME type')),
     minWidth: "180",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_160));
@@ -960,12 +1002,12 @@ const __VLS_163 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_164 = __VLS_asFunctionalComponent(__VLS_163, new __VLS_163({
     prop: "extension",
-    label: "扩展名",
+    label: (__VLS_ctx.t('upload.extension', 'Extension')),
     width: "110",
 }));
 const __VLS_165 = __VLS_164({
     prop: "extension",
-    label: "扩展名",
+    label: (__VLS_ctx.t('upload.extension', 'Extension')),
     width: "110",
 }, ...__VLS_functionalComponentArgsRest(__VLS_164));
 __VLS_166.slots.default;
@@ -980,12 +1022,12 @@ const __VLS_167 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_168 = __VLS_asFunctionalComponent(__VLS_167, new __VLS_167({
     prop: "size_bytes",
-    label: "大小",
+    label: (__VLS_ctx.t('upload.size', 'Size')),
     width: "120",
 }));
 const __VLS_169 = __VLS_168({
     prop: "size_bytes",
-    label: "大小",
+    label: (__VLS_ctx.t('upload.size', 'Size')),
     width: "120",
 }, ...__VLS_functionalComponentArgsRest(__VLS_168));
 __VLS_170.slots.default;
@@ -1000,12 +1042,12 @@ const __VLS_171 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_172 = __VLS_asFunctionalComponent(__VLS_171, new __VLS_171({
     prop: "storage_driver",
-    label: "存储驱动",
+    label: (__VLS_ctx.t('upload.storage_driver', 'Storage driver')),
     width: "130",
 }));
 const __VLS_173 = __VLS_172({
     prop: "storage_driver",
-    label: "存储驱动",
+    label: (__VLS_ctx.t('upload.storage_driver', 'Storage driver')),
     width: "130",
 }, ...__VLS_functionalComponentArgsRest(__VLS_172));
 __VLS_174.slots.default;
@@ -1020,13 +1062,13 @@ const __VLS_175 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_176 = __VLS_asFunctionalComponent(__VLS_175, new __VLS_175({
     prop: "biz_module",
-    label: "业务模块",
+    label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
     minWidth: "140",
     showOverflowTooltip: true,
 }));
 const __VLS_177 = __VLS_176({
     prop: "biz_module",
-    label: "业务模块",
+    label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
     minWidth: "140",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_176));
@@ -1042,13 +1084,13 @@ const __VLS_179 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_180 = __VLS_asFunctionalComponent(__VLS_179, new __VLS_179({
     prop: "biz_type",
-    label: "业务类型",
+    label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
     minWidth: "140",
     showOverflowTooltip: true,
 }));
 const __VLS_181 = __VLS_180({
     prop: "biz_type",
-    label: "业务类型",
+    label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
     minWidth: "140",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_180));
@@ -1064,13 +1106,13 @@ const __VLS_183 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_184 = __VLS_asFunctionalComponent(__VLS_183, new __VLS_183({
     prop: "biz_id",
-    label: "业务ID",
+    label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
     minWidth: "140",
     showOverflowTooltip: true,
 }));
 const __VLS_185 = __VLS_184({
     prop: "biz_id",
-    label: "业务ID",
+    label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
     minWidth: "140",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_184));
@@ -1086,12 +1128,12 @@ const __VLS_187 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_188 = __VLS_asFunctionalComponent(__VLS_187, new __VLS_187({
     prop: "uploaded_by",
-    label: "上传人",
+    label: (__VLS_ctx.t('upload.uploaded_by', 'Uploaded by')),
     width: "140",
 }));
 const __VLS_189 = __VLS_188({
     prop: "uploaded_by",
-    label: "上传人",
+    label: (__VLS_ctx.t('upload.uploaded_by', 'Uploaded by')),
     width: "140",
 }, ...__VLS_functionalComponentArgsRest(__VLS_188));
 __VLS_190.slots.default;
@@ -1105,11 +1147,11 @@ const __VLS_191 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_192 = __VLS_asFunctionalComponent(__VLS_191, new __VLS_191({
-    label: "更新时间",
+    label: (__VLS_ctx.t('upload.updated_at', 'Updated at')),
     minWidth: "180",
 }));
 const __VLS_193 = __VLS_192({
-    label: "更新时间",
+    label: (__VLS_ctx.t('upload.updated_at', 'Updated at')),
     minWidth: "180",
 }, ...__VLS_functionalComponentArgsRest(__VLS_192));
 __VLS_194.slots.default;
@@ -1123,12 +1165,12 @@ const __VLS_195 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_196 = __VLS_asFunctionalComponent(__VLS_195, new __VLS_195({
-    label: "操作",
+    label: (__VLS_ctx.t('common.actions', 'Actions')),
     width: "300",
     fixed: "right",
 }));
 const __VLS_197 = __VLS_196({
-    label: "操作",
+    label: (__VLS_ctx.t('common.actions', 'Actions')),
     width: "300",
     fixed: "right",
 }, ...__VLS_functionalComponentArgsRest(__VLS_196));
@@ -1173,6 +1215,7 @@ __VLS_198.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('upload:file:preview') }, null, null);
     __VLS_206.slots.default;
+    (__VLS_ctx.t('upload.preview', 'Preview'));
     var __VLS_206;
     const __VLS_211 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -1197,6 +1240,7 @@ __VLS_198.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('upload:file:download') }, null, null);
     __VLS_214.slots.default;
+    (__VLS_ctx.t('upload.download', 'Download'));
     var __VLS_214;
     const __VLS_219 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -1221,6 +1265,7 @@ __VLS_198.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('upload:file:bind') }, null, null);
     __VLS_222.slots.default;
+    (__VLS_ctx.t('upload.bind', 'Bind'));
     var __VLS_222;
     const __VLS_227 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -1243,6 +1288,7 @@ __VLS_198.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('upload:file:unbind') }, null, null);
     __VLS_230.slots.default;
+    (__VLS_ctx.t('upload.unbind', 'Unbind'));
     var __VLS_230;
     const __VLS_235 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -1267,6 +1313,7 @@ __VLS_198.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('upload:file:delete') }, null, null);
     __VLS_238.slots.default;
+    (__VLS_ctx.t('common.delete', 'Delete'));
     var __VLS_238;
     var __VLS_202;
 }
@@ -1317,13 +1364,13 @@ const __VLS_252 = {}.ElDialog;
 // @ts-ignore
 const __VLS_253 = __VLS_asFunctionalComponent(__VLS_252, new __VLS_252({
     modelValue: (__VLS_ctx.uploadDialogVisible),
-    title: "上传文件",
+    title: (__VLS_ctx.t('upload.upload_title', 'Upload file')),
     width: "760px",
     destroyOnClose: true,
 }));
 const __VLS_254 = __VLS_253({
     modelValue: (__VLS_ctx.uploadDialogVisible),
-    title: "上传文件",
+    title: (__VLS_ctx.t('upload.upload_title', 'Upload file')),
     width: "760px",
     destroyOnClose: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_253));
@@ -1332,14 +1379,14 @@ const __VLS_256 = {}.ElAlert;
 /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
 // @ts-ignore
 const __VLS_257 = __VLS_asFunctionalComponent(__VLS_256, new __VLS_256({
-    title: "支持在上传时填写业务绑定信息和备注；文件内容会按后端存储策略进行校验。",
+    title: (__VLS_ctx.t('upload.upload_alert', 'You can fill in business binding info and a remark during upload; file content is validated according to the backend storage policy.')),
     type: "info",
     closable: (false),
     showIcon: true,
     ...{ class: "mb-4" },
 }));
 const __VLS_258 = __VLS_257({
-    title: "支持在上传时填写业务绑定信息和备注；文件内容会按后端存储策略进行校验。",
+    title: (__VLS_ctx.t('upload.upload_alert', 'You can fill in business binding info and a remark during upload; file content is validated according to the backend storage policy.')),
     type: "info",
     closable: (false),
     showIcon: true,
@@ -1369,11 +1416,11 @@ const __VLS_266 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_267 = __VLS_asFunctionalComponent(__VLS_266, new __VLS_266({
-    label: "文件",
+    label: (__VLS_ctx.t('upload.file', 'File')),
     required: true,
 }));
 const __VLS_268 = __VLS_267({
-    label: "文件",
+    label: (__VLS_ctx.t('upload.file', 'File')),
     required: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_267));
 __VLS_269.slots.default;
@@ -1403,6 +1450,7 @@ const __VLS_281 = {
     onClick: (__VLS_ctx.triggerFileSelect)
 };
 __VLS_277.slots.default;
+(__VLS_ctx.t('upload.choose_file', 'Choose file'));
 var __VLS_277;
 if (__VLS_ctx.selectedFile) {
     const __VLS_282 = {}.ElTag;
@@ -1429,6 +1477,7 @@ else {
         type: "info",
     }, ...__VLS_functionalComponentArgsRest(__VLS_287));
     __VLS_289.slots.default;
+    (__VLS_ctx.t('upload.no_file_selected', 'No file selected'));
     var __VLS_289;
 }
 var __VLS_273;
@@ -1444,11 +1493,11 @@ const __VLS_290 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_291 = __VLS_asFunctionalComponent(__VLS_290, new __VLS_290({
-    label: "可见性",
+    label: (__VLS_ctx.t('upload.visibility.label', 'Visibility')),
     prop: "visibility",
 }));
 const __VLS_292 = __VLS_291({
-    label: "可见性",
+    label: (__VLS_ctx.t('upload.visibility.label', 'Visibility')),
     prop: "visibility",
 }, ...__VLS_functionalComponentArgsRest(__VLS_291));
 __VLS_293.slots.default;
@@ -1458,12 +1507,12 @@ const __VLS_294 = {}.ElSelect;
 const __VLS_295 = __VLS_asFunctionalComponent(__VLS_294, new __VLS_294({
     modelValue: (__VLS_ctx.uploadForm.visibility),
     ...{ style: {} },
-    placeholder: "请选择可见性",
+    placeholder: (__VLS_ctx.t('upload.visibility.placeholder', 'Select visibility')),
 }));
 const __VLS_296 = __VLS_295({
     modelValue: (__VLS_ctx.uploadForm.visibility),
     ...{ style: {} },
-    placeholder: "请选择可见性",
+    placeholder: (__VLS_ctx.t('upload.visibility.placeholder', 'Select visibility')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_295));
 __VLS_297.slots.default;
 for (const [option] of __VLS_getVForSourceType((__VLS_ctx.visibilityOptions))) {
@@ -1487,10 +1536,10 @@ const __VLS_302 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_303 = __VLS_asFunctionalComponent(__VLS_302, new __VLS_302({
-    label: "业务模块",
+    label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
 }));
 const __VLS_304 = __VLS_303({
-    label: "业务模块",
+    label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_303));
 __VLS_305.slots.default;
 const __VLS_306 = {}.ElInput;
@@ -1498,21 +1547,21 @@ const __VLS_306 = {}.ElInput;
 // @ts-ignore
 const __VLS_307 = __VLS_asFunctionalComponent(__VLS_306, new __VLS_306({
     modelValue: (__VLS_ctx.uploadForm.biz_module),
-    placeholder: "请输入业务模块",
+    placeholder: (__VLS_ctx.t('upload.biz_module_placeholder_input', 'Enter business module')),
 }));
 const __VLS_308 = __VLS_307({
     modelValue: (__VLS_ctx.uploadForm.biz_module),
-    placeholder: "请输入业务模块",
+    placeholder: (__VLS_ctx.t('upload.biz_module_placeholder_input', 'Enter business module')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_307));
 var __VLS_305;
 const __VLS_310 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_311 = __VLS_asFunctionalComponent(__VLS_310, new __VLS_310({
-    label: "业务类型",
+    label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
 }));
 const __VLS_312 = __VLS_311({
-    label: "业务类型",
+    label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_311));
 __VLS_313.slots.default;
 const __VLS_314 = {}.ElInput;
@@ -1520,21 +1569,21 @@ const __VLS_314 = {}.ElInput;
 // @ts-ignore
 const __VLS_315 = __VLS_asFunctionalComponent(__VLS_314, new __VLS_314({
     modelValue: (__VLS_ctx.uploadForm.biz_type),
-    placeholder: "请输入业务类型",
+    placeholder: (__VLS_ctx.t('upload.biz_type_placeholder_input', 'Enter business type')),
 }));
 const __VLS_316 = __VLS_315({
     modelValue: (__VLS_ctx.uploadForm.biz_type),
-    placeholder: "请输入业务类型",
+    placeholder: (__VLS_ctx.t('upload.biz_type_placeholder_input', 'Enter business type')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_315));
 var __VLS_313;
 const __VLS_318 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_319 = __VLS_asFunctionalComponent(__VLS_318, new __VLS_318({
-    label: "业务ID",
+    label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
 }));
 const __VLS_320 = __VLS_319({
-    label: "业务ID",
+    label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_319));
 __VLS_321.slots.default;
 const __VLS_322 = {}.ElInput;
@@ -1542,21 +1591,21 @@ const __VLS_322 = {}.ElInput;
 // @ts-ignore
 const __VLS_323 = __VLS_asFunctionalComponent(__VLS_322, new __VLS_322({
     modelValue: (__VLS_ctx.uploadForm.biz_id),
-    placeholder: "请输入业务ID",
+    placeholder: (__VLS_ctx.t('upload.biz_id_placeholder_input', 'Enter business ID')),
 }));
 const __VLS_324 = __VLS_323({
     modelValue: (__VLS_ctx.uploadForm.biz_id),
-    placeholder: "请输入业务ID",
+    placeholder: (__VLS_ctx.t('upload.biz_id_placeholder_input', 'Enter business ID')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_323));
 var __VLS_321;
 const __VLS_326 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_327 = __VLS_asFunctionalComponent(__VLS_326, new __VLS_326({
-    label: "业务字段",
+    label: (__VLS_ctx.t('upload.biz_field', 'Business field')),
 }));
 const __VLS_328 = __VLS_327({
-    label: "业务字段",
+    label: (__VLS_ctx.t('upload.biz_field', 'Business field')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_327));
 __VLS_329.slots.default;
 const __VLS_330 = {}.ElInput;
@@ -1564,21 +1613,21 @@ const __VLS_330 = {}.ElInput;
 // @ts-ignore
 const __VLS_331 = __VLS_asFunctionalComponent(__VLS_330, new __VLS_330({
     modelValue: (__VLS_ctx.uploadForm.biz_field),
-    placeholder: "请输入业务字段",
+    placeholder: (__VLS_ctx.t('upload.biz_field_placeholder', 'Enter business field')),
 }));
 const __VLS_332 = __VLS_331({
     modelValue: (__VLS_ctx.uploadForm.biz_field),
-    placeholder: "请输入业务字段",
+    placeholder: (__VLS_ctx.t('upload.biz_field_placeholder', 'Enter business field')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_331));
 var __VLS_329;
 const __VLS_334 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_335 = __VLS_asFunctionalComponent(__VLS_334, new __VLS_334({
-    label: "备注",
+    label: (__VLS_ctx.t('upload.remark', 'Remark')),
 }));
 const __VLS_336 = __VLS_335({
-    label: "备注",
+    label: (__VLS_ctx.t('upload.remark', 'Remark')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_335));
 __VLS_337.slots.default;
 const __VLS_338 = {}.ElInput;
@@ -1588,13 +1637,13 @@ const __VLS_339 = __VLS_asFunctionalComponent(__VLS_338, new __VLS_338({
     modelValue: (__VLS_ctx.uploadForm.remark),
     type: "textarea",
     rows: (3),
-    placeholder: "请输入备注",
+    placeholder: (__VLS_ctx.t('upload.remark_placeholder', 'Enter a remark')),
 }));
 const __VLS_340 = __VLS_339({
     modelValue: (__VLS_ctx.uploadForm.remark),
     type: "textarea",
     rows: (3),
-    placeholder: "请输入备注",
+    placeholder: (__VLS_ctx.t('upload.remark_placeholder', 'Enter a remark')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_339));
 var __VLS_337;
 var __VLS_263;
@@ -1618,6 +1667,7 @@ var __VLS_263;
         }
     };
     __VLS_345.slots.default;
+    (__VLS_ctx.t('common.cancel', 'Cancel'));
     var __VLS_345;
     const __VLS_350 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -1641,6 +1691,7 @@ var __VLS_263;
         onClick: (__VLS_ctx.submitUpload)
     };
     __VLS_353.slots.default;
+    (__VLS_ctx.t('upload.confirm_upload', 'Confirm upload'));
     var __VLS_353;
 }
 var __VLS_255;
@@ -1649,13 +1700,13 @@ const __VLS_358 = {}.ElDialog;
 // @ts-ignore
 const __VLS_359 = __VLS_asFunctionalComponent(__VLS_358, new __VLS_358({
     modelValue: (__VLS_ctx.bindDialogVisible),
-    title: "绑定文件",
+    title: (__VLS_ctx.t('upload.bind_title', 'Bind file')),
     width: "680px",
     destroyOnClose: true,
 }));
 const __VLS_360 = __VLS_359({
     modelValue: (__VLS_ctx.bindDialogVisible),
-    title: "绑定文件",
+    title: (__VLS_ctx.t('upload.bind_title', 'Bind file')),
     width: "680px",
     destroyOnClose: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_359));
@@ -1665,14 +1716,14 @@ if (__VLS_ctx.bindTarget) {
     /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
     // @ts-ignore
     const __VLS_363 = __VLS_asFunctionalComponent(__VLS_362, new __VLS_362({
-        title: (`当前文件：${__VLS_ctx.bindTarget.original_name || __VLS_ctx.bindTarget.id}`),
+        title: (__VLS_ctx.t('upload.current_file', 'Current file: {name}', { name: __VLS_ctx.bindTarget.original_name || __VLS_ctx.bindTarget.id })),
         type: "info",
         closable: (false),
         showIcon: true,
         ...{ class: "mb-4" },
     }));
     const __VLS_364 = __VLS_363({
-        title: (`当前文件：${__VLS_ctx.bindTarget.original_name || __VLS_ctx.bindTarget.id}`),
+        title: (__VLS_ctx.t('upload.current_file', 'Current file: {name}', { name: __VLS_ctx.bindTarget.original_name || __VLS_ctx.bindTarget.id })),
         type: "info",
         closable: (false),
         showIcon: true,
@@ -1703,11 +1754,11 @@ const __VLS_372 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_373 = __VLS_asFunctionalComponent(__VLS_372, new __VLS_372({
-    label: "业务模块",
+    label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
     prop: "biz_module",
 }));
 const __VLS_374 = __VLS_373({
-    label: "业务模块",
+    label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
     prop: "biz_module",
 }, ...__VLS_functionalComponentArgsRest(__VLS_373));
 __VLS_375.slots.default;
@@ -1716,22 +1767,22 @@ const __VLS_376 = {}.ElInput;
 // @ts-ignore
 const __VLS_377 = __VLS_asFunctionalComponent(__VLS_376, new __VLS_376({
     modelValue: (__VLS_ctx.bindForm.biz_module),
-    placeholder: "请输入业务模块",
+    placeholder: (__VLS_ctx.t('upload.biz_module_placeholder_input', 'Enter business module')),
 }));
 const __VLS_378 = __VLS_377({
     modelValue: (__VLS_ctx.bindForm.biz_module),
-    placeholder: "请输入业务模块",
+    placeholder: (__VLS_ctx.t('upload.biz_module_placeholder_input', 'Enter business module')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_377));
 var __VLS_375;
 const __VLS_380 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_381 = __VLS_asFunctionalComponent(__VLS_380, new __VLS_380({
-    label: "业务类型",
+    label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
     prop: "biz_type",
 }));
 const __VLS_382 = __VLS_381({
-    label: "业务类型",
+    label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
     prop: "biz_type",
 }, ...__VLS_functionalComponentArgsRest(__VLS_381));
 __VLS_383.slots.default;
@@ -1740,22 +1791,22 @@ const __VLS_384 = {}.ElInput;
 // @ts-ignore
 const __VLS_385 = __VLS_asFunctionalComponent(__VLS_384, new __VLS_384({
     modelValue: (__VLS_ctx.bindForm.biz_type),
-    placeholder: "请输入业务类型",
+    placeholder: (__VLS_ctx.t('upload.biz_type_placeholder_input', 'Enter business type')),
 }));
 const __VLS_386 = __VLS_385({
     modelValue: (__VLS_ctx.bindForm.biz_type),
-    placeholder: "请输入业务类型",
+    placeholder: (__VLS_ctx.t('upload.biz_type_placeholder_input', 'Enter business type')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_385));
 var __VLS_383;
 const __VLS_388 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_389 = __VLS_asFunctionalComponent(__VLS_388, new __VLS_388({
-    label: "业务ID",
+    label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
     prop: "biz_id",
 }));
 const __VLS_390 = __VLS_389({
-    label: "业务ID",
+    label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
     prop: "biz_id",
 }, ...__VLS_functionalComponentArgsRest(__VLS_389));
 __VLS_391.slots.default;
@@ -1764,22 +1815,22 @@ const __VLS_392 = {}.ElInput;
 // @ts-ignore
 const __VLS_393 = __VLS_asFunctionalComponent(__VLS_392, new __VLS_392({
     modelValue: (__VLS_ctx.bindForm.biz_id),
-    placeholder: "请输入业务ID",
+    placeholder: (__VLS_ctx.t('upload.biz_id_placeholder_input', 'Enter business ID')),
 }));
 const __VLS_394 = __VLS_393({
     modelValue: (__VLS_ctx.bindForm.biz_id),
-    placeholder: "请输入业务ID",
+    placeholder: (__VLS_ctx.t('upload.biz_id_placeholder_input', 'Enter business ID')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_393));
 var __VLS_391;
 const __VLS_396 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_397 = __VLS_asFunctionalComponent(__VLS_396, new __VLS_396({
-    label: "业务字段",
+    label: (__VLS_ctx.t('upload.biz_field', 'Business field')),
     prop: "biz_field",
 }));
 const __VLS_398 = __VLS_397({
-    label: "业务字段",
+    label: (__VLS_ctx.t('upload.biz_field', 'Business field')),
     prop: "biz_field",
 }, ...__VLS_functionalComponentArgsRest(__VLS_397));
 __VLS_399.slots.default;
@@ -1788,11 +1839,11 @@ const __VLS_400 = {}.ElInput;
 // @ts-ignore
 const __VLS_401 = __VLS_asFunctionalComponent(__VLS_400, new __VLS_400({
     modelValue: (__VLS_ctx.bindForm.biz_field),
-    placeholder: "请输入业务字段",
+    placeholder: (__VLS_ctx.t('upload.biz_field_placeholder', 'Enter business field')),
 }));
 const __VLS_402 = __VLS_401({
     modelValue: (__VLS_ctx.bindForm.biz_field),
-    placeholder: "请输入业务字段",
+    placeholder: (__VLS_ctx.t('upload.biz_field_placeholder', 'Enter business field')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_401));
 var __VLS_399;
 var __VLS_369;
@@ -1816,6 +1867,7 @@ var __VLS_369;
         }
     };
     __VLS_407.slots.default;
+    (__VLS_ctx.t('common.cancel', 'Cancel'));
     var __VLS_407;
     const __VLS_412 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -1837,6 +1889,7 @@ var __VLS_369;
         onClick: (__VLS_ctx.submitBind)
     };
     __VLS_415.slots.default;
+    (__VLS_ctx.t('upload.confirm_bind', 'Confirm bind'));
     var __VLS_415;
 }
 var __VLS_361;
@@ -1930,6 +1983,7 @@ if (__VLS_ctx.previewItem) {
             }
         };
         __VLS_443.slots.default;
+        (__VLS_ctx.t('upload.preview.copy_public_url', 'Copy public URL'));
         var __VLS_443;
     }
     var __VLS_431;
@@ -1938,11 +1992,11 @@ if (__VLS_ctx.previewItem) {
         /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
         // @ts-ignore
         const __VLS_449 = __VLS_asFunctionalComponent(__VLS_448, new __VLS_448({
-            title: "当前文件类型不适合在线预览，请使用下载按钮获取原文件。",
+            title: (__VLS_ctx.t('upload.preview.download_hint', 'This file type is not suitable for online preview. Use the download button to get the original file.')),
             ...{ class: "mb-4" },
         }));
         const __VLS_450 = __VLS_449({
-            title: "当前文件类型不适合在线预览，请使用下载按钮获取原文件。",
+            title: (__VLS_ctx.t('upload.preview.download_hint', 'This file type is not suitable for online preview. Use the download button to get the original file.')),
             ...{ class: "mb-4" },
         }, ...__VLS_functionalComponentArgsRest(__VLS_449));
     }
@@ -1964,10 +2018,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_457 = __VLS_asFunctionalComponent(__VLS_456, new __VLS_456({
-        label: "文件名",
+        label: (__VLS_ctx.t('upload.file_name', 'File name')),
     }));
     const __VLS_458 = __VLS_457({
-        label: "文件名",
+        label: (__VLS_ctx.t('upload.file_name', 'File name')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_457));
     __VLS_459.slots.default;
     (__VLS_ctx.previewItem.original_name || '-');
@@ -1976,10 +2030,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_461 = __VLS_asFunctionalComponent(__VLS_460, new __VLS_460({
-        label: "可见性",
+        label: (__VLS_ctx.t('upload.visibility.label', 'Visibility')),
     }));
     const __VLS_462 = __VLS_461({
-        label: "可见性",
+        label: (__VLS_ctx.t('upload.visibility.label', 'Visibility')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_461));
     __VLS_463.slots.default;
     (__VLS_ctx.resolveUploadVisibilityLabel(__VLS_ctx.previewItem.visibility));
@@ -1988,10 +2042,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_465 = __VLS_asFunctionalComponent(__VLS_464, new __VLS_464({
-        label: "状态",
+        label: (__VLS_ctx.t('upload.status.label', 'Status')),
     }));
     const __VLS_466 = __VLS_465({
-        label: "状态",
+        label: (__VLS_ctx.t('upload.status.label', 'Status')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_465));
     __VLS_467.slots.default;
     (__VLS_ctx.resolveUploadStatusLabel(__VLS_ctx.previewItem.status));
@@ -2000,10 +2054,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_469 = __VLS_asFunctionalComponent(__VLS_468, new __VLS_468({
-        label: "大小",
+        label: (__VLS_ctx.t('upload.size', 'Size')),
     }));
     const __VLS_470 = __VLS_469({
-        label: "大小",
+        label: (__VLS_ctx.t('upload.size', 'Size')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_469));
     __VLS_471.slots.default;
     (__VLS_ctx.formatUploadFileSize(__VLS_ctx.previewItem.size_bytes));
@@ -2012,10 +2066,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_473 = __VLS_asFunctionalComponent(__VLS_472, new __VLS_472({
-        label: "MIME 类型",
+        label: (__VLS_ctx.t('upload.mime_type', 'MIME type')),
     }));
     const __VLS_474 = __VLS_473({
-        label: "MIME 类型",
+        label: (__VLS_ctx.t('upload.mime_type', 'MIME type')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_473));
     __VLS_475.slots.default;
     (__VLS_ctx.previewItem.mime_type || '-');
@@ -2024,10 +2078,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_477 = __VLS_asFunctionalComponent(__VLS_476, new __VLS_476({
-        label: "扩展名",
+        label: (__VLS_ctx.t('upload.extension', 'Extension')),
     }));
     const __VLS_478 = __VLS_477({
-        label: "扩展名",
+        label: (__VLS_ctx.t('upload.extension', 'Extension')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_477));
     __VLS_479.slots.default;
     (__VLS_ctx.previewItem.extension || '-');
@@ -2036,10 +2090,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_481 = __VLS_asFunctionalComponent(__VLS_480, new __VLS_480({
-        label: "存储驱动",
+        label: (__VLS_ctx.t('upload.storage_driver', 'Storage driver')),
     }));
     const __VLS_482 = __VLS_481({
-        label: "存储驱动",
+        label: (__VLS_ctx.t('upload.storage_driver', 'Storage driver')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_481));
     __VLS_483.slots.default;
     (__VLS_ctx.previewItem.storage_driver || '-');
@@ -2048,10 +2102,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_485 = __VLS_asFunctionalComponent(__VLS_484, new __VLS_484({
-        label: "存储键",
+        label: (__VLS_ctx.t('upload.storage_key', 'Storage key')),
     }));
     const __VLS_486 = __VLS_485({
-        label: "存储键",
+        label: (__VLS_ctx.t('upload.storage_key', 'Storage key')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_485));
     __VLS_487.slots.default;
     (__VLS_ctx.previewItem.storage_key || '-');
@@ -2060,10 +2114,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_489 = __VLS_asFunctionalComponent(__VLS_488, new __VLS_488({
-        label: "业务模块",
+        label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
     }));
     const __VLS_490 = __VLS_489({
-        label: "业务模块",
+        label: (__VLS_ctx.t('upload.biz_module', 'Business module')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_489));
     __VLS_491.slots.default;
     (__VLS_ctx.previewItem.biz_module || '-');
@@ -2072,10 +2126,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_493 = __VLS_asFunctionalComponent(__VLS_492, new __VLS_492({
-        label: "业务类型",
+        label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
     }));
     const __VLS_494 = __VLS_493({
-        label: "业务类型",
+        label: (__VLS_ctx.t('upload.biz_type', 'Business type')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_493));
     __VLS_495.slots.default;
     (__VLS_ctx.previewItem.biz_type || '-');
@@ -2084,10 +2138,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_497 = __VLS_asFunctionalComponent(__VLS_496, new __VLS_496({
-        label: "业务ID",
+        label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
     }));
     const __VLS_498 = __VLS_497({
-        label: "业务ID",
+        label: (__VLS_ctx.t('upload.biz_id', 'Business ID')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_497));
     __VLS_499.slots.default;
     (__VLS_ctx.previewItem.biz_id || '-');
@@ -2096,10 +2150,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_501 = __VLS_asFunctionalComponent(__VLS_500, new __VLS_500({
-        label: "业务字段",
+        label: (__VLS_ctx.t('upload.biz_field', 'Business field')),
     }));
     const __VLS_502 = __VLS_501({
-        label: "业务字段",
+        label: (__VLS_ctx.t('upload.biz_field', 'Business field')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_501));
     __VLS_503.slots.default;
     (__VLS_ctx.previewItem.biz_field || '-');
@@ -2108,10 +2162,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_505 = __VLS_asFunctionalComponent(__VLS_504, new __VLS_504({
-        label: "上传人",
+        label: (__VLS_ctx.t('upload.uploaded_by', 'Uploaded by')),
     }));
     const __VLS_506 = __VLS_505({
-        label: "上传人",
+        label: (__VLS_ctx.t('upload.uploaded_by', 'Uploaded by')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_505));
     __VLS_507.slots.default;
     (__VLS_ctx.previewItem.uploaded_by || '-');
@@ -2120,10 +2174,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_509 = __VLS_asFunctionalComponent(__VLS_508, new __VLS_508({
-        label: "更新时间",
+        label: (__VLS_ctx.t('upload.updated_at', 'Updated at')),
     }));
     const __VLS_510 = __VLS_509({
-        label: "更新时间",
+        label: (__VLS_ctx.t('upload.updated_at', 'Updated at')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_509));
     __VLS_511.slots.default;
     (__VLS_ctx.formatDateTime(__VLS_ctx.previewItem.updated_at));
@@ -2132,10 +2186,10 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_513 = __VLS_asFunctionalComponent(__VLS_512, new __VLS_512({
-        label: "访问方式",
+        label: (__VLS_ctx.t('upload.access_mode', 'Access mode')),
     }));
     const __VLS_514 = __VLS_513({
-        label: "访问方式",
+        label: (__VLS_ctx.t('upload.access_mode', 'Access mode')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_513));
     __VLS_515.slots.default;
     (__VLS_ctx.getPreviewSourceLabel());
@@ -2144,11 +2198,11 @@ if (__VLS_ctx.previewItem) {
     /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_517 = __VLS_asFunctionalComponent(__VLS_516, new __VLS_516({
-        label: "公开地址",
+        label: (__VLS_ctx.t('upload.public_url', 'Public URL')),
         span: (2),
     }));
     const __VLS_518 = __VLS_517({
-        label: "公开地址",
+        label: (__VLS_ctx.t('upload.public_url', 'Public URL')),
         span: (2),
     }, ...__VLS_functionalComponentArgsRest(__VLS_517));
     __VLS_519.slots.default;
@@ -2171,6 +2225,7 @@ if (__VLS_ctx.previewItem) {
             onClick: (__VLS_ctx.openPreviewWindow)
         };
         __VLS_523.slots.default;
+        (__VLS_ctx.t('upload.open_in_new_window', 'Open in new window'));
         var __VLS_523;
     }
     else {
@@ -2205,7 +2260,7 @@ if (__VLS_ctx.previewItem) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.iframe)({
             src: (__VLS_ctx.previewBrowserUrl),
             ...{ class: "upload-preview-document" },
-            title: "文件预览",
+            title: (__VLS_ctx.t('upload.preview.iframe_file', 'File preview')),
         });
     }
     else if (__VLS_ctx.previewBrowserUrl && __VLS_ctx.previewKind === 'text') {
@@ -2215,7 +2270,7 @@ if (__VLS_ctx.previewItem) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.iframe)({
             src: (__VLS_ctx.previewBrowserUrl),
             ...{ class: "upload-preview-text" },
-            title: "文本预览",
+            title: (__VLS_ctx.t('upload.preview.iframe_text', 'Text preview')),
         });
     }
     else if (__VLS_ctx.previewBrowserUrl) {
@@ -2223,13 +2278,13 @@ if (__VLS_ctx.previewItem) {
         /** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
         // @ts-ignore
         const __VLS_533 = __VLS_asFunctionalComponent(__VLS_532, new __VLS_532({
-            title: "当前文件使用临时预览地址，已在上方显示元数据。",
+            title: (__VLS_ctx.t('upload.preview.temp_url_hint', 'This file is using a temporary preview URL; its metadata is shown above.')),
             type: "info",
             closable: (false),
             showIcon: true,
         }));
         const __VLS_534 = __VLS_533({
-            title: "当前文件使用临时预览地址，已在上方显示元数据。",
+            title: (__VLS_ctx.t('upload.preview.temp_url_hint', 'This file is using a temporary preview URL; its metadata is shown above.')),
             type: "info",
             closable: (false),
             showIcon: true,
@@ -2256,6 +2311,7 @@ if (__VLS_ctx.previewItem) {
         }
     };
     __VLS_539.slots.default;
+    (__VLS_ctx.t('common.close', 'Close'));
     var __VLS_539;
     if (__VLS_ctx.previewItem) {
         const __VLS_544 = {}.ElButton;
@@ -2280,6 +2336,7 @@ if (__VLS_ctx.previewItem) {
             }
         };
         __VLS_547.slots.default;
+        (__VLS_ctx.t('upload.download_file', 'Download file'));
         var __VLS_547;
     }
 }
@@ -2316,10 +2373,9 @@ const __VLS_self = (await import('vue')).defineComponent({
             isBrowserDirectPublicUrl: isBrowserDirectPublicUrl,
             formatUploadFileSize: formatUploadFileSize,
             isPreviewableImage: isPreviewableImage,
-            resolveUploadStatusLabel: resolveUploadStatusLabel,
             resolveUploadStatusTagType: resolveUploadStatusTagType,
-            resolveUploadVisibilityLabel: resolveUploadVisibilityLabel,
             resolveUploadVisibilityTagType: resolveUploadVisibilityTagType,
+            t: t,
             tableLoading: tableLoading,
             storageSettingLoading: storageSettingLoading,
             storageSettingSaving: storageSettingSaving,
@@ -2352,6 +2408,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             previewKind: previewKind,
             previewTitle: previewTitle,
             uploadReady: uploadReady,
+            resolveUploadVisibilityLabel: resolveUploadVisibilityLabel,
+            resolveUploadStatusLabel: resolveUploadStatusLabel,
             revokePreviewBrowserUrl: revokePreviewBrowserUrl,
             loadFiles: loadFiles,
             submitStorageSetting: submitStorageSetting,

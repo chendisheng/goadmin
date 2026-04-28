@@ -4,6 +4,8 @@ const route = {
     component: () => import('@/views/casbin_rule/index.vue'),
     meta: {
         title: 'rules',
+        titleKey: 'route.casbin_rules',
+        titleDefault: 'Policy management',
         icon: 'menu',
     },
 };

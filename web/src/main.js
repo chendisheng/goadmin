@@ -1,9 +1,10 @@
-import { createApp } from 'vue';
+import { createApp, watch } from 'vue';
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';
 import { restoreAuthenticatedSession } from '@/auth/bootstrap';
 import { setUnauthorizedHandler } from '@/api/http';
 import { permissionDirective } from '@/directives/permission';
+import { initializeI18n, setI18nLanguage } from '@/i18n';
 import App from './App.vue';
 import router from './router';
 import pinia from './store';
@@ -25,6 +26,10 @@ sessionStore.hydrate();
 appStore.hydrate();
 localeStore.hydrate();
 tabsStore.hydrate();
+await initializeI18n(localeStore.language);
+watch(() => localeStore.language, (language) => {
+    void setI18nLanguage(language);
+});
 setUnauthorizedHandler(() => {
     menuStore.clear(router);
     tabsStore.clearTabs();

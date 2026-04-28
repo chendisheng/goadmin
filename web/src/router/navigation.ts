@@ -42,6 +42,30 @@ function resolveTitleKey(meta: Pick<BackendMenuRoute['meta'], 'title' | 'titleKe
   return (meta.titleKey || meta.titleDefault || meta.title || '').trim();
 }
 
+function namespacesFromComponentName(componentName: string): string[] {
+  const normalized = componentName.trim();
+  if (normalized === '' || normalized === 'Layout') {
+    return [];
+  }
+
+  const segments = normalized.split('/').filter(Boolean);
+  if (segments.length === 0) {
+    return [];
+  }
+
+  const viewIndex = segments[0] === 'view' || segments[0] === 'views' ? 1 : 0;
+  if (viewIndex >= segments.length) {
+    return [];
+  }
+
+  const namespace = segments[viewIndex] === 'system' && viewIndex + 1 < segments.length
+    ? segments[viewIndex + 1]
+    : segments[viewIndex];
+
+  const normalizedNamespace = namespace.trim().toLowerCase();
+  return normalizedNamespace === '' ? [] : [normalizedNamespace];
+}
+
 function componentNameToModulePath(componentName: string): string | null {
   const normalized = componentName.trim();
   if (normalized === '') {
@@ -187,6 +211,8 @@ function buildRouteRecord(node: BackendMenuRoute, parentPath = '/'): RouteRecord
       icon: node.meta.icon,
       permission: node.meta.permission,
       link: node.meta.link,
+      componentName: componentName || undefined,
+      i18nNamespaces: namespacesFromComponentName(componentName),
       hidden: node.hidden,
       inMenu: !node.hidden,
       hideInMenu: node.hidden,
@@ -242,6 +268,8 @@ export function mapPluginMenusToBackendRoutes(items: PluginMenu[]): BackendMenuR
       subtitle: item.subtitle,
       subtitleKey: item.subtitleKey,
       subtitleDefault: item.subtitleDefault,
+      componentName: item.component,
+      i18nNamespaces: namespacesFromComponentName(item.component || ''),
     },
     children: mapPluginMenusToBackendRoutes(item.children ?? []),
   }));

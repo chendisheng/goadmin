@@ -1,0 +1,19 @@
+{
+  "casbin_model.title": "Model management",
+  "casbin_model.description": "Manage, edit, and delete authorization model configurations.",
+  "casbin_model.keyword_placeholder": "Search CasbinModel data",
+  "casbin_model.content": "Content",
+  "casbin_model.content_placeholder": "Enter content",
+  "casbin_model.id": "ID",
+  "casbin_model.created_at": "Created at",
+  "casbin_model.updated_at": "Updated at",
+  "casbin_model.actions": "Actions",
+  "casbin_model.edit_title": "Edit model",
+  "casbin_model.create_title": "New model",
+  "casbin_model.deleted": "CasbinModel deleted",
+  "casbin_model.created": "CasbinModel created",
+  "casbin_model.updated": "CasbinModel updated",
+  "casbin_model.save_failed": "Save failed",
+  "casbin_model.delete_title": "Delete CasbinModel",
+  "casbin_model.confirm_delete": "Delete CasbinModel {name}?"
+}

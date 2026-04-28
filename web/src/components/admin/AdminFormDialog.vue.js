@@ -1,8 +1,8 @@
 const __VLS_props = withDefaults(defineProps(), {
     width: '720px',
     loading: false,
-    confirmText: '保存',
-    cancelText: '取消',
+    confirmText: 'Save',
+    cancelText: 'Cancel',
 });
 const emit = defineEmits();
 function updateVisible(value) {
@@ -22,8 +22,8 @@ debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_withDefaultsArg = (function (t) { return t; })({
     width: '720px',
     loading: false,
-    confirmText: '保存',
-    cancelText: '取消',
+    confirmText: 'Save',
+    cancelText: 'Cancel',
 });
 const __VLS_ctx = {};
 let __VLS_components;

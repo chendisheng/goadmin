@@ -19,9 +19,9 @@ export function resolveUploadVisibilityLabel(value) {
     }
     switch (value) {
         case 'public':
-            return '公开';
+            return 'Public';
         case 'private':
-            return '私有';
+            return 'Private';
         default:
             return value;
     }
@@ -35,11 +35,11 @@ export function resolveUploadStatusLabel(value) {
     }
     switch (value) {
         case 'active':
-            return '有效';
+            return 'Active';
         case 'archived':
-            return '已归档';
+            return 'Archived';
         case 'deleted':
-            return '已删除';
+            return 'Deleted';
         default:
             return value;
     }

@@ -6,6 +6,7 @@ const route = {
     title: 'Book',
     titleKey: 'route.book',
     titleDefault: 'Book',
+    i18nNamespaces: ['book'],
     icon: 'menu',
   },
 }

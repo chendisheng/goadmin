@@ -4,8 +4,10 @@ import { computed } from 'vue';
 import AppHeader from './components/AppHeader.vue';
 import AppSidebar from './components/AppSidebar.vue';
 import TabsBar from './components/TabsBar.vue';
+import { useLocaleStore } from '@/store/locale';
 import { useTabsStore } from '@/store/tabs';
 
+const localeStore = useLocaleStore();
 const tabsStore = useTabsStore();
 const cachedViewNames = computed(() => tabsStore.cachedViewNames);
 </script>
@@ -19,7 +21,7 @@ const cachedViewNames = computed(() => tabsStore.cachedViewNames);
       <el-main class="app-layout__main">
         <router-view v-slot="{ Component, route }">
           <KeepAlive :include="cachedViewNames">
-            <component :is="Component" :key="route.fullPath" />
+            <component :is="Component" :key="`${route.fullPath}:${localeStore.language}`" />
           </KeepAlive>
         </router-view>
       </el-main>

@@ -113,7 +113,7 @@ const __VLS_23 = {
     }
 };
 __VLS_19.slots.default;
-(__VLS_ctx.appStore.sidebarCollapsed ? __VLS_ctx.t('common.expand_sidebar', '展开侧栏') : __VLS_ctx.t('common.collapse_sidebar', '收起侧栏'));
+(__VLS_ctx.appStore.sidebarCollapsed ? __VLS_ctx.t('common.expand_sidebar', 'Expand sidebar') : __VLS_ctx.t('common.collapse_sidebar', 'Collapse sidebar'));
 var __VLS_19;
 var __VLS_3;
 /** @type {__VLS_StyleScopedClasses['app-sidebar']} */ ;

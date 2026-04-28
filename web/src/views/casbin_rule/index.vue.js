@@ -85,30 +85,30 @@ async function submitForm() {
         };
         if (editingId.value) {
             await updateCasbinRule(editingId.value, payload);
-            ElMessage.success(t('casbin_rule.updated', 'CasbinRule 已更新'));
+            ElMessage.success(t('casbin_rule.updated', 'CasbinRule updated'));
         }
         else {
             await createCasbinRule(payload);
-            ElMessage.success(t('casbin_rule.created', 'CasbinRule 已创建'));
+            ElMessage.success(t('casbin_rule.created', 'CasbinRule created'));
         }
         dialogVisible.value = false;
         await loadItems();
     }
     catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : t('casbin_rule.save_failed', '保存失败'));
+        ElMessage.error(error instanceof Error ? error.message : t('casbin_rule.save_failed', 'Save failed'));
     }
     finally {
         dialogLoading.value = false;
     }
 }
 async function removeRow(row) {
-    await ElMessageBox.confirm(t('casbin_rule.confirm_delete', '确认删除 CasbinRule {name} 吗？', { name: row.id }), t('casbin_rule.delete_title', '删除 CasbinRule'), {
+    await ElMessageBox.confirm(t('casbin_rule.confirm_delete', 'Delete CasbinRule {name}?', { name: row.id }), t('casbin_rule.delete_title', 'Delete CasbinRule'), {
         type: 'warning',
-        confirmButtonText: t('common.delete', '删除'),
-        cancelButtonText: t('common.cancel', '取消'),
+        confirmButtonText: t('common.delete', 'Delete'),
+        cancelButtonText: t('common.cancel', 'Cancel'),
     });
     await deleteCasbinRule(row.id);
-    ElMessage.success(t('casbin_rule.deleted', 'CasbinRule 已删除'));
+    ElMessage.success(t('casbin_rule.deleted', 'CasbinRule deleted'));
     await loadItems();
 }
 function handleSearch() {
@@ -142,13 +142,13 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 /** @type {[typeof AdminTable, typeof AdminTable, ]} */ ;
 // @ts-ignore
 const __VLS_0 = __VLS_asFunctionalComponent(AdminTable, new AdminTable({
-    title: (__VLS_ctx.t('casbin_rule.title', '策略管理')),
-    description: (__VLS_ctx.t('casbin_rule.description', '授权策略规则的列表、编辑和删除入口。')),
+    title: (__VLS_ctx.t('casbin_rule.title', 'Rule management')),
+    description: (__VLS_ctx.t('casbin_rule.description', 'Manage authorization policy rules, including listing, editing, and deletion.')),
     loading: (__VLS_ctx.tableLoading),
 }));
 const __VLS_1 = __VLS_0({
-    title: (__VLS_ctx.t('casbin_rule.title', '策略管理')),
-    description: (__VLS_ctx.t('casbin_rule.description', '授权策略规则的列表、编辑和删除入口。')),
+    title: (__VLS_ctx.t('casbin_rule.title', 'Rule management')),
+    description: (__VLS_ctx.t('casbin_rule.description', 'Manage authorization policy rules, including listing, editing, and deletion.')),
     loading: (__VLS_ctx.tableLoading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
 __VLS_2.slots.default;
@@ -172,7 +172,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.loadItems)
     };
     __VLS_6.slots.default;
-    (__VLS_ctx.t('common.refresh', '刷新'));
+    (__VLS_ctx.t('common.refresh', 'Refresh'));
     var __VLS_6;
     const __VLS_11 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -193,7 +193,7 @@ __VLS_2.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('casbin_rule:create') }, null, null);
     __VLS_14.slots.default;
-    (__VLS_ctx.t('common.create', '新增'));
+    (__VLS_ctx.t('common.create', 'Create'));
     var __VLS_14;
 }
 {
@@ -216,10 +216,10 @@ __VLS_2.slots.default;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_24 = __VLS_asFunctionalComponent(__VLS_23, new __VLS_23({
-        label: (__VLS_ctx.t('common.search', '查询')),
+        label: (__VLS_ctx.t('common.search', 'Search')),
     }));
     const __VLS_25 = __VLS_24({
-        label: (__VLS_ctx.t('common.search', '查询')),
+        label: (__VLS_ctx.t('common.search', 'Search')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_24));
     __VLS_26.slots.default;
     const __VLS_27 = {}.ElInput;
@@ -228,12 +228,12 @@ __VLS_2.slots.default;
     const __VLS_28 = __VLS_asFunctionalComponent(__VLS_27, new __VLS_27({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: (__VLS_ctx.t('casbin_rule.keyword_placeholder', '搜索 CasbinRule 数据')),
+        placeholder: (__VLS_ctx.t('casbin_rule.keyword_placeholder', 'Search CasbinRule data')),
     }));
     const __VLS_29 = __VLS_28({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: (__VLS_ctx.t('casbin_rule.keyword_placeholder', '搜索 CasbinRule 数据')),
+        placeholder: (__VLS_ctx.t('casbin_rule.keyword_placeholder', 'Search CasbinRule data')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_28));
     var __VLS_26;
     const __VLS_31 = {}.ElFormItem;
@@ -260,7 +260,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleSearch)
     };
     __VLS_38.slots.default;
-    (__VLS_ctx.t('common.search', '查询'));
+    (__VLS_ctx.t('common.search', 'Search'));
     var __VLS_38;
     const __VLS_43 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -278,7 +278,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleReset)
     };
     __VLS_46.slots.default;
-    (__VLS_ctx.t('common.reset', '重置'));
+    (__VLS_ctx.t('common.reset', 'Reset'));
     var __VLS_46;
     var __VLS_34;
     var __VLS_22;
@@ -469,11 +469,11 @@ const __VLS_87 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_88 = __VLS_asFunctionalComponent(__VLS_87, new __VLS_87({
-    label: (__VLS_ctx.t('casbin_rule.created_at', '创建时间')),
+    label: (__VLS_ctx.t('casbin_rule.created_at', 'Created at')),
     minWidth: "180",
 }));
 const __VLS_89 = __VLS_88({
-    label: (__VLS_ctx.t('casbin_rule.created_at', '创建时间')),
+    label: (__VLS_ctx.t('casbin_rule.created_at', 'Created at')),
     minWidth: "180",
 }, ...__VLS_functionalComponentArgsRest(__VLS_88));
 __VLS_90.slots.default;
@@ -487,11 +487,11 @@ const __VLS_91 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_92 = __VLS_asFunctionalComponent(__VLS_91, new __VLS_91({
-    label: (__VLS_ctx.t('casbin_rule.updated_at', '更新时间')),
+    label: (__VLS_ctx.t('casbin_rule.updated_at', 'Updated at')),
     minWidth: "180",
 }));
 const __VLS_93 = __VLS_92({
-    label: (__VLS_ctx.t('casbin_rule.updated_at', '更新时间')),
+    label: (__VLS_ctx.t('casbin_rule.updated_at', 'Updated at')),
     minWidth: "180",
 }, ...__VLS_functionalComponentArgsRest(__VLS_92));
 __VLS_94.slots.default;
@@ -505,12 +505,12 @@ const __VLS_95 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_96 = __VLS_asFunctionalComponent(__VLS_95, new __VLS_95({
-    label: (__VLS_ctx.t('casbin_rule.actions', '操作')),
+    label: (__VLS_ctx.t('casbin_rule.actions', 'Actions')),
     width: "180",
     fixed: "right",
 }));
 const __VLS_97 = __VLS_96({
-    label: (__VLS_ctx.t('casbin_rule.actions', '操作')),
+    label: (__VLS_ctx.t('casbin_rule.actions', 'Actions')),
     width: "180",
     fixed: "right",
 }, ...__VLS_functionalComponentArgsRest(__VLS_96));
@@ -541,7 +541,7 @@ __VLS_98.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('casbin_rule:update') }, null, null);
     __VLS_102.slots.default;
-    (__VLS_ctx.t('common.edit', '编辑'));
+    (__VLS_ctx.t('common.edit', 'Edit'));
     var __VLS_102;
     const __VLS_107 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -566,7 +566,7 @@ __VLS_98.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('casbin_rule:delete') }, null, null);
     __VLS_110.slots.default;
-    (__VLS_ctx.t('common.delete', '删除'));
+    (__VLS_ctx.t('common.delete', 'Delete'));
     var __VLS_110;
 }
 var __VLS_98;
@@ -616,13 +616,13 @@ var __VLS_2;
 const __VLS_124 = __VLS_asFunctionalComponent(AdminFormDialog, new AdminFormDialog({
     ...{ 'onConfirm': {} },
     modelValue: (__VLS_ctx.dialogVisible),
-    title: (__VLS_ctx.editingId ? __VLS_ctx.t('casbin_rule.edit_title', '编辑策略') : __VLS_ctx.t('casbin_rule.create_title', '新增策略')),
+    title: (__VLS_ctx.editingId ? __VLS_ctx.t('casbin_rule.edit_title', 'Edit rule') : __VLS_ctx.t('casbin_rule.create_title', 'New rule')),
     loading: (__VLS_ctx.dialogLoading),
 }));
 const __VLS_125 = __VLS_124({
     ...{ 'onConfirm': {} },
     modelValue: (__VLS_ctx.dialogVisible),
-    title: (__VLS_ctx.editingId ? __VLS_ctx.t('casbin_rule.edit_title', '编辑策略') : __VLS_ctx.t('casbin_rule.create_title', '新增策略')),
+    title: (__VLS_ctx.editingId ? __VLS_ctx.t('casbin_rule.edit_title', 'Edit rule') : __VLS_ctx.t('casbin_rule.create_title', 'New rule')),
     loading: (__VLS_ctx.dialogLoading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_124));
 let __VLS_127;
@@ -659,11 +659,11 @@ const __VLS_139 = {}.ElInput;
 // @ts-ignore
 const __VLS_140 = __VLS_asFunctionalComponent(__VLS_139, new __VLS_139({
     modelValue: (__VLS_ctx.form.ptype),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'Ptype' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'Ptype' })),
 }));
 const __VLS_141 = __VLS_140({
     modelValue: (__VLS_ctx.form.ptype),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'Ptype' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'Ptype' })),
 }, ...__VLS_functionalComponentArgsRest(__VLS_140));
 var __VLS_138;
 const __VLS_143 = {}.ElFormItem;
@@ -681,11 +681,11 @@ const __VLS_147 = {}.ElInput;
 // @ts-ignore
 const __VLS_148 = __VLS_asFunctionalComponent(__VLS_147, new __VLS_147({
     modelValue: (__VLS_ctx.form.v0),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V0' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V0' })),
 }));
 const __VLS_149 = __VLS_148({
     modelValue: (__VLS_ctx.form.v0),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V0' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V0' })),
 }, ...__VLS_functionalComponentArgsRest(__VLS_148));
 var __VLS_146;
 const __VLS_151 = {}.ElFormItem;
@@ -703,11 +703,11 @@ const __VLS_155 = {}.ElInput;
 // @ts-ignore
 const __VLS_156 = __VLS_asFunctionalComponent(__VLS_155, new __VLS_155({
     modelValue: (__VLS_ctx.form.v1),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V1' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V1' })),
 }));
 const __VLS_157 = __VLS_156({
     modelValue: (__VLS_ctx.form.v1),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V1' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V1' })),
 }, ...__VLS_functionalComponentArgsRest(__VLS_156));
 var __VLS_154;
 const __VLS_159 = {}.ElFormItem;
@@ -725,11 +725,11 @@ const __VLS_163 = {}.ElInput;
 // @ts-ignore
 const __VLS_164 = __VLS_asFunctionalComponent(__VLS_163, new __VLS_163({
     modelValue: (__VLS_ctx.form.v2),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V2' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V2' })),
 }));
 const __VLS_165 = __VLS_164({
     modelValue: (__VLS_ctx.form.v2),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V2' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V2' })),
 }, ...__VLS_functionalComponentArgsRest(__VLS_164));
 var __VLS_162;
 const __VLS_167 = {}.ElFormItem;
@@ -747,11 +747,11 @@ const __VLS_171 = {}.ElInput;
 // @ts-ignore
 const __VLS_172 = __VLS_asFunctionalComponent(__VLS_171, new __VLS_171({
     modelValue: (__VLS_ctx.form.v3),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V3' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V3' })),
 }));
 const __VLS_173 = __VLS_172({
     modelValue: (__VLS_ctx.form.v3),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V3' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V3' })),
 }, ...__VLS_functionalComponentArgsRest(__VLS_172));
 var __VLS_170;
 const __VLS_175 = {}.ElFormItem;
@@ -769,11 +769,11 @@ const __VLS_179 = {}.ElInput;
 // @ts-ignore
 const __VLS_180 = __VLS_asFunctionalComponent(__VLS_179, new __VLS_179({
     modelValue: (__VLS_ctx.form.v4),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V4' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V4' })),
 }));
 const __VLS_181 = __VLS_180({
     modelValue: (__VLS_ctx.form.v4),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V4' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V4' })),
 }, ...__VLS_functionalComponentArgsRest(__VLS_180));
 var __VLS_178;
 const __VLS_183 = {}.ElFormItem;
@@ -791,11 +791,11 @@ const __VLS_187 = {}.ElInput;
 // @ts-ignore
 const __VLS_188 = __VLS_asFunctionalComponent(__VLS_187, new __VLS_187({
     modelValue: (__VLS_ctx.form.v5),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V5' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V5' })),
 }));
 const __VLS_189 = __VLS_188({
     modelValue: (__VLS_ctx.form.v5),
-    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', '请输入 {field}', { field: 'V5' })),
+    placeholder: (__VLS_ctx.t('casbin_rule.placeholder', 'Enter {field}', { field: 'V5' })),
 }, ...__VLS_functionalComponentArgsRest(__VLS_188));
 var __VLS_186;
 var __VLS_134;

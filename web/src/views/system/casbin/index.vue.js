@@ -10,7 +10,7 @@ const actionLoading = ref(false);
 const status = ref({});
 const { t } = useAppI18n();
 const statusTag = computed(() => (status.value.enabled ? 'success' : 'info'));
-const statusText = computed(() => (status.value.enabled ? t('casbin.enabled', '已启用') : t('casbin.disabled', '未启用')));
+const statusText = computed(() => (status.value.enabled ? t('casbin.enabled', 'Enabled') : t('casbin.disabled', 'Disabled')));
 async function loadStatus() {
     loading.value = true;
     try {
@@ -24,7 +24,7 @@ async function handleReload() {
     actionLoading.value = true;
     try {
         await reloadAuthorizationPolicies();
-        ElMessage.success(t('casbin.reload_success', '授权模块已重新加载'));
+        ElMessage.success(t('casbin.reload_success', 'Authorization module reloaded'));
         await loadStatus();
     }
     finally {
@@ -35,7 +35,7 @@ async function handleSeed() {
     actionLoading.value = true;
     try {
         await seedAuthorizationPolicies();
-        ElMessage.success(t('casbin.seed_success', '授权模块默认策略已补齐'));
+        ElMessage.success(t('casbin.seed_success', 'Default authorization policies have been seeded'));
         await loadStatus();
     }
     finally {
@@ -61,13 +61,13 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 /** @type {[typeof AdminTable, typeof AdminTable, ]} */ ;
 // @ts-ignore
 const __VLS_0 = __VLS_asFunctionalComponent(AdminTable, new AdminTable({
-    title: (__VLS_ctx.t('casbin.title', '授权治理')),
-    description: (__VLS_ctx.t('casbin.description', '统一管理授权运行时、默认策略与模型、策略入口。')),
+    title: (__VLS_ctx.t('casbin.title', 'Authorization governance')),
+    description: (__VLS_ctx.t('casbin.description', 'Manage authorization runtime, default policies, and model/policy entry points.')),
     loading: (__VLS_ctx.loading),
 }));
 const __VLS_1 = __VLS_0({
-    title: (__VLS_ctx.t('casbin.title', '授权治理')),
-    description: (__VLS_ctx.t('casbin.description', '统一管理授权运行时、默认策略与模型、策略入口。')),
+    title: (__VLS_ctx.t('casbin.title', 'Authorization governance')),
+    description: (__VLS_ctx.t('casbin.description', 'Manage authorization runtime, default policies, and model/policy entry points.')),
     loading: (__VLS_ctx.loading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
 __VLS_2.slots.default;
@@ -91,7 +91,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.loadStatus)
     };
     __VLS_6.slots.default;
-    (__VLS_ctx.t('casbin.refresh_status', '刷新状态'));
+    (__VLS_ctx.t('casbin.refresh_status', 'Refresh status'));
     var __VLS_6;
     const __VLS_11 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -113,7 +113,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleReload)
     };
     __VLS_14.slots.default;
-    (__VLS_ctx.t('casbin.reload_runtime', '重载运行时'));
+    (__VLS_ctx.t('casbin.reload_runtime', 'Reload runtime'));
     var __VLS_14;
     const __VLS_19 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -133,7 +133,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleSeed)
     };
     __VLS_22.slots.default;
-    (__VLS_ctx.t('casbin.seed_default', '补齐默认策略'));
+    (__VLS_ctx.t('casbin.seed_default', 'Seed default policies'));
     var __VLS_22;
     const __VLS_27 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -151,7 +151,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.openModels)
     };
     __VLS_30.slots.default;
-    (__VLS_ctx.t('casbin.models', '模型管理'));
+    (__VLS_ctx.t('casbin.models', 'Model management'));
     var __VLS_30;
     const __VLS_35 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -169,7 +169,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.openRules)
     };
     __VLS_38.slots.default;
-    (__VLS_ctx.t('casbin.rules', '策略管理'));
+    (__VLS_ctx.t('casbin.rules', 'Policy management'));
     var __VLS_38;
 }
 const __VLS_43 = {}.ElRow;
@@ -208,7 +208,7 @@ const __VLS_53 = __VLS_52({
 __VLS_54.slots.default;
 {
     const { header: __VLS_thisSlot } = __VLS_54.slots;
-    (__VLS_ctx.t('casbin.status_panel', '运行状态'));
+    (__VLS_ctx.t('casbin.status_panel', 'Runtime status'));
 }
 const __VLS_55 = {}.ElDescriptions;
 /** @type {[typeof __VLS_components.ElDescriptions, typeof __VLS_components.elDescriptions, typeof __VLS_components.ElDescriptions, typeof __VLS_components.elDescriptions, ]} */ ;
@@ -226,10 +226,10 @@ const __VLS_59 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_60 = __VLS_asFunctionalComponent(__VLS_59, new __VLS_59({
-    label: (__VLS_ctx.t('casbin.enabled_status', '启用状态')),
+    label: (__VLS_ctx.t('casbin.enabled_status', 'Enabled status')),
 }));
 const __VLS_61 = __VLS_60({
-    label: (__VLS_ctx.t('casbin.enabled_status', '启用状态')),
+    label: (__VLS_ctx.t('casbin.enabled_status', 'Enabled status')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_60));
 __VLS_62.slots.default;
 const __VLS_63 = {}.ElTag;
@@ -251,10 +251,10 @@ const __VLS_67 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_68 = __VLS_asFunctionalComponent(__VLS_67, new __VLS_67({
-    label: (__VLS_ctx.t('casbin.source', '来源')),
+    label: (__VLS_ctx.t('casbin.source', 'Source')),
 }));
 const __VLS_69 = __VLS_68({
-    label: (__VLS_ctx.t('casbin.source', '来源')),
+    label: (__VLS_ctx.t('casbin.source', 'Source')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_68));
 __VLS_70.slots.default;
 (__VLS_ctx.status.source || '-');
@@ -263,10 +263,10 @@ const __VLS_71 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_72 = __VLS_asFunctionalComponent(__VLS_71, new __VLS_71({
-    label: (__VLS_ctx.t('casbin.model_path', '模型路径')),
+    label: (__VLS_ctx.t('casbin.model_path', 'Model path')),
 }));
 const __VLS_73 = __VLS_72({
-    label: (__VLS_ctx.t('casbin.model_path', '模型路径')),
+    label: (__VLS_ctx.t('casbin.model_path', 'Model path')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_72));
 __VLS_74.slots.default;
 (__VLS_ctx.status.model_path || '-');
@@ -275,10 +275,10 @@ const __VLS_75 = {}.ElDescriptionsItem;
 /** @type {[typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, typeof __VLS_components.ElDescriptionsItem, typeof __VLS_components.elDescriptionsItem, ]} */ ;
 // @ts-ignore
 const __VLS_76 = __VLS_asFunctionalComponent(__VLS_75, new __VLS_75({
-    label: (__VLS_ctx.t('casbin.policy_path', '策略路径')),
+    label: (__VLS_ctx.t('casbin.policy_path', 'Policy path')),
 }));
 const __VLS_77 = __VLS_76({
-    label: (__VLS_ctx.t('casbin.policy_path', '策略路径')),
+    label: (__VLS_ctx.t('casbin.policy_path', 'Policy path')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_76));
 __VLS_78.slots.default;
 (__VLS_ctx.status.policy_path || '-');
@@ -312,12 +312,12 @@ const __VLS_85 = __VLS_84({
 __VLS_86.slots.default;
 {
     const { header: __VLS_thisSlot } = __VLS_86.slots;
-    (__VLS_ctx.t('casbin.summary_title', '治理摘要'));
+    (__VLS_ctx.t('casbin.summary_title', 'Governance summary'));
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
     ...{ class: "casbin-summary" },
 });
-(__VLS_ctx.status.summary || __VLS_ctx.t('casbin.no_summary', '暂无摘要'));
+(__VLS_ctx.status.summary || __VLS_ctx.t('casbin.no_summary', 'No summary available'));
 const __VLS_87 = {}.ElDivider;
 /** @type {[typeof __VLS_components.ElDivider, typeof __VLS_components.elDivider, ]} */ ;
 // @ts-ignore
@@ -325,7 +325,7 @@ const __VLS_88 = __VLS_asFunctionalComponent(__VLS_87, new __VLS_87({}));
 const __VLS_89 = __VLS_88({}, ...__VLS_functionalComponentArgsRest(__VLS_88));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-(__VLS_ctx.t('casbin.legacy_modules', '关联入口'));
+(__VLS_ctx.t('casbin.legacy_modules', 'Linked entries'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
     ...{ class: "casbin-list" },
 });
@@ -337,7 +337,7 @@ for (const [item] of __VLS_getVForSourceType((__VLS_ctx.status.legacy_modules ||
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-(__VLS_ctx.t('casbin.available_routes', '可用接口'));
+(__VLS_ctx.t('casbin.available_routes', 'Available endpoints'));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
     ...{ class: "casbin-list" },
 });

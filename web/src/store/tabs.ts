@@ -2,7 +2,7 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 
-import { translate } from '@/i18n';
+import { useAppI18n } from '@/i18n';
 import type { WorkspaceTabRecord, WorkspaceTabSnapshot, WorkspaceTabState } from '@/types/tabs';
 
 const TAB_SNAPSHOT_KEY = 'goadmin.workspace.tabs.v1';
@@ -13,7 +13,8 @@ const DEFAULT_NON_TAB_ROUTES = new Set(['/login']);
 const DEFAULT_NON_TAB_ROUTE_NAMES = new Set(['login', 'not-found']);
 
 function defaultTabTitle(): string {
-  return translate('tabs.page', 'Page');
+  const { t } = useAppI18n();
+  return t('tabs.page', 'Page');
 }
 
 function canUseStorage(): boolean {

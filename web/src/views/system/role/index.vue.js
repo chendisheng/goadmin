@@ -4,6 +4,7 @@ import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { fetchMenuTree } from '@/api/system-menus';
 import { createRole, deleteRole, fetchRoles, updateRole } from '@/api/roles';
+import { useAppI18n } from '@/i18n';
 import { flattenMenuItems, formatDateTime, statusTagType } from '@/utils/admin';
 const tableLoading = ref(false);
 const dialogLoading = ref(false);
@@ -13,6 +14,7 @@ const rows = ref([]);
 const total = ref(0);
 const menuTree = ref([]);
 const editingId = ref('');
+const { t } = useAppI18n();
 const query = reactive({
     keyword: '',
     status: '',
@@ -28,6 +30,9 @@ const defaultForm = () => ({
     menu_ids: [],
 });
 const form = reactive(defaultForm());
+function getMenuDisplayTitle(item) {
+    return t(item.titleKey || '', item.titleDefault || item.name || t('menu.unnamed', 'Unnamed menu'));
+}
 const menuOptions = computed(() => flattenMenuItems(menuTree.value));
 function resetForm() {
     Object.assign(form, defaultForm());
@@ -72,11 +77,11 @@ function openEdit(row) {
     dialogVisible.value = true;
 }
 function statusLabel(status) {
-    return status === 'inactive' ? '禁用' : '启用';
+    return status === 'inactive' ? t('role.status.inactive', 'Disabled') : t('role.status.active', 'Enabled');
 }
 async function submitForm() {
     if (form.name.trim() === '' || form.code.trim() === '') {
-        ElMessage.warning('请输入角色名称和编码');
+        ElMessage.warning(t('role.validation_required', 'Enter the role name and code'));
         return;
     }
     dialogLoading.value = true;
@@ -92,11 +97,11 @@ async function submitForm() {
         };
         if (editingId.value) {
             await updateRole(editingId.value, payload);
-            ElMessage.success('角色已更新');
+            ElMessage.success(t('role.updated', 'Role updated'));
         }
         else {
             await createRole(payload);
-            ElMessage.success('角色已创建');
+            ElMessage.success(t('role.created', 'Role created'));
         }
         dialogVisible.value = false;
         await loadRoles();
@@ -106,13 +111,13 @@ async function submitForm() {
     }
 }
 async function removeRow(row) {
-    await ElMessageBox.confirm(`确认删除角色 ${row.name} 吗？`, '删除角色', {
+    await ElMessageBox.confirm(t('role.confirm_delete', 'Delete role {name}?', { name: row.name }), t('role.delete_title', 'Delete role'), {
         type: 'warning',
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
+        confirmButtonText: t('common.delete', 'Delete'),
+        cancelButtonText: t('common.cancel', 'Cancel'),
     });
     await deleteRole(row.id);
-    ElMessage.success('角色已删除');
+    ElMessage.success(t('role.deleted', 'Role deleted'));
     await loadRoles();
 }
 function handleSearch() {
@@ -147,13 +152,13 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 /** @type {[typeof AdminTable, typeof AdminTable, ]} */ ;
 // @ts-ignore
 const __VLS_0 = __VLS_asFunctionalComponent(AdminTable, new AdminTable({
-    title: "角色管理",
-    description: "维护角色基础信息和角色绑定菜单。",
+    title: (__VLS_ctx.t('role.title', 'Role management')),
+    description: (__VLS_ctx.t('role.description', 'Maintain role basics and menu bindings.')),
     loading: (__VLS_ctx.tableLoading),
 }));
 const __VLS_1 = __VLS_0({
-    title: "角色管理",
-    description: "维护角色基础信息和角色绑定菜单。",
+    title: (__VLS_ctx.t('role.title', 'Role management')),
+    description: (__VLS_ctx.t('role.description', 'Maintain role basics and menu bindings.')),
     loading: (__VLS_ctx.tableLoading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
 __VLS_2.slots.default;
@@ -177,6 +182,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.loadRoles)
     };
     __VLS_6.slots.default;
+    (__VLS_ctx.t('common.refresh', 'Refresh'));
     var __VLS_6;
     const __VLS_11 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -197,6 +203,7 @@ __VLS_2.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('role:create') }, null, null);
     __VLS_14.slots.default;
+    (__VLS_ctx.t('common.create', 'Create'));
     var __VLS_14;
 }
 {
@@ -219,10 +226,10 @@ __VLS_2.slots.default;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_24 = __VLS_asFunctionalComponent(__VLS_23, new __VLS_23({
-        label: "关键字",
+        label: (__VLS_ctx.t('role.keyword_label', 'Keyword')),
     }));
     const __VLS_25 = __VLS_24({
-        label: "关键字",
+        label: (__VLS_ctx.t('role.keyword_label', 'Keyword')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_24));
     __VLS_26.slots.default;
     const __VLS_27 = {}.ElInput;
@@ -231,22 +238,22 @@ __VLS_2.slots.default;
     const __VLS_28 = __VLS_asFunctionalComponent(__VLS_27, new __VLS_27({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: "角色名称 / 编码",
+        placeholder: (__VLS_ctx.t('role.keyword_placeholder', 'Role name / code')),
     }));
     const __VLS_29 = __VLS_28({
         modelValue: (__VLS_ctx.query.keyword),
         clearable: true,
-        placeholder: "角色名称 / 编码",
+        placeholder: (__VLS_ctx.t('role.keyword_placeholder', 'Role name / code')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_28));
     var __VLS_26;
     const __VLS_31 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
     const __VLS_32 = __VLS_asFunctionalComponent(__VLS_31, new __VLS_31({
-        label: "状态",
+        label: (__VLS_ctx.t('role.status_label', 'Status')),
     }));
     const __VLS_33 = __VLS_32({
-        label: "状态",
+        label: (__VLS_ctx.t('role.status_label', 'Status')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_32));
     __VLS_34.slots.default;
     const __VLS_35 = {}.ElSelect;
@@ -255,13 +262,13 @@ __VLS_2.slots.default;
     const __VLS_36 = __VLS_asFunctionalComponent(__VLS_35, new __VLS_35({
         modelValue: (__VLS_ctx.query.status),
         clearable: true,
-        placeholder: "全部状态",
+        placeholder: (__VLS_ctx.t('role.status_placeholder', 'All statuses')),
         ...{ style: {} },
     }));
     const __VLS_37 = __VLS_36({
         modelValue: (__VLS_ctx.query.status),
         clearable: true,
-        placeholder: "全部状态",
+        placeholder: (__VLS_ctx.t('role.status_placeholder', 'All statuses')),
         ...{ style: {} },
     }, ...__VLS_functionalComponentArgsRest(__VLS_36));
     __VLS_38.slots.default;
@@ -269,22 +276,22 @@ __VLS_2.slots.default;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_40 = __VLS_asFunctionalComponent(__VLS_39, new __VLS_39({
-        label: "启用",
+        label: (__VLS_ctx.t('role.status.active', 'Enabled')),
         value: "active",
     }));
     const __VLS_41 = __VLS_40({
-        label: "启用",
+        label: (__VLS_ctx.t('role.status.active', 'Enabled')),
         value: "active",
     }, ...__VLS_functionalComponentArgsRest(__VLS_40));
     const __VLS_43 = {}.ElOption;
     /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
     // @ts-ignore
     const __VLS_44 = __VLS_asFunctionalComponent(__VLS_43, new __VLS_43({
-        label: "禁用",
+        label: (__VLS_ctx.t('role.status.inactive', 'Disabled')),
         value: "inactive",
     }));
     const __VLS_45 = __VLS_44({
-        label: "禁用",
+        label: (__VLS_ctx.t('role.status.inactive', 'Disabled')),
         value: "inactive",
     }, ...__VLS_functionalComponentArgsRest(__VLS_44));
     var __VLS_38;
@@ -313,6 +320,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleSearch)
     };
     __VLS_54.slots.default;
+    (__VLS_ctx.t('common.search', 'Search'));
     var __VLS_54;
     const __VLS_59 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -330,6 +338,7 @@ __VLS_2.slots.default;
         onClick: (__VLS_ctx.handleReset)
     };
     __VLS_62.slots.default;
+    (__VLS_ctx.t('common.reset', 'Reset'));
     var __VLS_62;
     var __VLS_50;
     var __VLS_22;
@@ -354,12 +363,12 @@ const __VLS_71 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_72 = __VLS_asFunctionalComponent(__VLS_71, new __VLS_71({
     prop: "name",
-    label: "角色名称",
+    label: (__VLS_ctx.t('role.name', 'Role name')),
     minWidth: "140",
 }));
 const __VLS_73 = __VLS_72({
     prop: "name",
-    label: "角色名称",
+    label: (__VLS_ctx.t('role.name', 'Role name')),
     minWidth: "140",
 }, ...__VLS_functionalComponentArgsRest(__VLS_72));
 const __VLS_75 = {}.ElTableColumn;
@@ -367,23 +376,23 @@ const __VLS_75 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_76 = __VLS_asFunctionalComponent(__VLS_75, new __VLS_75({
     prop: "code",
-    label: "角色编码",
+    label: (__VLS_ctx.t('role.code', 'Role code')),
     minWidth: "140",
 }));
 const __VLS_77 = __VLS_76({
     prop: "code",
-    label: "角色编码",
+    label: (__VLS_ctx.t('role.code', 'Role code')),
     minWidth: "140",
 }, ...__VLS_functionalComponentArgsRest(__VLS_76));
 const __VLS_79 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_80 = __VLS_asFunctionalComponent(__VLS_79, new __VLS_79({
-    label: "状态",
+    label: (__VLS_ctx.t('role.status', 'Status')),
     width: "100",
 }));
 const __VLS_81 = __VLS_80({
-    label: "状态",
+    label: (__VLS_ctx.t('role.status', 'Status')),
     width: "100",
 }, ...__VLS_functionalComponentArgsRest(__VLS_80));
 __VLS_82.slots.default;
@@ -411,13 +420,13 @@ const __VLS_87 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_88 = __VLS_asFunctionalComponent(__VLS_87, new __VLS_87({
     prop: "remark",
-    label: "备注",
+    label: (__VLS_ctx.t('role.remark', 'Remark')),
     minWidth: "220",
     showOverflowTooltip: true,
 }));
 const __VLS_89 = __VLS_88({
     prop: "remark",
-    label: "备注",
+    label: (__VLS_ctx.t('role.remark', 'Remark')),
     minWidth: "220",
     showOverflowTooltip: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_88));
@@ -425,11 +434,11 @@ const __VLS_91 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_92 = __VLS_asFunctionalComponent(__VLS_91, new __VLS_91({
-    label: "菜单数量",
+    label: (__VLS_ctx.t('role.menu_count', 'Menu count')),
     width: "110",
 }));
 const __VLS_93 = __VLS_92({
-    label: "菜单数量",
+    label: (__VLS_ctx.t('role.menu_count', 'Menu count')),
     width: "110",
 }, ...__VLS_functionalComponentArgsRest(__VLS_92));
 __VLS_94.slots.default;
@@ -443,11 +452,11 @@ const __VLS_95 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_96 = __VLS_asFunctionalComponent(__VLS_95, new __VLS_95({
-    label: "创建时间",
+    label: (__VLS_ctx.t('role.created_at', 'Created at')),
     minWidth: "180",
 }));
 const __VLS_97 = __VLS_96({
-    label: "创建时间",
+    label: (__VLS_ctx.t('role.created_at', 'Created at')),
     minWidth: "180",
 }, ...__VLS_functionalComponentArgsRest(__VLS_96));
 __VLS_98.slots.default;
@@ -461,12 +470,12 @@ const __VLS_99 = {}.ElTableColumn;
 /** @type {[typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, typeof __VLS_components.ElTableColumn, typeof __VLS_components.elTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_100 = __VLS_asFunctionalComponent(__VLS_99, new __VLS_99({
-    label: "操作",
+    label: (__VLS_ctx.t('role.actions', 'Actions')),
     width: "180",
     fixed: "right",
 }));
 const __VLS_101 = __VLS_100({
-    label: "操作",
+    label: (__VLS_ctx.t('role.actions', 'Actions')),
     width: "180",
     fixed: "right",
 }, ...__VLS_functionalComponentArgsRest(__VLS_100));
@@ -497,6 +506,7 @@ __VLS_102.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('role:update') }, null, null);
     __VLS_106.slots.default;
+    (__VLS_ctx.t('common.edit', 'Edit'));
     var __VLS_106;
     const __VLS_111 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -521,6 +531,7 @@ __VLS_102.slots.default;
     };
     __VLS_asFunctionalDirective(__VLS_directives.vPermission)(null, { ...__VLS_directiveBindingRestFields, value: ('role:delete') }, null, null);
     __VLS_114.slots.default;
+    (__VLS_ctx.t('common.delete', 'Delete'));
     var __VLS_114;
 }
 var __VLS_102;
@@ -570,13 +581,13 @@ var __VLS_2;
 const __VLS_128 = __VLS_asFunctionalComponent(AdminFormDialog, new AdminFormDialog({
     ...{ 'onConfirm': {} },
     modelValue: (__VLS_ctx.dialogVisible),
-    title: (__VLS_ctx.editingId ? '编辑角色' : '新增角色'),
+    title: (__VLS_ctx.editingId ? __VLS_ctx.t('role.edit_title', 'Edit role') : __VLS_ctx.t('role.create_title', 'New role')),
     loading: (__VLS_ctx.dialogLoading),
 }));
 const __VLS_129 = __VLS_128({
     ...{ 'onConfirm': {} },
     modelValue: (__VLS_ctx.dialogVisible),
-    title: (__VLS_ctx.editingId ? '编辑角色' : '新增角色'),
+    title: (__VLS_ctx.editingId ? __VLS_ctx.t('role.edit_title', 'Edit role') : __VLS_ctx.t('role.create_title', 'New role')),
     loading: (__VLS_ctx.dialogLoading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_128));
 let __VLS_131;
@@ -602,11 +613,11 @@ const __VLS_139 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_140 = __VLS_asFunctionalComponent(__VLS_139, new __VLS_139({
-    label: "角色名称",
+    label: (__VLS_ctx.t('role.name', 'Role name')),
     required: true,
 }));
 const __VLS_141 = __VLS_140({
-    label: "角色名称",
+    label: (__VLS_ctx.t('role.name', 'Role name')),
     required: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_140));
 __VLS_142.slots.default;
@@ -615,22 +626,22 @@ const __VLS_143 = {}.ElInput;
 // @ts-ignore
 const __VLS_144 = __VLS_asFunctionalComponent(__VLS_143, new __VLS_143({
     modelValue: (__VLS_ctx.form.name),
-    placeholder: "请输入角色名称",
+    placeholder: (__VLS_ctx.t('role.name_placeholder', 'Enter the role name')),
 }));
 const __VLS_145 = __VLS_144({
     modelValue: (__VLS_ctx.form.name),
-    placeholder: "请输入角色名称",
+    placeholder: (__VLS_ctx.t('role.name_placeholder', 'Enter the role name')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_144));
 var __VLS_142;
 const __VLS_147 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_148 = __VLS_asFunctionalComponent(__VLS_147, new __VLS_147({
-    label: "角色编码",
+    label: (__VLS_ctx.t('role.code', 'Role code')),
     required: true,
 }));
 const __VLS_149 = __VLS_148({
-    label: "角色编码",
+    label: (__VLS_ctx.t('role.code', 'Role code')),
     required: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_148));
 __VLS_150.slots.default;
@@ -639,21 +650,21 @@ const __VLS_151 = {}.ElInput;
 // @ts-ignore
 const __VLS_152 = __VLS_asFunctionalComponent(__VLS_151, new __VLS_151({
     modelValue: (__VLS_ctx.form.code),
-    placeholder: "请输入角色编码",
+    placeholder: (__VLS_ctx.t('role.code_placeholder', 'Enter the role code')),
 }));
 const __VLS_153 = __VLS_152({
     modelValue: (__VLS_ctx.form.code),
-    placeholder: "请输入角色编码",
+    placeholder: (__VLS_ctx.t('role.code_placeholder', 'Enter the role code')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_152));
 var __VLS_150;
 const __VLS_155 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_156 = __VLS_asFunctionalComponent(__VLS_155, new __VLS_155({
-    label: "状态",
+    label: (__VLS_ctx.t('role.status', 'Status')),
 }));
 const __VLS_157 = __VLS_156({
-    label: "状态",
+    label: (__VLS_ctx.t('role.status', 'Status')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_156));
 __VLS_158.slots.default;
 const __VLS_159 = {}.ElSelect;
@@ -672,22 +683,22 @@ const __VLS_163 = {}.ElOption;
 /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
 // @ts-ignore
 const __VLS_164 = __VLS_asFunctionalComponent(__VLS_163, new __VLS_163({
-    label: "启用",
+    label: (__VLS_ctx.t('role.status.active', 'Enabled')),
     value: "active",
 }));
 const __VLS_165 = __VLS_164({
-    label: "启用",
+    label: (__VLS_ctx.t('role.status.active', 'Enabled')),
     value: "active",
 }, ...__VLS_functionalComponentArgsRest(__VLS_164));
 const __VLS_167 = {}.ElOption;
 /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
 // @ts-ignore
 const __VLS_168 = __VLS_asFunctionalComponent(__VLS_167, new __VLS_167({
-    label: "禁用",
+    label: (__VLS_ctx.t('role.status.inactive', 'Disabled')),
     value: "inactive",
 }));
 const __VLS_169 = __VLS_168({
-    label: "禁用",
+    label: (__VLS_ctx.t('role.status.inactive', 'Disabled')),
     value: "inactive",
 }, ...__VLS_functionalComponentArgsRest(__VLS_168));
 var __VLS_162;
@@ -696,10 +707,10 @@ const __VLS_171 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_172 = __VLS_asFunctionalComponent(__VLS_171, new __VLS_171({
-    label: "备注",
+    label: (__VLS_ctx.t('role.remark', 'Remark')),
 }));
 const __VLS_173 = __VLS_172({
-    label: "备注",
+    label: (__VLS_ctx.t('role.remark', 'Remark')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_172));
 __VLS_174.slots.default;
 const __VLS_175 = {}.ElInput;
@@ -709,23 +720,23 @@ const __VLS_176 = __VLS_asFunctionalComponent(__VLS_175, new __VLS_175({
     modelValue: (__VLS_ctx.form.remark),
     type: "textarea",
     rows: (3),
-    placeholder: "请输入备注",
+    placeholder: (__VLS_ctx.t('role.remark_placeholder', 'Enter a remark')),
 }));
 const __VLS_177 = __VLS_176({
     modelValue: (__VLS_ctx.form.remark),
     type: "textarea",
     rows: (3),
-    placeholder: "请输入备注",
+    placeholder: (__VLS_ctx.t('role.remark_placeholder', 'Enter a remark')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_176));
 var __VLS_174;
 const __VLS_179 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_180 = __VLS_asFunctionalComponent(__VLS_179, new __VLS_179({
-    label: "菜单权限",
+    label: (__VLS_ctx.t('role.menu_permissions', 'Menu permissions')),
 }));
 const __VLS_181 = __VLS_180({
-    label: "菜单权限",
+    label: (__VLS_ctx.t('role.menu_permissions', 'Menu permissions')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_180));
 __VLS_182.slots.default;
 const __VLS_183 = {}.ElSelect;
@@ -737,7 +748,7 @@ const __VLS_184 = __VLS_asFunctionalComponent(__VLS_183, new __VLS_183({
     clearable: true,
     filterable: true,
     loading: (__VLS_ctx.menuLoading),
-    placeholder: "选择角色可访问的菜单",
+    placeholder: (__VLS_ctx.t('role.menu_permissions_placeholder', 'Select the menus this role can access')),
 }));
 const __VLS_185 = __VLS_184({
     modelValue: (__VLS_ctx.form.menu_ids),
@@ -745,7 +756,7 @@ const __VLS_185 = __VLS_184({
     clearable: true,
     filterable: true,
     loading: (__VLS_ctx.menuLoading),
-    placeholder: "选择角色可访问的菜单",
+    placeholder: (__VLS_ctx.t('role.menu_permissions_placeholder', 'Select the menus this role can access')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_184));
 __VLS_186.slots.default;
 for (const [menu] of __VLS_getVForSourceType((__VLS_ctx.menuOptions))) {
@@ -754,12 +765,12 @@ for (const [menu] of __VLS_getVForSourceType((__VLS_ctx.menuOptions))) {
     // @ts-ignore
     const __VLS_188 = __VLS_asFunctionalComponent(__VLS_187, new __VLS_187({
         key: (menu.id),
-        label: (`${menu.name} (${menu.path})`),
+        label: (`${__VLS_ctx.getMenuDisplayTitle(menu)} (${menu.path})`),
         value: (menu.id),
     }));
     const __VLS_189 = __VLS_188({
         key: (menu.id),
-        label: (`${menu.name} (${menu.path})`),
+        label: (`${__VLS_ctx.getMenuDisplayTitle(menu)} (${menu.path})`),
         value: (menu.id),
     }, ...__VLS_functionalComponentArgsRest(__VLS_188));
 }
@@ -786,8 +797,10 @@ const __VLS_self = (await import('vue')).defineComponent({
             rows: rows,
             total: total,
             editingId: editingId,
+            t: t,
             query: query,
             form: form,
+            getMenuDisplayTitle: getMenuDisplayTitle,
             menuOptions: menuOptions,
             loadRoles: loadRoles,
             openCreate: openCreate,

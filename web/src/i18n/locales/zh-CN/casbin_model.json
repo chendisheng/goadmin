@@ -1,0 +1,19 @@
+{
+  "casbin_model.title": "模型管理",
+  "casbin_model.description": "授权模型配置的列表、编辑和删除入口。",
+  "casbin_model.keyword_placeholder": "搜索 CasbinModel 数据",
+  "casbin_model.content": "内容",
+  "casbin_model.content_placeholder": "请输入内容",
+  "casbin_model.id": "ID",
+  "casbin_model.created_at": "创建时间",
+  "casbin_model.updated_at": "更新时间",
+  "casbin_model.actions": "操作",
+  "casbin_model.edit_title": "编辑模型",
+  "casbin_model.create_title": "新增模型",
+  "casbin_model.deleted": "CasbinModel 已删除",
+  "casbin_model.created": "CasbinModel 已创建",
+  "casbin_model.updated": "CasbinModel 已更新",
+  "casbin_model.save_failed": "保存失败",
+  "casbin_model.delete_title": "删除 CasbinModel",
+  "casbin_model.confirm_delete": "确认删除 CasbinModel {name} 吗？"
+}

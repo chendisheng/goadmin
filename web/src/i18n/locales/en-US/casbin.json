@@ -1,0 +1,22 @@
+{
+  "casbin.title": "Authorization governance",
+  "casbin.description": "Manage authorization runtime, default policies, and model/policy entry points.",
+  "casbin.status_panel": "Runtime status",
+  "casbin.refresh_status": "Refresh status",
+  "casbin.reload_runtime": "Reload runtime",
+  "casbin.seed_default": "Seed default policies",
+  "casbin.models": "Model management",
+  "casbin.rules": "Policy management",
+  "casbin.enabled_status": "Enabled status",
+  "casbin.source": "Source",
+  "casbin.model_path": "Model path",
+  "casbin.policy_path": "Policy path",
+  "casbin.summary_title": "Governance summary",
+  "casbin.no_summary": "No summary yet",
+  "casbin.legacy_modules": "Related entries",
+  "casbin.available_routes": "Available APIs",
+  "casbin.enabled": "Enabled",
+  "casbin.disabled": "Disabled",
+  "casbin.reload_success": "Authorization module reloaded",
+  "casbin.seed_success": "Default authorization policies seeded"
+}

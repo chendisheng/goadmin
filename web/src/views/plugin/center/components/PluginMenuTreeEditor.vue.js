@@ -1,8 +1,10 @@
 import { ref } from 'vue';
+import { useAppI18n } from '@/i18n';
 import { createPluginMenuNode } from '@/utils/plugin';
 defineOptions({ name: 'PluginMenuTreeEditor' });
 const emit = defineEmits();
 const props = defineProps();
+const { t } = useAppI18n();
 const mutableMenus = props.menus;
 const draggingId = ref('');
 const dropHint = ref(null);
@@ -38,6 +40,9 @@ function clearDropHint() {
 }
 function isDropHint(targetId, position) {
     return dropHint.value?.targetId === targetId && dropHint.value?.position === position;
+}
+function getMenuDisplayTitle(menu) {
+    return t(menu.titleKey || '', menu.titleDefault || menu.name || menu.id || t('plugin.menu_unnamed', 'Unnamed menu'));
 }
 function onDrop(event, targetId, position) {
     event.preventDefault();
@@ -78,16 +83,17 @@ const __VLS_7 = {
     onClick: (__VLS_ctx.addRootMenu)
 };
 __VLS_3.slots.default;
+(__VLS_ctx.t('plugin.add_root_menu', 'Add root menu'));
 var __VLS_3;
 if (__VLS_ctx.mutableMenus.length === 0) {
     const __VLS_8 = {}.ElEmpty;
     /** @type {[typeof __VLS_components.ElEmpty, typeof __VLS_components.elEmpty, ]} */ ;
     // @ts-ignore
     const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
-        description: "暂无菜单，请先新增根菜单",
+        description: (__VLS_ctx.t('plugin.no_menus', 'No menus yet, please add a root menu first')),
     }));
     const __VLS_10 = __VLS_9({
-        description: "暂无菜单，请先新增根菜单",
+        description: (__VLS_ctx.t('plugin.no_menus', 'No menus yet, please add a root menu first')),
     }, ...__VLS_functionalComponentArgsRest(__VLS_9));
 }
 else {
@@ -114,8 +120,7 @@ else {
             ...{ class: "plugin-menu-tree-editor__dropzone" },
             ...{ class: ({ 'is-active': __VLS_ctx.isDropHint(menu.id, 'before') }) },
         });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-        (menu.name || menu.id || '当前菜单');
+        (__VLS_ctx.t('plugin.drop_before', 'Drop here to place before {name}', { name: menu.name || menu.id || __VLS_ctx.t('plugin.current_menu', 'Current menu') }));
         const __VLS_12 = {}.ElCard;
         /** @type {[typeof __VLS_components.ElCard, typeof __VLS_components.elCard, typeof __VLS_components.ElCard, typeof __VLS_components.elCard, ]} */ ;
         // @ts-ignore
@@ -153,7 +158,7 @@ else {
                 ...{ class: "page-card__header" },
             });
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-            (menu.name || menu.id || '未命名菜单');
+            (__VLS_ctx.getMenuDisplayTitle(menu));
             const __VLS_21 = {}.ElSpace;
             /** @type {[typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, typeof __VLS_components.ElSpace, typeof __VLS_components.elSpace, ]} */ ;
             // @ts-ignore
@@ -174,7 +179,7 @@ else {
                 effect: "plain",
             }, ...__VLS_functionalComponentArgsRest(__VLS_26));
             __VLS_28.slots.default;
-            (menu.type || 'menu');
+            (menu.type || __VLS_ctx.t('plugin.menu_type_menu', 'Menu'));
             var __VLS_28;
             const __VLS_29 = {}.ElTag;
             /** @type {[typeof __VLS_components.ElTag, typeof __VLS_components.elTag, typeof __VLS_components.ElTag, typeof __VLS_components.elTag, ]} */ ;
@@ -188,6 +193,7 @@ else {
                 type: "info",
             }, ...__VLS_functionalComponentArgsRest(__VLS_30));
             __VLS_32.slots.default;
+            (__VLS_ctx.t('plugin.drag_sorting', 'Drag sorting'));
             var __VLS_32;
             const __VLS_33 = {}.ElButton;
             /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -215,6 +221,7 @@ else {
                 }
             };
             __VLS_36.slots.default;
+            (__VLS_ctx.t('plugin.add_child_menu', 'Add child menu'));
             var __VLS_36;
             const __VLS_41 = {}.ElButton;
             /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
@@ -242,6 +249,7 @@ else {
                 }
             };
             __VLS_44.slots.default;
+            (__VLS_ctx.t('common.delete', 'Delete'));
             var __VLS_44;
             var __VLS_24;
         }
@@ -260,8 +268,7 @@ else {
             ...{ class: "plugin-menu-tree-editor__dropzone plugin-menu-tree-editor__dropzone--inside" },
             ...{ class: ({ 'is-active': __VLS_ctx.isDropHint(menu.id, 'inside') }) },
         });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-        (menu.name || menu.id || '当前菜单');
+        (__VLS_ctx.t('plugin.drop_inside', 'Drop here to place as a child of {name}', { name: menu.name || menu.id || __VLS_ctx.t('plugin.current_menu', 'Current menu') }));
         const __VLS_49 = {}.ElForm;
         /** @type {[typeof __VLS_components.ElForm, typeof __VLS_components.elForm, typeof __VLS_components.ElForm, typeof __VLS_components.elForm, ]} */ ;
         // @ts-ignore
@@ -278,10 +285,10 @@ else {
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_54 = __VLS_asFunctionalComponent(__VLS_53, new __VLS_53({
-            label: "菜单 ID",
+            label: (__VLS_ctx.t('plugin.menu_id', 'Menu ID')),
         }));
         const __VLS_55 = __VLS_54({
-            label: "菜单 ID",
+            label: (__VLS_ctx.t('plugin.menu_id', 'Menu ID')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_54));
         __VLS_56.slots.default;
         const __VLS_57 = {}.ElInput;
@@ -289,21 +296,21 @@ else {
         // @ts-ignore
         const __VLS_58 = __VLS_asFunctionalComponent(__VLS_57, new __VLS_57({
             modelValue: (menu.id),
-            placeholder: "唯一 ID",
+            placeholder: (__VLS_ctx.t('plugin.menu_id_placeholder', 'Unique ID')),
         }));
         const __VLS_59 = __VLS_58({
             modelValue: (menu.id),
-            placeholder: "唯一 ID",
+            placeholder: (__VLS_ctx.t('plugin.menu_id_placeholder', 'Unique ID')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_58));
         var __VLS_56;
         const __VLS_61 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_62 = __VLS_asFunctionalComponent(__VLS_61, new __VLS_61({
-            label: "父级 ID",
+            label: (__VLS_ctx.t('plugin.parent_id', 'Parent ID')),
         }));
         const __VLS_63 = __VLS_62({
-            label: "父级 ID",
+            label: (__VLS_ctx.t('plugin.parent_id', 'Parent ID')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_62));
         __VLS_64.slots.default;
         const __VLS_65 = {}.ElInput;
@@ -311,22 +318,22 @@ else {
         // @ts-ignore
         const __VLS_66 = __VLS_asFunctionalComponent(__VLS_65, new __VLS_65({
             modelValue: (menu.parent_id),
-            placeholder: "父级菜单 ID",
+            placeholder: (__VLS_ctx.t('plugin.parent_id_placeholder', 'Parent menu ID')),
         }));
         const __VLS_67 = __VLS_66({
             modelValue: (menu.parent_id),
-            placeholder: "父级菜单 ID",
+            placeholder: (__VLS_ctx.t('plugin.parent_id_placeholder', 'Parent menu ID')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_66));
         var __VLS_64;
         const __VLS_69 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_70 = __VLS_asFunctionalComponent(__VLS_69, new __VLS_69({
-            label: "名称",
+            label: (__VLS_ctx.t('plugin.menu_name', 'Name')),
             required: true,
         }));
         const __VLS_71 = __VLS_70({
-            label: "名称",
+            label: (__VLS_ctx.t('plugin.menu_name', 'Name')),
             required: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_70));
         __VLS_72.slots.default;
@@ -335,295 +342,339 @@ else {
         // @ts-ignore
         const __VLS_74 = __VLS_asFunctionalComponent(__VLS_73, new __VLS_73({
             modelValue: (menu.name),
-            placeholder: "菜单名称",
+            placeholder: (__VLS_ctx.t('plugin.menu_name_placeholder', 'Menu name')),
         }));
         const __VLS_75 = __VLS_74({
             modelValue: (menu.name),
-            placeholder: "菜单名称",
+            placeholder: (__VLS_ctx.t('plugin.menu_name_placeholder', 'Menu name')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_74));
         var __VLS_72;
         const __VLS_77 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_78 = __VLS_asFunctionalComponent(__VLS_77, new __VLS_77({
-            label: "路径",
-            required: true,
+            label: (__VLS_ctx.t('plugin.menu_title_key', 'Title key')),
         }));
         const __VLS_79 = __VLS_78({
-            label: "路径",
-            required: true,
+            label: (__VLS_ctx.t('plugin.menu_title_key', 'Title key')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_78));
         __VLS_80.slots.default;
         const __VLS_81 = {}.ElInput;
         /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
         // @ts-ignore
         const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({
-            modelValue: (menu.path),
-            placeholder: "/plugin/example/home",
+            modelValue: (menu.titleKey),
+            placeholder: (__VLS_ctx.t('plugin.menu_title_key_placeholder', 'For example, route.dashboard')),
         }));
         const __VLS_83 = __VLS_82({
-            modelValue: (menu.path),
-            placeholder: "/plugin/example/home",
+            modelValue: (menu.titleKey),
+            placeholder: (__VLS_ctx.t('plugin.menu_title_key_placeholder', 'For example, route.dashboard')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_82));
         var __VLS_80;
         const __VLS_85 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_86 = __VLS_asFunctionalComponent(__VLS_85, new __VLS_85({
-            label: "组件",
+            label: (__VLS_ctx.t('plugin.menu_title_default', 'Default title')),
         }));
         const __VLS_87 = __VLS_86({
-            label: "组件",
+            label: (__VLS_ctx.t('plugin.menu_title_default', 'Default title')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_86));
         __VLS_88.slots.default;
         const __VLS_89 = {}.ElInput;
         /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
         // @ts-ignore
         const __VLS_90 = __VLS_asFunctionalComponent(__VLS_89, new __VLS_89({
-            modelValue: (menu.component),
-            placeholder: "view/plugin/example/index",
+            modelValue: (menu.titleDefault),
+            placeholder: (__VLS_ctx.t('plugin.menu_title_default_placeholder', 'For example, Dashboard')),
         }));
         const __VLS_91 = __VLS_90({
-            modelValue: (menu.component),
-            placeholder: "view/plugin/example/index",
+            modelValue: (menu.titleDefault),
+            placeholder: (__VLS_ctx.t('plugin.menu_title_default_placeholder', 'For example, Dashboard')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_90));
         var __VLS_88;
         const __VLS_93 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_94 = __VLS_asFunctionalComponent(__VLS_93, new __VLS_93({
-            label: "图标",
+            label: (__VLS_ctx.t('plugin.path', 'Path')),
+            required: true,
         }));
         const __VLS_95 = __VLS_94({
-            label: "图标",
+            label: (__VLS_ctx.t('plugin.path', 'Path')),
+            required: true,
         }, ...__VLS_functionalComponentArgsRest(__VLS_94));
         __VLS_96.slots.default;
         const __VLS_97 = {}.ElInput;
         /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
         // @ts-ignore
         const __VLS_98 = __VLS_asFunctionalComponent(__VLS_97, new __VLS_97({
-            modelValue: (menu.icon),
-            placeholder: "sparkles",
+            modelValue: (menu.path),
+            placeholder: (__VLS_ctx.t('plugin.menu_path_placeholder', '/plugin/example/home')),
         }));
         const __VLS_99 = __VLS_98({
-            modelValue: (menu.icon),
-            placeholder: "sparkles",
+            modelValue: (menu.path),
+            placeholder: (__VLS_ctx.t('plugin.menu_path_placeholder', '/plugin/example/home')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_98));
         var __VLS_96;
         const __VLS_101 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_102 = __VLS_asFunctionalComponent(__VLS_101, new __VLS_101({
-            label: "权限标识",
+            label: (__VLS_ctx.t('plugin.component', 'Component')),
         }));
         const __VLS_103 = __VLS_102({
-            label: "权限标识",
+            label: (__VLS_ctx.t('plugin.component', 'Component')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_102));
         __VLS_104.slots.default;
         const __VLS_105 = {}.ElInput;
         /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
         // @ts-ignore
         const __VLS_106 = __VLS_asFunctionalComponent(__VLS_105, new __VLS_105({
-            modelValue: (menu.permission),
-            placeholder: "plugin:example:view",
+            modelValue: (menu.component),
+            placeholder: (__VLS_ctx.t('plugin.menu_component_placeholder_detail', 'view/plugin/example/index')),
         }));
         const __VLS_107 = __VLS_106({
-            modelValue: (menu.permission),
-            placeholder: "plugin:example:view",
+            modelValue: (menu.component),
+            placeholder: (__VLS_ctx.t('plugin.menu_component_placeholder_detail', 'view/plugin/example/index')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_106));
         var __VLS_104;
         const __VLS_109 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_110 = __VLS_asFunctionalComponent(__VLS_109, new __VLS_109({
-            label: "类型",
+            label: (__VLS_ctx.t('plugin.icon', 'Icon')),
         }));
         const __VLS_111 = __VLS_110({
-            label: "类型",
+            label: (__VLS_ctx.t('plugin.icon', 'Icon')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_110));
         __VLS_112.slots.default;
-        const __VLS_113 = {}.ElSelect;
-        /** @type {[typeof __VLS_components.ElSelect, typeof __VLS_components.elSelect, typeof __VLS_components.ElSelect, typeof __VLS_components.elSelect, ]} */ ;
-        // @ts-ignore
-        const __VLS_114 = __VLS_asFunctionalComponent(__VLS_113, new __VLS_113({
-            modelValue: (menu.type),
-            ...{ style: {} },
-        }));
-        const __VLS_115 = __VLS_114({
-            modelValue: (menu.type),
-            ...{ style: {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_114));
-        __VLS_116.slots.default;
-        const __VLS_117 = {}.ElOption;
-        /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
-        // @ts-ignore
-        const __VLS_118 = __VLS_asFunctionalComponent(__VLS_117, new __VLS_117({
-            label: "目录",
-            value: "directory",
-        }));
-        const __VLS_119 = __VLS_118({
-            label: "目录",
-            value: "directory",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_118));
-        const __VLS_121 = {}.ElOption;
-        /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
-        // @ts-ignore
-        const __VLS_122 = __VLS_asFunctionalComponent(__VLS_121, new __VLS_121({
-            label: "菜单",
-            value: "menu",
-        }));
-        const __VLS_123 = __VLS_122({
-            label: "菜单",
-            value: "menu",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_122));
-        const __VLS_125 = {}.ElOption;
-        /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
-        // @ts-ignore
-        const __VLS_126 = __VLS_asFunctionalComponent(__VLS_125, new __VLS_125({
-            label: "按钮",
-            value: "button",
-        }));
-        const __VLS_127 = __VLS_126({
-            label: "按钮",
-            value: "button",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_126));
-        var __VLS_116;
-        var __VLS_112;
-        const __VLS_129 = {}.ElFormItem;
-        /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
-        // @ts-ignore
-        const __VLS_130 = __VLS_asFunctionalComponent(__VLS_129, new __VLS_129({
-            label: "排序",
-        }));
-        const __VLS_131 = __VLS_130({
-            label: "排序",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_130));
-        __VLS_132.slots.default;
-        const __VLS_133 = {}.ElInputNumber;
-        /** @type {[typeof __VLS_components.ElInputNumber, typeof __VLS_components.elInputNumber, ]} */ ;
-        // @ts-ignore
-        const __VLS_134 = __VLS_asFunctionalComponent(__VLS_133, new __VLS_133({
-            modelValue: (menu.sort),
-            min: (0),
-            step: (1),
-            ...{ style: {} },
-        }));
-        const __VLS_135 = __VLS_134({
-            modelValue: (menu.sort),
-            min: (0),
-            step: (1),
-            ...{ style: {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_134));
-        var __VLS_132;
-        const __VLS_137 = {}.ElFormItem;
-        /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
-        // @ts-ignore
-        const __VLS_138 = __VLS_asFunctionalComponent(__VLS_137, new __VLS_137({
-            label: "重定向",
-        }));
-        const __VLS_139 = __VLS_138({
-            label: "重定向",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_138));
-        __VLS_140.slots.default;
-        const __VLS_141 = {}.ElInput;
+        const __VLS_113 = {}.ElInput;
         /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
         // @ts-ignore
+        const __VLS_114 = __VLS_asFunctionalComponent(__VLS_113, new __VLS_113({
+            modelValue: (menu.icon),
+            placeholder: (__VLS_ctx.t('plugin.icon_placeholder', 'sparkles')),
+        }));
+        const __VLS_115 = __VLS_114({
+            modelValue: (menu.icon),
+            placeholder: (__VLS_ctx.t('plugin.icon_placeholder', 'sparkles')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_114));
+        var __VLS_112;
+        const __VLS_117 = {}.ElFormItem;
+        /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
+        // @ts-ignore
+        const __VLS_118 = __VLS_asFunctionalComponent(__VLS_117, new __VLS_117({
+            label: (__VLS_ctx.t('plugin.permission_key', 'Permission key')),
+        }));
+        const __VLS_119 = __VLS_118({
+            label: (__VLS_ctx.t('plugin.permission_key', 'Permission key')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_118));
+        __VLS_120.slots.default;
+        const __VLS_121 = {}.ElInput;
+        /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
+        // @ts-ignore
+        const __VLS_122 = __VLS_asFunctionalComponent(__VLS_121, new __VLS_121({
+            modelValue: (menu.permission),
+            placeholder: (__VLS_ctx.t('plugin.permission_key_placeholder', 'plugin:example:view')),
+        }));
+        const __VLS_123 = __VLS_122({
+            modelValue: (menu.permission),
+            placeholder: (__VLS_ctx.t('plugin.permission_key_placeholder', 'plugin:example:view')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_122));
+        var __VLS_120;
+        const __VLS_125 = {}.ElFormItem;
+        /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
+        // @ts-ignore
+        const __VLS_126 = __VLS_asFunctionalComponent(__VLS_125, new __VLS_125({
+            label: (__VLS_ctx.t('plugin.type', 'Type')),
+        }));
+        const __VLS_127 = __VLS_126({
+            label: (__VLS_ctx.t('plugin.type', 'Type')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_126));
+        __VLS_128.slots.default;
+        const __VLS_129 = {}.ElSelect;
+        /** @type {[typeof __VLS_components.ElSelect, typeof __VLS_components.elSelect, typeof __VLS_components.ElSelect, typeof __VLS_components.elSelect, ]} */ ;
+        // @ts-ignore
+        const __VLS_130 = __VLS_asFunctionalComponent(__VLS_129, new __VLS_129({
+            modelValue: (menu.type),
+            ...{ style: {} },
+        }));
+        const __VLS_131 = __VLS_130({
+            modelValue: (menu.type),
+            ...{ style: {} },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_130));
+        __VLS_132.slots.default;
+        const __VLS_133 = {}.ElOption;
+        /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
+        // @ts-ignore
+        const __VLS_134 = __VLS_asFunctionalComponent(__VLS_133, new __VLS_133({
+            label: (__VLS_ctx.t('plugin.menu_type_directory', 'Directory')),
+            value: "directory",
+        }));
+        const __VLS_135 = __VLS_134({
+            label: (__VLS_ctx.t('plugin.menu_type_directory', 'Directory')),
+            value: "directory",
+        }, ...__VLS_functionalComponentArgsRest(__VLS_134));
+        const __VLS_137 = {}.ElOption;
+        /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
+        // @ts-ignore
+        const __VLS_138 = __VLS_asFunctionalComponent(__VLS_137, new __VLS_137({
+            label: (__VLS_ctx.t('plugin.menu_type_menu', 'Menu')),
+            value: "menu",
+        }));
+        const __VLS_139 = __VLS_138({
+            label: (__VLS_ctx.t('plugin.menu_type_menu', 'Menu')),
+            value: "menu",
+        }, ...__VLS_functionalComponentArgsRest(__VLS_138));
+        const __VLS_141 = {}.ElOption;
+        /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
+        // @ts-ignore
         const __VLS_142 = __VLS_asFunctionalComponent(__VLS_141, new __VLS_141({
-            modelValue: (menu.redirect),
-            placeholder: "/plugin/example/home",
+            label: (__VLS_ctx.t('plugin.menu_type_button', 'Button')),
+            value: "button",
         }));
         const __VLS_143 = __VLS_142({
-            modelValue: (menu.redirect),
-            placeholder: "/plugin/example/home",
+            label: (__VLS_ctx.t('plugin.menu_type_button', 'Button')),
+            value: "button",
         }, ...__VLS_functionalComponentArgsRest(__VLS_142));
-        var __VLS_140;
+        var __VLS_132;
+        var __VLS_128;
         const __VLS_145 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_146 = __VLS_asFunctionalComponent(__VLS_145, new __VLS_145({
-            label: "外链地址",
+            label: (__VLS_ctx.t('plugin.sort', 'Sort')),
         }));
         const __VLS_147 = __VLS_146({
-            label: "外链地址",
+            label: (__VLS_ctx.t('plugin.sort', 'Sort')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_146));
         __VLS_148.slots.default;
-        const __VLS_149 = {}.ElInput;
-        /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
+        const __VLS_149 = {}.ElInputNumber;
+        /** @type {[typeof __VLS_components.ElInputNumber, typeof __VLS_components.elInputNumber, ]} */ ;
         // @ts-ignore
         const __VLS_150 = __VLS_asFunctionalComponent(__VLS_149, new __VLS_149({
-            modelValue: (menu.external_url),
-            placeholder: "可选",
+            modelValue: (menu.sort),
+            min: (0),
+            step: (1),
+            ...{ style: {} },
         }));
         const __VLS_151 = __VLS_150({
-            modelValue: (menu.external_url),
-            placeholder: "可选",
+            modelValue: (menu.sort),
+            min: (0),
+            step: (1),
+            ...{ style: {} },
         }, ...__VLS_functionalComponentArgsRest(__VLS_150));
         var __VLS_148;
         const __VLS_153 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_154 = __VLS_asFunctionalComponent(__VLS_153, new __VLS_153({
-            label: "可见",
+            label: (__VLS_ctx.t('plugin.redirect', 'Redirect')),
         }));
         const __VLS_155 = __VLS_154({
-            label: "可见",
+            label: (__VLS_ctx.t('plugin.redirect', 'Redirect')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_154));
         __VLS_156.slots.default;
-        const __VLS_157 = {}.ElSwitch;
-        /** @type {[typeof __VLS_components.ElSwitch, typeof __VLS_components.elSwitch, ]} */ ;
+        const __VLS_157 = {}.ElInput;
+        /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
         // @ts-ignore
         const __VLS_158 = __VLS_asFunctionalComponent(__VLS_157, new __VLS_157({
-            modelValue: (menu.visible),
+            modelValue: (menu.redirect),
+            placeholder: (__VLS_ctx.t('plugin.redirect_placeholder', '/plugin/example/home')),
         }));
         const __VLS_159 = __VLS_158({
-            modelValue: (menu.visible),
+            modelValue: (menu.redirect),
+            placeholder: (__VLS_ctx.t('plugin.redirect_placeholder', '/plugin/example/home')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_158));
         var __VLS_156;
         const __VLS_161 = {}.ElFormItem;
         /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
         // @ts-ignore
         const __VLS_162 = __VLS_asFunctionalComponent(__VLS_161, new __VLS_161({
-            label: "启用",
+            label: (__VLS_ctx.t('plugin.external_url', 'External URL')),
         }));
         const __VLS_163 = __VLS_162({
-            label: "启用",
+            label: (__VLS_ctx.t('plugin.external_url', 'External URL')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_162));
         __VLS_164.slots.default;
-        const __VLS_165 = {}.ElSwitch;
-        /** @type {[typeof __VLS_components.ElSwitch, typeof __VLS_components.elSwitch, ]} */ ;
+        const __VLS_165 = {}.ElInput;
+        /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
         // @ts-ignore
         const __VLS_166 = __VLS_asFunctionalComponent(__VLS_165, new __VLS_165({
-            modelValue: (menu.enabled),
+            modelValue: (menu.external_url),
+            placeholder: (__VLS_ctx.t('plugin.optional', 'Optional')),
         }));
         const __VLS_167 = __VLS_166({
-            modelValue: (menu.enabled),
+            modelValue: (menu.external_url),
+            placeholder: (__VLS_ctx.t('plugin.optional', 'Optional')),
         }, ...__VLS_functionalComponentArgsRest(__VLS_166));
         var __VLS_164;
+        const __VLS_169 = {}.ElFormItem;
+        /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
+        // @ts-ignore
+        const __VLS_170 = __VLS_asFunctionalComponent(__VLS_169, new __VLS_169({
+            label: (__VLS_ctx.t('plugin.visible', 'Visible')),
+        }));
+        const __VLS_171 = __VLS_170({
+            label: (__VLS_ctx.t('plugin.visible', 'Visible')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_170));
+        __VLS_172.slots.default;
+        const __VLS_173 = {}.ElSwitch;
+        /** @type {[typeof __VLS_components.ElSwitch, typeof __VLS_components.elSwitch, ]} */ ;
+        // @ts-ignore
+        const __VLS_174 = __VLS_asFunctionalComponent(__VLS_173, new __VLS_173({
+            modelValue: (menu.visible),
+        }));
+        const __VLS_175 = __VLS_174({
+            modelValue: (menu.visible),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_174));
+        var __VLS_172;
+        const __VLS_177 = {}.ElFormItem;
+        /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
+        // @ts-ignore
+        const __VLS_178 = __VLS_asFunctionalComponent(__VLS_177, new __VLS_177({
+            label: (__VLS_ctx.t('plugin.enabled', 'Enabled')),
+        }));
+        const __VLS_179 = __VLS_178({
+            label: (__VLS_ctx.t('plugin.enabled', 'Enabled')),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_178));
+        __VLS_180.slots.default;
+        const __VLS_181 = {}.ElSwitch;
+        /** @type {[typeof __VLS_components.ElSwitch, typeof __VLS_components.elSwitch, ]} */ ;
+        // @ts-ignore
+        const __VLS_182 = __VLS_asFunctionalComponent(__VLS_181, new __VLS_181({
+            modelValue: (menu.enabled),
+        }));
+        const __VLS_183 = __VLS_182({
+            modelValue: (menu.enabled),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_182));
+        var __VLS_180;
         var __VLS_52;
         if (menu.children && menu.children.length > 0) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "plugin-menu-tree-editor__children" },
             });
-            const __VLS_169 = {}.PluginMenuTreeEditor;
+            const __VLS_185 = {}.PluginMenuTreeEditor;
             /** @type {[typeof __VLS_components.PluginMenuTreeEditor, ]} */ ;
             // @ts-ignore
-            const __VLS_170 = __VLS_asFunctionalComponent(__VLS_169, new __VLS_169({
+            const __VLS_186 = __VLS_asFunctionalComponent(__VLS_185, new __VLS_185({
                 ...{ 'onMoveNode': {} },
                 menus: (menu.children),
                 pluginName: (__VLS_ctx.pluginName),
             }));
-            const __VLS_171 = __VLS_170({
+            const __VLS_187 = __VLS_186({
                 ...{ 'onMoveNode': {} },
                 menus: (menu.children),
                 pluginName: (__VLS_ctx.pluginName),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_170));
-            let __VLS_173;
-            let __VLS_174;
-            let __VLS_175;
-            const __VLS_176 = {
+            }, ...__VLS_functionalComponentArgsRest(__VLS_186));
+            let __VLS_189;
+            let __VLS_190;
+            let __VLS_191;
+            const __VLS_192 = {
                 onMoveNode: (__VLS_ctx.forwardMove)
             };
-            var __VLS_172;
+            var __VLS_188;
         }
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ onDragover: (...[$event]) => {
@@ -640,8 +691,7 @@ else {
             ...{ class: "plugin-menu-tree-editor__dropzone" },
             ...{ class: ({ 'is-active': __VLS_ctx.isDropHint(menu.id, 'after') }) },
         });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-        (menu.name || menu.id || '当前菜单');
+        (__VLS_ctx.t('plugin.drop_after', 'Drop here to place after {name}', { name: __VLS_ctx.getMenuDisplayTitle(menu) }));
         var __VLS_15;
     }
 }
@@ -663,6 +713,7 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
+            t: t,
             mutableMenus: mutableMenus,
             addRootMenu: addRootMenu,
             addChildMenu: addChildMenu,
@@ -673,6 +724,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             setDropHint: setDropHint,
             clearDropHint: clearDropHint,
             isDropHint: isDropHint,
+            getMenuDisplayTitle: getMenuDisplayTitle,
             onDrop: onDrop,
         };
     },

@@ -6,7 +6,7 @@ import { ArrowDown, Expand, Fold, RefreshRight, UserFilled } from '@element-plus
 import { ElMessage } from 'element-plus';
 
 import { logout as logoutApi } from '@/api/auth';
-import { resolveRouteLocaleMeta, useAppI18n } from '@/i18n';
+import { preloadRouteNamespaces, resolveRouteLocaleMeta, setI18nLanguage, useAppI18n } from '@/i18n';
 import { useAppStore } from '@/store/app';
 import { useLocaleStore } from '@/store/locale';
 import { useMenuStore } from '@/store/menu';
@@ -61,7 +61,13 @@ function refreshPage() {
   window.location.reload();
 }
 
-function switchLanguage(language: 'zh-CN' | 'en-US') {
+async function switchLanguage(language: 'zh-CN' | 'en-US') {
+  if (localeStore.language === language) {
+    return;
+  }
+
+  await preloadRouteNamespaces(route, language);
+  await setI18nLanguage(language);
   localeStore.setLanguage(language);
   sessionStore.setLanguage(language);
 }

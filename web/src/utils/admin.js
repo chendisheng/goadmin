@@ -1,3 +1,4 @@
+import { getAppLanguage } from '@/i18n';
 export function formatDateTime(value) {
     if (value == null || value === '') {
         return '-';
@@ -6,7 +7,8 @@ export function formatDateTime(value) {
     if (Number.isNaN(date.getTime())) {
         return '-';
     }
-    return date.toLocaleString('zh-CN', {
+    const locale = getAppLanguage();
+    return date.toLocaleString(locale, {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -14,6 +16,41 @@ export function formatDateTime(value) {
         minute: '2-digit',
         second: '2-digit',
     });
+}
+export function formatRemainingTime(value, now, expired) {
+    if (!value) {
+        return '-';
+    }
+    const locale = getAppLanguage();
+    const isZh = locale.toLowerCase().startsWith('zh');
+    if (expired) {
+        return isZh ? '已过期' : 'Expired';
+    }
+    const expiresAt = new Date(value).getTime();
+    if (Number.isNaN(expiresAt)) {
+        return '-';
+    }
+    const diff = Math.max(0, expiresAt - now);
+    if (diff <= 0) {
+        return isZh ? '已过期' : 'Expired';
+    }
+    const totalSeconds = Math.floor(diff / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const parts = [];
+    if (days > 0) {
+        parts.push(isZh ? `${days}天` : `${days}d`);
+    }
+    if (hours > 0 || parts.length > 0) {
+        parts.push(isZh ? `${hours}小时` : `${hours}h`);
+    }
+    if (minutes > 0 || parts.length > 0) {
+        parts.push(isZh ? `${minutes}分钟` : `${minutes}m`);
+    }
+    parts.push(isZh ? `${seconds}秒` : `${seconds}s`);
+    return isZh ? parts.join('') : parts.join(' ');
 }
 export function buildTreeOptions(items) {
     return items.map((item) => ({

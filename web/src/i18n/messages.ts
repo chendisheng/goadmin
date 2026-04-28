@@ -1,3 +1,5 @@
+// Task-1 freeze: do not add new keys in this file.
+// New i18n keys must be introduced through namespace resources in task-4.
 export const appMessages = {
   'zh-CN': {
     'app.title': 'GoAdmin',

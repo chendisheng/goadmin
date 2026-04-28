@@ -1,0 +1,8 @@
+{
+  "tabs.title": "页面",
+  "tabs.aria": "已打开页面",
+  "tabs.more": "更多操作 {title}",
+  "tabs.close": "关闭 {title}",
+  "tabs.page": "页面",
+  "tabs.not_closable": "该标签页不可关闭"
+}

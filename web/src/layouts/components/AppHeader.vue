@@ -116,7 +116,7 @@ function onCommand(command: string) {
     <div class="app-header__right">
       <el-tag effect="plain" round type="info">{{ buildMode }}</el-tag>
       <el-tag effect="plain" round type="success">{{ apiBaseUrl }}</el-tag>
-      <el-dropdown trigger="click" popper-class="app-language-dropdown" @command="switchLanguage">
+      <el-dropdown trigger="click" @command="switchLanguage">
         <el-button class="app-header__language" text>
           {{ t('common.language', 'Language') }}：{{ currentLanguageLabel }}
           <el-icon class="app-header__language-arrow"><ArrowDown /></el-icon>

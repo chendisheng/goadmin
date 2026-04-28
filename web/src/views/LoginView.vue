@@ -91,100 +91,110 @@ async function onSubmit() {
   <div class="login-page">
     <div class="login-page__backdrop" />
 
-    <el-card class="login-card" shadow="never">
-      <section class="login-card__brand">
-        <div class="login-card__brand-top">
-          <div class="login-card__logo">G</div>
-          <div>
-            <h1>{{ t('app.title', appTitle) }}</h1>
-            <p>{{ t('app.subtitle', 'Frontend Core') }} · Vue 3 + TypeScript + Vite</p>
+    <el-card class="login-card" shadow="never" :body-style="{ padding: '0' }">
+      <div class="login-card__body">
+        <section class="login-card__brand">
+          <div class="login-card__brand-top">
+            <div class="login-card__logo">G</div>
+            <div>
+              <h1>{{ t('app.title', appTitle) }}</h1>
+              <p>{{ t('app.subtitle', 'Frontend Core') }} · Vue 3 + TypeScript + Vite</p>
+            </div>
           </div>
-        </div>
 
-        <div class="login-card__brand-body">
-          <el-tag effect="plain" round type="success">{{ t('login.title', 'Login') }}</el-tag>
-          <h2>{{ t('login.welcome', 'Welcome to GoAdmin') }}</h2>
-          <p>{{ t('login.description', 'Sign in with the account created by the server.') }}</p>
+          <div class="login-card__brand-body">
+            <el-tag effect="plain" round type="success">{{ t('login.title', 'Login') }}</el-tag>
+            <h2>{{ t('login.welcome', 'Welcome to GoAdmin') }}</h2>
+            <p>{{ t('login.description', 'Sign in with the account created by the server.') }}</p>
 
-          <ul class="login-card__highlights">
-            <li>{{ t('login.highlight.jwt_session', 'JWT login and session management') }}</li>
-            <li>{{ t('login.highlight.dynamic_menu', 'Dynamic menus and permission-driven access') }}</li>
-            <li>{{ t('login.highlight.element_plus', 'Unified Element Plus styling') }}</li>
-          </ul>
+            <ul class="login-card__highlights">
+              <li>{{ t('login.highlight.jwt_session', 'JWT login and session management') }}</li>
+              <li>{{ t('login.highlight.dynamic_menu', 'Dynamic menus and permission-driven access') }}</li>
+              <li>{{ t('login.highlight.element_plus', 'Unified Element Plus styling') }}</li>
+            </ul>
 
-          <div class="login-card__stats">
-            <div>
-              <strong>{{ apiBaseUrl }}</strong>
-              <span>{{ t('login.api_base_url', 'API base URL') }}</span>
+            <div class="login-card__stats">
+              <div>
+                <strong>{{ apiBaseUrl }}</strong>
+                <span>{{ t('login.api_base_url', 'API base URL') }}</span>
+              </div>
+              <div>
+                <strong>admin</strong>
+                <span>{{ t('login.username', 'Username') }}</span>
+              </div>
+              <div>
+                <strong>admin123</strong>
+                <span>{{ t('login.default_account', 'Default account: admin / admin123') }}</span>
+              </div>
             </div>
-            <div>
-              <strong>admin</strong>
-              <span>{{ t('login.username', 'Username') }}</span>
+          </div>
+        </section>
+
+        <section class="login-card__panel">
+          <div class="login-card__panel-header">
+            <div class="login-card__panel-header-top">
+              <div>
+                <h2>{{ t('login.title', 'Login') }}</h2>
+                <p>{{ t('login.description', 'Sign in with the account created by the server.') }}</p>
+              </div>
+
+              <el-dropdown trigger="click" @command="switchLanguage">
+                <el-button class="login-card__language" text>
+                  {{ t('common.language', 'Language') }}：{{ currentLanguageLabel }}
+                  <el-icon class="login-card__language-arrow"><ArrowDown /></el-icon>
+                </el-button>
+
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="zh-CN">{{ t('common.language_zh', 'Chinese') }}</el-dropdown-item>
+                    <el-dropdown-item command="en-US">{{ t('common.language_en', 'English') }}</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
-            <div>
-              <strong>admin123</strong>
+          </div>
+
+          <el-form
+            ref="formRef"
+            :model="form"
+            :rules="rules"
+            class="login-form"
+            label-position="top"
+            @keyup.enter="onSubmit"
+          >
+            <el-form-item class="login-form__item" :label="t('login.username', 'Username')" prop="username">
+              <el-input
+                v-model="form.username"
+                class="login-form__input"
+                size="large"
+                autocomplete="username"
+                :placeholder="t('login.username_placeholder', 'Enter username')"
+              />
+            </el-form-item>
+
+            <el-form-item class="login-form__item" :label="t('login.password', 'Password')" prop="password">
+              <el-input
+                v-model="form.password"
+                class="login-form__input"
+                size="large"
+                autocomplete="current-password"
+                :placeholder="t('login.password_placeholder', 'Enter password')"
+                type="password"
+                show-password
+              />
+            </el-form-item>
+
+            <div class="login-form__meta">
+              <el-tag effect="plain" round type="info">{{ t('login.api_base_url', 'API base URL') }}: {{ apiBaseUrl }}</el-tag>
               <span>{{ t('login.default_account', 'Default account: admin / admin123') }}</span>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <section class="login-card__panel">
-        <div class="login-card__panel-header">
-          <div class="login-card__panel-header-top">
-            <div>
-              <h2>{{ t('login.title', 'Login') }}</h2>
-              <p>{{ t('login.description', 'Sign in with the account created by the server.') }}</p>
-            </div>
-
-            <el-dropdown trigger="click" @command="switchLanguage">
-              <el-button class="login-card__language" text>
-                {{ t('common.language', 'Language') }}：{{ currentLanguageLabel }}
-                <el-icon class="login-card__language-arrow"><ArrowDown /></el-icon>
-              </el-button>
-
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="zh-CN">{{ t('common.language_zh', 'Chinese') }}</el-dropdown-item>
-                  <el-dropdown-item command="en-US">{{ t('common.language_en', 'English') }}</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
-        </div>
-
-        <el-form
-          ref="formRef"
-          :model="form"
-          :rules="rules"
-          class="login-form"
-          label-position="top"
-          @keyup.enter="onSubmit"
-        >
-          <el-form-item :label="t('login.username', 'Username')" prop="username">
-            <el-input v-model="form.username" autocomplete="username" :placeholder="t('login.username_placeholder', 'Enter username')" />
-          </el-form-item>
-
-          <el-form-item :label="t('login.password', 'Password')" prop="password">
-            <el-input
-              v-model="form.password"
-              autocomplete="current-password"
-              :placeholder="t('login.password_placeholder', 'Enter password')"
-              type="password"
-              show-password
-            />
-          </el-form-item>
-
-          <div class="login-form__meta">
-            <el-tag effect="plain" round type="info">{{ t('login.api_base_url', 'API base URL') }}: {{ apiBaseUrl }}</el-tag>
-            <span>{{ t('login.default_account', 'Default account: admin / admin123') }}</span>
-          </div>
-
-          <el-button class="login-form__submit" type="primary" :loading="loading" @click="onSubmit">
-            {{ t('login.submit', 'Login') }}
-          </el-button>
-        </el-form>
-      </section>
+            <el-button class="login-form__submit" type="primary" :loading="loading" @click="onSubmit">
+              {{ t('login.submit', 'Login') }}
+            </el-button>
+          </el-form>
+        </section>
+      </div>
     </el-card>
   </div>
 </template>
@@ -221,11 +231,10 @@ async function onSubmit() {
   box-shadow: 0 28px 80px rgba(15, 23, 42, 0.14);
 }
 
-.login-card :deep(.el-card__body) {
+.login-card__body {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
   min-height: 680px;
-  padding: 0;
 }
 
 .login-card__brand {
@@ -388,18 +397,12 @@ async function onSubmit() {
   gap: 6px;
 }
 
-.login-form :deep(.el-form-item) {
+.login-form__item {
   margin-bottom: 18px;
 }
 
-.login-form :deep(.el-form-item__label) {
-  font-weight: 600;
-  color: var(--app-text);
-}
-
-.login-form :deep(.el-input__wrapper) {
-  min-height: 48px;
-  border-radius: 14px;
+.login-form__input {
+  width: 100%;
 }
 
 .login-form__meta {
@@ -430,7 +433,7 @@ async function onSubmit() {
     min-height: auto;
   }
 
-  .login-card :deep(.el-card__body) {
+  .login-card__body {
     grid-template-columns: 1fr;
   }
 

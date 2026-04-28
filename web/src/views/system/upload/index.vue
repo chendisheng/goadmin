@@ -276,8 +276,7 @@ function triggerFileSelect() {
 
 function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement | null;
-  const file = input?.files?.[0] ?? null;
-  selectedFile.value = file;
+  selectedFile.value = input?.files?.[0] ?? null;
 }
 
 function openBindDialog(row: UploadFileItem) {

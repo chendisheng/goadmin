@@ -619,7 +619,9 @@ func ManualDebug() string {
 		t.Fatalf("open router for manual edit: %v", err)
 	}
 	if _, err := handle.WriteString("\n" + manual + "\n"); err != nil {
-		handle.Close()
+		if closeErr := handle.Close(); closeErr != nil {
+			t.Fatalf("close router after failed manual edit: %v", closeErr)
+		}
 		t.Fatalf("append manual edit: %v", err)
 	}
 	if err := handle.Close(); err != nil {

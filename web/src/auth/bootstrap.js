@@ -10,8 +10,10 @@ export async function restoreAuthenticatedSession() {
     }
     const currentUser = await fetchCurrentUser();
     sessionStore.setCurrentUser(currentUser);
-    const resolvedLanguage = currentUser.language?.trim() || sessionStore.language || 'zh-CN';
-    sessionStore.setLanguage(resolvedLanguage);
-    localeStore.syncFromUser(currentUser);
+    const resolvedLanguage = localeStore.hasLanguagePreference
+        ? sessionStore.language
+        : currentUser.language?.trim() || sessionStore.language || 'zh-CN';
+    sessionStore.setLanguage(resolvedLanguage, currentUser.language);
+    localeStore.applyLanguagePreference(resolvedLanguage, currentUser.language, localeStore.hasLanguagePreference);
     return currentUser;
 }

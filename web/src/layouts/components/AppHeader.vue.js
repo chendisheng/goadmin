@@ -50,9 +50,15 @@ const currentLanguageLabel = computed(() => {
 function refreshPage() {
     window.location.reload();
 }
-function switchLanguage(language) {
-    localeStore.setLanguage(language);
-    sessionStore.setLanguage(language);
+async function switchLanguage(language) {
+    if (localeStore.language === language) {
+        return;
+    }
+    const profileLanguage = sessionStore.currentUser?.language ?? null;
+    await preloadRouteNamespaces(route, language);
+    await setI18nLanguage(language);
+    localeStore.applyLanguagePreference(language, profileLanguage);
+    sessionStore.setLanguage(language, profileLanguage);
 }
 async function onLogout() {
     try {

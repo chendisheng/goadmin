@@ -2,6 +2,7 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { useAppI18n } from '@/i18n';
+import { resolveInitialI18nLanguage, resolvePreferredI18nLanguage } from '@/i18n/language';
 import type { AuthUser, LoginResponse } from '@/types/auth';
 
 const ACCESS_TOKEN_KEY = 'goadmin.access_token';
@@ -17,9 +18,9 @@ function canUseStorage(): boolean {
 
 function readLanguageValue(): string {
   if (!canUseStorage()) {
-    return 'zh-CN';
+    return resolveInitialI18nLanguage();
   }
-  return window.localStorage.getItem(LANGUAGE_KEY) || 'zh-CN';
+  return resolveInitialI18nLanguage(window.localStorage.getItem(LANGUAGE_KEY));
 }
 
 function readAccessToken(): string {
@@ -135,14 +136,14 @@ export const useSessionStore = defineStore('session', () => {
     currentUser.value = null;
   }
 
-  function applyLoginResponse(response: LoginResponse) {
+  function applyLoginResponse(response: LoginResponse, selectedLanguage?: string | null) {
     accessToken.value = response.access_token.trim();
     refreshToken.value = response.refresh_token.trim();
     tokenType.value = response.token_type.trim() || 'Bearer';
     accessExpiresAt.value = Math.max(0, Math.trunc(Date.now() / 1000) + Math.max(0, response.expires_in));
     refreshExpiresAt.value = Math.max(0, Math.trunc(Date.now() / 1000) + Math.max(0, response.refresh_expires_in));
     currentUser.value = response.user;
-    language.value = response.user.language?.trim() || language.value || 'zh-CN';
+    language.value = resolvePreferredI18nLanguage(selectedLanguage, response.user.language);
 
     persistAccessToken(accessToken.value);
     persistStringValue(REFRESH_TOKEN_KEY, refreshToken.value);
@@ -175,8 +176,8 @@ export const useSessionStore = defineStore('session', () => {
     persistNumberValue(REFRESH_EXPIRES_AT_KEY, 0);
   }
 
-  function setLanguage(value: string) {
-    language.value = value.trim() || 'zh-CN';
+  function setLanguage(value: string, profileLanguage?: string) {
+    language.value = resolvePreferredI18nLanguage(value, profileLanguage);
     persistLanguageValue(language.value);
   }
 

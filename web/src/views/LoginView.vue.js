@@ -35,9 +35,15 @@ const rules = computed(() => ({
     username: [{ required: true, message: t('login.form.username_required', 'Enter username'), trigger: 'blur' }],
     password: [{ required: true, message: t('login.form.password_required', 'Enter password'), trigger: 'blur' }],
 }));
-function switchLanguage(language) {
-    localeStore.setLanguage(language);
-    sessionStore.setLanguage(language);
+async function switchLanguage(language) {
+    if (localeStore.language === language) {
+        return;
+    }
+    const profileLanguage = sessionStore.currentUser?.language ?? null;
+    await preloadRouteNamespaces(route, language);
+    await setI18nLanguage(language);
+    localeStore.applyLanguagePreference(language, profileLanguage);
+    sessionStore.setLanguage(language, profileLanguage);
 }
 async function onSubmit() {
     if (!formRef.value) {
@@ -50,8 +56,9 @@ async function onSubmit() {
         loading.value = true;
         try {
             const response = await login({ username: form.username.trim(), password: form.password });
-            sessionStore.applyLoginResponse(response);
-            localeStore.syncFromUser(response.user);
+            const selectedLanguage = localeStore.hasLanguagePreference ? localeStore.language : null;
+            sessionStore.applyLoginResponse(response, selectedLanguage);
+            localeStore.applyLanguagePreference(selectedLanguage, response.user.language, localeStore.hasLanguagePreference);
             await menuStore.ensureLoaded(router);
             ElMessage.success(t('login.success', 'Login successful'));
             await router.replace(redirectTarget.value);

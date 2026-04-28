@@ -408,7 +408,7 @@ function loadDbSample() {
     activeMode.value = 'db';
     applyDbPreset('sqlite');
     dbSchema.value = '';
-    dbTablesText.value = 'books, orders';
+    dbTablesText.value = 'book, order';
     dbForce.value = false;
     dbGenerateFrontend.value = true;
     dbGeneratePolicy.value = true;
@@ -2234,14 +2234,14 @@ const __VLS_313 = __VLS_asFunctionalComponent(__VLS_312, new __VLS_312({
     type: "textarea",
     rows: (6),
     resize: "none",
-    placeholder: (__VLS_ctx.t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：books, orders')),
+    :placeholder="(__VLS_ctx.t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：book, order'))",
 }));
 const __VLS_314 = __VLS_313({
     modelValue: (__VLS_ctx.dbTablesText),
     type: "textarea",
     rows: (6),
     resize: "none",
-    placeholder: (__VLS_ctx.t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：books, orders')),
+    placeholder: (__VLS_ctx.t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：book, order')),
 }, ...__VLS_functionalComponentArgsRest(__VLS_313));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "db-form-row" },

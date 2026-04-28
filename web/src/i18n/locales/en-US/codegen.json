@@ -40,7 +40,7 @@
   "codegen.db_mount_root_placeholder": "Leave blank for the top-level root menu",
   "codegen.db_mount_root_top": "Top-level root menu",
   "codegen.db_table_range": "Table range",
-  "codegen.db_table_range_placeholder": "Supports comma or newline separation, for example: books, orders",
+  "codegen.db_table_range_placeholder": "Supports comma or newline separation, for example: book, order",
   "codegen.db_table_range_help": "Leave blank to scan all tables; prefill a small set of tables first for previewing.",
   "codegen.generate_options": "Generation options",
   "codegen.generate_options_hint": "Control whether to overwrite existing files and whether to output frontend and permission policies.",

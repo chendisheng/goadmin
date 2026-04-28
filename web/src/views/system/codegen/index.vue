@@ -131,7 +131,7 @@
                         type="textarea"
                         :rows="6"
                         resize="none"
-                        :placeholder="t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：books, orders')"
+                        :placeholder="t('codegen.db_table_range_placeholder', '支持逗号、换行分隔，例如：book, order')"
                       />
                       <div class="db-form-row">
                         <span class="db-field-help">{{ t('codegen.db_table_range_help', '留空则表示扫描全部表；建议优先预填少量表进行预览。') }}</span>
@@ -1031,7 +1031,7 @@ function loadDbSample() {
   activeMode.value = 'db';
   applyDbPreset('sqlite');
   dbSchema.value = '';
-  dbTablesText.value = 'books, orders';
+  dbTablesText.value = 'book, order';
   dbForce.value = false;
   dbGenerateFrontend.value = true;
   dbGeneratePolicy.value = true;

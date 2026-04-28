@@ -40,7 +40,7 @@
   "codegen.db_mount_root_placeholder": "留空为顶层根菜单",
   "codegen.db_mount_root_top": "顶层根菜单",
   "codegen.db_table_range": "表名范围",
-  "codegen.db_table_range_placeholder": "支持逗号、换行分隔，例如：books, orders",
+  "codegen.db_table_range_placeholder": "支持逗号、换行分隔，例如：book, order",
   "codegen.db_table_range_help": "留空则表示扫描全部表；建议优先预填少量表进行预览。",
   "codegen.generate_options": "生成选项",
   "codegen.generate_options_hint": "控制是否覆盖现有文件、是否输出前端和权限策略。",

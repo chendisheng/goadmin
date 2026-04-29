@@ -8,6 +8,8 @@ GoAdmin 是一个 clean-room、模块化的全栈管理平台，采用 `server/ 
 
 本文件是项目的中文说明，和根目录 `README.md` 保持内容一致但以中文组织，便于快速了解项目结构、启动方式和开发约定。
 
+> **作者声明：本项目完全使用 AI 生成，一个字符的代码都没有人为改动，包括文档；人类（我）只参与了与 AI 的沟通。**
+
 ## 项目定位
 
 - **clean-room 实现**：不直接复用外部同类项目的源码、目录和接口设计。
@@ -199,9 +201,10 @@ make server-run-cli ARGS="generate plugin demo"
 
 推荐优先阅读以下文档：
 
-- `docs/GoAdmin 架构设计.md`
-- `docs/GoAdmin 架构设计-简版摘要.md`
-- `docs/demo/demo.md`
+- [`docs/GoAdmin 架构设计.md`](./docs/GoAdmin%20%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1.md)
+- [`docs/GoAdmin 架构设计-简版摘要.md`](./docs/GoAdmin%20%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1-%E7%AE%80%E7%89%88%E6%91%98%E8%A6%81.md)
+- [`docs/GoAdmin 功能演示.md`](./docs/GoAdmin%20%E5%8A%9F%E8%83%BD%E6%BC%94%E7%A4%BA.md)
+- [`docs/GoAdmin CodeGen 模块使用说明.md`](./docs/GoAdmin%20CodeGen%20%E6%A8%A1%E5%9D%97%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.md)
 
 ## 开发约定
 

@@ -8,6 +8,8 @@ GoAdmin is a clean-room, modular full-stack platform. It uses a `server/ + web/`
 
 This file is the English version of the project overview. It keeps the same structure and meaning as `README_zh.md`, so you can switch between the two languages at any time.
 
+> **Author statement: this project was generated entirely by AI, with not a single character of code manually changed, including the documentation; humans (me) only participated in conversations with AI.**
+
 ## Project positioning
 
 - **Clean-room implementation**: do not reuse source code, directory habits, or interface design from external sibling projects.
@@ -199,9 +201,10 @@ The root `Makefile` also provides common deployment helpers such as:
 
 Recommended reading:
 
-- `docs/GoAdmin 架构设计.md`
-- `docs/GoAdmin 架构设计-简版摘要.md`
-- `docs/demo/demo.md`
+- [`docs/GoAdmin 架构设计.md`](./docs/GoAdmin%20%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1.md)
+- [`docs/GoAdmin 架构设计-简版摘要.md`](./docs/GoAdmin%20%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1-%E7%AE%80%E7%89%88%E6%91%98%E8%A6%81.md)
+- [`docs/GoAdmin 功能演示.md`](./docs/GoAdmin%20%E5%8A%9F%E8%83%BD%E6%BC%94%E7%A4%BA.md)
+- [`docs/GoAdmin CodeGen 模块使用说明.md`](./docs/GoAdmin%20CodeGen%20%E6%A8%A1%E5%9D%97%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.md)
 
 ## Development conventions
 

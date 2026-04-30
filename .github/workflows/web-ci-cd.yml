@@ -1,4 +1,4 @@
-name: Phase 15 Frontend CI/CD (Manual Backup)
+name: Frontend CI/CD (Manual Backup)
 
 on:
   workflow_dispatch:
@@ -56,8 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: |
-      github.event_name != 'pull_request' &&
-      (github.event_name != 'workflow_dispatch' || inputs.publish == true)
+      github.event_name == 'workflow_dispatch' && inputs.publish == true
     permissions:
       contents: read
       packages: write

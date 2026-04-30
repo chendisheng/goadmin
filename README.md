@@ -83,7 +83,6 @@ Host development reuses the following local cache directories:
 ├── web/                    # frontend project based on Vue 3 + TypeScript + Vite + Pinia + Vue Router + Element Plus
 ├── deploy/                 # delivery assets for Docker / Compose / Kubernetes / Helm
 ├── docs/                   # architecture, design, requirements, and reference documents
-├── memory-bank/            # project memory and progress records
 ├── Makefile                # root-level entry commands
 └── README.md               # English project overview
 ```

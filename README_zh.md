@@ -83,7 +83,6 @@ make host-cache-init
 ├── web/                    # 前端工程，基于 Vue 3 + TypeScript + Vite + Pinia + Vue Router + Element Plus
 ├── deploy/                 # Docker / Compose / Kubernetes / Helm 等交付资源
 ├── docs/                   # 架构设计、需求说明、参考资料与实施拆解文档
-├── memory-bank/            # 项目记忆与状态记录
 ├── Makefile                # 根级入口命令
 └── README.md               # 英文项目说明
 ```
